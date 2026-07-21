@@ -5,6 +5,7 @@ RSpec.describe ApplicationHelper, type: :helper do
     it { expect(helper.brl(nil)).to eq "—" }
     it { expect(helper.brl(0)).to eq "R$ 0,00" }
     it { expect(helper.brl(123_456_789)).to eq "R$ 1.234.567,89" }
-    it { expect(helper.brl(-1_234)).to eq "R$ -12,34" }
+    it { expect(helper.brl(-1_234)).to eq "-R$ 12,34" }
+    it { expect(helper.brl(-123_456_789)).to eq "-R$ 1.234.567,89" }
   end
 end

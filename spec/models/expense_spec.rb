@@ -34,4 +34,30 @@ RSpec.describe Expense do
     expect(expense(date: Date.new(2026, 2, 28))).not_to be_valid
     expect(expense(date: Date.new(2026, 3, 1))).to be_valid
   end
+
+  it "parcela exige número, não tem data própria e é sempre no crédito" do
+    purchase = InstallmentPurchase.create!(
+      name: "sofá", total_cents: 100_000, installments_count: 10,
+      date: Date.new(2026, 3, 10), card: card, category: mercado
+    )
+    part = purchase.expenses.first
+
+    without_number = part.dup.tap { |e| e.installment_number = nil }
+    expect(without_number).not_to be_valid
+    expect(without_number.errors[:installment_number]).to include("é obrigatório numa parcela")
+
+    with_own_date = part.dup.tap { |e| e.date = Date.new(2026, 3, 10) }
+    expect(with_own_date).not_to be_valid
+    expect(with_own_date.errors[:date]).to include("parcela não tem data própria")
+
+    not_credit = part.dup.tap { |e| e.payment_method = "debit" }
+    expect(not_credit).not_to be_valid
+    expect(not_credit.errors[:payment_method]).to include("parcela é sempre no crédito")
+  end
+
+  it "número de parcela só se aplica a parcelas" do
+    non_installment = expense(installment_number: 2)
+    expect(non_installment).not_to be_valid
+    expect(non_installment.errors[:installment_number]).to include("só se aplica a parcelas")
+  end
 end

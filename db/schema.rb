@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_153915) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_154744) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,6 +73,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_153915) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "installment_purchases", force: :cascade do |t|
+    t.bigint "card_id", null: false
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.date "date", null: false
+    t.integer "first_installment", default: 1, null: false
+    t.integer "installments_count", null: false
+    t.string "name", null: false
+    t.integer "total_cents", null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_id"], name: "index_installment_purchases_on_card_id"
+    t.index ["category_id"], name: "index_installment_purchases_on_category_id"
+  end
+
   create_table "settings", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.date "first_month", null: false
@@ -84,4 +98,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_153915) do
   add_foreign_key "card_schedules", "cards"
   add_foreign_key "expenses", "cards"
   add_foreign_key "expenses", "categories"
+  add_foreign_key "expenses", "installment_purchases"
+  add_foreign_key "installment_purchases", "cards"
+  add_foreign_key "installment_purchases", "categories"
 end

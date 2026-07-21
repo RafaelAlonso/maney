@@ -55,6 +55,24 @@ RSpec.describe Card do
         .not_to change { CardSchedule.count }
     end
 
+    # Contraponto ao exemplo acima: `persisted?` não é contrato. Com a linha do
+    # tempo começando no futuro (hoje antes da primeira vigência) a fronteira é
+    # a própria data inicial, então volta a linha inicial JÁ persistida, suja.
+    # Quem chama salva do mesmo jeito.
+    it "linha do tempo no futuro: devolve a vigência inicial já persistida, com os dias novos" do
+      row = card.reschedule(closing_day: 20, due_day: 27, today: Date.new(2026, 2, 10))
+
+      expect(row).to be_persisted
+      expect(row).to eq(card.card_schedules.first)
+      expect(row.valid_from).to eq(Date.new(2026, 3, 1))
+      expect(row.closing_day).to eq(20)
+      expect(row.due_day).to eq(27)
+
+      row.save!
+      expect(card.card_schedules.reload.count).to eq(1)
+      expect(schedule_on(Date.new(2026, 3, 10)).closing_day).to eq(20)
+    end
+
     it "depois de salva: vigência antiga intacta, nova em vigor da janela aberta em diante" do
       card.reschedule(closing_day: 20, due_day: 27, today:).save!
 
@@ -73,6 +91,30 @@ RSpec.describe Card do
         expect(schedule_on(Date.current).closing_day).to eq(21)
         expect(schedule_on(Date.current).due_day).to eq(27)
         expect(schedule_on(Date.new(2026, 3, 10)).closing_day).to eq(5)
+      end
+    end
+
+    # Cartão que fecha 31: em fevereiro/2026 o fechamento transborda para
+    # 03/03 (terça). A primeira edição nasce nessa fronteira com o dia 1, e aí
+    # succ passa a resolver a vigência EM 03/03 — o ciclo 03 fecha nominalmente
+    # em 01/03 (domingo), efetivo 27/02. A cadeia RECUA, e a fronteira
+    # calculada anteciparia uma vigência que já existe.
+    context "quando a troca de vigência faz a cadeia de faturas recuar" do
+      let(:card) { create_card(name: "Trinta e um", closing_day: 31, due_day: 10, valid_from: Date.new(2026, 1, 1)) }
+
+      it "nunca posiciona a vigência nova antes de uma já existente" do
+        card.reschedule(closing_day: 1, due_day: 10, today: Date.new(2026, 3, 10)).save!
+        expect(card.card_schedules.reload.maximum(:valid_from)).to eq(Date.new(2026, 3, 3))
+
+        row = card.reschedule(closing_day: 15, due_day: 20, today: Date.new(2026, 3, 20))
+
+        expect(row.valid_from).to be >= card.card_schedules.maximum(:valid_from),
+                                  "vigência nova em #{row.valid_from} antecede a vigência existente de #{card.card_schedules.maximum(:valid_from)}"
+        expect(row.valid_from).to eq(Date.new(2026, 3, 3)) # amenda a linha da fronteira, não empilha outra
+        row.save!
+
+        expect(card.card_schedules.reload.count).to eq(2)
+        expect_every_schedule_on_a_real_boundary
       end
     end
 

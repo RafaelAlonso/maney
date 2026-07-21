@@ -26,6 +26,11 @@ module Budgeting
       statement = statement_for(card:, date: earliest)
       start = earliest
       while statement.effective_closing <= date
+        # Uma troca de vigência pode fazer succ recuar (fechar dia 31 -> dia 1
+        # atravessa a virada do mês). Fronteira de janela não anda para trás:
+        # se a cadeia deixou de avançar, a última fronteira real é a que vale.
+        break if statement.effective_closing <= start
+
         start = statement.effective_closing
         statement = statement.succ
       end

@@ -8,32 +8,32 @@ class Card < ApplicationRecord
   # Editar os dias nunca reescreve a vigência antiga: cria uma nova valendo do
   # início da janela aberta hoje — faturas já fechadas seguem derivadas da
   # antiga, e a fronteira é sempre uma data real de fechamento (ver
-  # Budgeting::StatementAttribution.window_start). Devolve a linha SEM salvar,
-  # ou nil se os dias pedidos já são os vigentes.
+  # Budgeting::StatementAttribution.window_start). Devolve nil se os dias
+  # pedidos já são os vigentes.
+  #
+  # A linha devolvida costuma ser nova, mas pode vir persistida: quando a
+  # fronteira coincide com uma vigência que já existe (segunda correção na
+  # mesma janela, ou cartão cuja linha do tempo começa no futuro), a própria
+  # linha existente volta suja. Quem chama salva sempre — nunca ramifique em
+  # `persisted?` / `new_record?`.
   def reschedule(closing_day:, due_day:, today: Date.current)
     wanted = [closing_day.to_i, due_day.to_i]
     current = Budgeting::Schedule.for(card: self, date: today)
     return nil if [current.closing_day, current.due_day] == wanted
 
-    row = amendable_schedule(today) ||
-          card_schedules.find_or_initialize_by(
-            valid_from: Budgeting::StatementAttribution.window_start(card: self, date: today)
-          )
+    row = card_schedules.find_or_initialize_by(valid_from: schedule_start_on(today))
     row.assign_attributes(closing_day: wanted[0], due_day: wanted[1])
     row
   end
 
   private
 
-  # Corrigir os dias no mesmo dia em que a vigência foi criada amenda aquela
-  # linha em vez de empilhar outra: a primeira edição já moveu as fronteiras,
-  # então a segunda cairia numa fronteira diferente e deixaria para trás uma
-  # vigência de vida curta que ninguém pediu.
-  def amendable_schedule(today)
-    rows = card_schedules.order(:valid_from).to_a
-    return nil if rows.size < 2
-
-    latest = rows.last
-    latest if latest.valid_from <= today && latest.created_at&.to_date == today
+  # Garantia estrutural, além da monotonia já imposta por window_start: uma
+  # vigência nova jamais pode anteceder uma existente, senão reatribuiria
+  # compras de faturas já fechadas.
+  def schedule_start_on(today)
+    boundary = Budgeting::StatementAttribution.window_start(card: self, date: today)
+    # maximum nunca é nil aqui: Schedule.for já teria levantado sem vigência.
+    [boundary, card_schedules.maximum(:valid_from)].max
   end
 end

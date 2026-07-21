@@ -15,6 +15,23 @@ module Budgeting
       end
     end
 
+    # A data em que a janela que contém `date` abriu — o fechamento efetivo da
+    # fatura anterior. Percorre a cadeia com succ de propósito: as fronteiras
+    # relatadas aqui são, por construção, as mesmas que succ enxerga.
+    def window_start(card:, date:)
+      earliest = card.card_schedules.minimum(:valid_from)
+      raise ArgumentError, "card #{card.id} has no schedule" if earliest.nil?
+      return earliest if date <= earliest
+
+      statement = statement_for(card:, date: earliest)
+      start = earliest
+      while statement.effective_closing <= date
+        start = statement.effective_closing
+        statement = statement.succ
+      end
+      start
+    end
+
     # Parcela k: fatura da compra avançada (k - primeira parcela criada)
     # faturas — sequência por fatura, sem data própria.
     def statement_for_installment(purchase:, number:)

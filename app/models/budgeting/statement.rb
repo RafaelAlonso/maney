@@ -26,7 +26,10 @@ module Budgeting
 
     def succ
       next_cycle = cycle >> 1
-      Statement.new(card:, cycle: next_cycle, schedule: Schedule.for(card:, date: next_cycle))
+      # A janela N+1 abre exatamente quando a janela N fecha, então a vigência
+      # em efeito para ela é a que vale nesse fechamento — não o dia 1º do mês
+      # calendário, que um transbordo de dia de fechamento pode anteceder.
+      Statement.new(card:, cycle: next_cycle, schedule: Schedule.for(card:, date: effective_closing))
     end
 
     def ==(other)

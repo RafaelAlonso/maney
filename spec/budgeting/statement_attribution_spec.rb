@@ -92,4 +92,25 @@ RSpec.describe Budgeting::StatementAttribution do
     expect(described_class.statement_for_installment(purchase:, number: 5).effective_due)
       .to eq(Date.new(2026, 5, 12))
   end
+
+  it "regressão: transbordo de fechamento + mudança de vigência no próprio boundary — succ pega a vigência nova" do
+    card30 = create_card(name: "Trinta", closing_day: 30, due_day: 10) # AC 7: fecha 30, transborda em fevereiro
+    february_statement = described_class.statement_for(card: card30, date: Date.new(2026, 2, 25))
+    expect(february_statement.effective_closing).to eq(Date.new(2026, 3, 2)) # transbordou para fora de fevereiro
+
+    # vigência nova entra em vigor exatamente no boundary transbordado (AC 19: valia da janela aberta em diante)
+    card30.card_schedules.create!(closing_day: 15, due_day: 10, valid_from: Date.new(2026, 3, 2))
+
+    succeeding_statement = february_statement.succ
+    # dia 15/03/2026 é domingo -> efetivo recua para sexta 13/03
+    expect(succeeding_statement.effective_closing).to eq(Date.new(2026, 3, 13))
+    expect(succeeding_statement).to eq(described_class.statement_for(card: card30, date: Date.new(2026, 3, 2)))
+
+    purchase = InstallmentPurchase.create!(
+      name: "presente", total_cents: 20_000, installments_count: 2,
+      date: Date.new(2026, 2, 25), card: card30, category: category("casa")
+    )
+    expect(described_class.statement_for_installment(purchase:, number: 2).effective_closing)
+      .to eq(Date.new(2026, 3, 13))
+  end
 end

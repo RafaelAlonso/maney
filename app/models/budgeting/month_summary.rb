@@ -19,8 +19,7 @@ module Budgeting
 
     def spent_cents(category)
       if category.credit_card?
-        Expense.where(category:, payment_method: %w[debit cash], date: month.all_month)
-               .sum(:amount_cents)
+        credit_card_spent_cents
       else
         dated = Expense.where(category:, date: month.all_month).sum(:amount_cents)
         dated + installment_spent_cents(category)
@@ -29,7 +28,7 @@ module Budgeting
 
     def budgeted_cents(category)
       if category.credit_card?
-        StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
+        credit_card_budgeted_cents
       else
         Budget.find_by(category:, month:)&.amount_cents || 0
       end
@@ -55,14 +54,20 @@ module Budgeting
       [credit_card_budgeted_cents, credit_card_spent_cents].max
     end
 
+    # Memoizados porque derivar as faturas do mês percorre todos os cartões e
+    # todas as parcelas — caro, e pedido mais de uma vez por resumo (o orçado
+    # da categoria reservada e o estimado usam o mesmo número). Seguro pelo
+    # mesmo motivo que carried_balance_cents: a instância é descartável, de um
+    # mês só. Nada aqui pode virar estado de processo (ver Budgeting::Schedule).
     def credit_card_budgeted_cents
-      StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
+      @credit_card_budgeted_cents ||= StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
     end
 
     def credit_card_spent_cents
-      Expense.joins(:category)
-             .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
-             .sum(:amount_cents)
+      @credit_card_spent_cents ||=
+        Expense.joins(:category)
+               .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
+               .sum(:amount_cents)
     end
 
     def installment_spent_cents(category)

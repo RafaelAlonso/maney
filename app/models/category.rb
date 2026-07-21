@@ -15,6 +15,15 @@ class Category < ApplicationRecord
 
   private
 
+  # Tirar ou trocar o papel de uma reservada é bloqueado; renomear continua
+  # livre (decisões: reservada é "não excluível, renomeável").
+  #
+  # Promover uma categoria comum a reservada continua permitido de propósito:
+  # com as seeds rodadas os dois papéis já existem e a validação de unicidade
+  # barra a promoção, então isso só é alcançável num banco sem seeds — onde
+  # é justamente o caminho de recuperação. Se algum dia houver tela de
+  # categorias, reveja: promover "mercado" a cartão de crédito reinterpreta
+  # todo o histórico dela e, por esta mesma validação, não teria volta.
   def reserved_role_cannot_change
     return unless persisted?
     return unless role_was.present? && role_changed?

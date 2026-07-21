@@ -15,6 +15,12 @@ class InstallmentPurchase < ApplicationRecord
 
   after_create :generate_installments
 
+  # Recalcula a série inteira após edição — apaga e regenera pelo motor.
+  def regenerate_installments!
+    expenses.destroy_all
+    generate_installments
+  end
+
   private
 
   def first_installment_within_range

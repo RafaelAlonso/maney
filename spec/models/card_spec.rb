@@ -84,13 +84,42 @@ RSpec.describe Card do
 
     it "duas correções no mesmo dia amendam a mesma linha em vez de empilhar outra" do
       travel_to(Time.zone.local(2026, 7, 21, 10, 0, 0)) do
-        card.reschedule(closing_day: 20, due_day: 27).save!
-        card.reschedule(closing_day: 21, due_day: 27).save!
+        # Dias 28/27: ainda por vir dentro da janela aberta, então a primeira
+        # correção não fecha fatura nenhuma e a fronteira segue em 03/07.
+        card.reschedule(closing_day: 28, due_day: 10).save!
+        card.reschedule(closing_day: 27, due_day: 10).save!
 
         expect(card.card_schedules.reload.count).to eq(2)
-        expect(schedule_on(Date.current).closing_day).to eq(21)
-        expect(schedule_on(Date.current).due_day).to eq(27)
+        expect(card.card_schedules.maximum(:valid_from)).to eq(Date.new(2026, 7, 3))
+        expect(schedule_on(Date.current).closing_day).to eq(27)
+        expect(schedule_on(Date.current).due_day).to eq(10)
         expect(schedule_on(Date.new(2026, 3, 10)).closing_day).to eq(5)
+      end
+    end
+
+    # Contraponto: quando a primeira correção adota um dia de fechamento que a
+    # janela aberta JÁ passou, ela fecha uma fatura na hora (janela [03/07,
+    # 20/07), fechada em 20/07 — ontem). A segunda correção do mesmo dia cai
+    # numa janela nova e por isso empilha uma linha: amendar a de 03/07
+    # reabriria uma fatura já fechada. Não amendar aqui é o comportamento
+    # correto, não uma regressão de "duas correções no mesmo dia".
+    it "segunda correção no mesmo dia empilha linha quando a primeira fechou uma fatura na hora" do
+      travel_to(Time.zone.local(2026, 7, 21, 10, 0, 0)) do
+        card.reschedule(closing_day: 20, due_day: 27).save!
+        expect(statement_for(Date.current).effective_closing).to eq(Date.new(2026, 8, 20))
+        expect(statement_for(Date.new(2026, 7, 19)).closed?(today: Date.current)).to be(true)
+
+        card.reschedule(closing_day: 21, due_day: 27).save!
+
+        rows = card.card_schedules.reload.order(:valid_from).map { [_1.valid_from, _1.closing_day, _1.due_day] }
+        expect(rows).to eq([
+                             [Date.new(2026, 3, 1), 5, 12],
+                             [Date.new(2026, 7, 3), 20, 27],
+                             [Date.new(2026, 7, 20), 21, 27]
+                           ])
+        expect(schedule_on(Date.current).closing_day).to eq(21)
+        expect(schedule_on(Date.new(2026, 3, 10)).closing_day).to eq(5)
+        expect_every_schedule_on_a_real_boundary
       end
     end
 
@@ -114,6 +143,29 @@ RSpec.describe Card do
         row.save!
 
         expect(card.card_schedules.reload.count).to eq(2)
+        expect_every_schedule_on_a_real_boundary
+      end
+
+      # Meses depois, a fronteira da janela aberta já saiu de 03/03 há muito.
+      # Uma travessia com succ, porém, para no mergulho de março e devolve
+      # 03/03 para sempre: a edição de junho reescreveria a linha do meio,
+      # apagando uma vigência e reatribuindo três faturas já fechadas.
+      it "edição meses depois abre vigência nova na janela aberta, sem reescrever a do meio" do
+        card.reschedule(closing_day: 1, due_day: 10, today: Date.new(2026, 3, 10)).save!
+        expect(card.card_schedules.reload.maximum(:valid_from)).to eq(Date.new(2026, 3, 3))
+
+        row = card.reschedule(closing_day: 15, due_day: 20, today: Date.new(2026, 6, 15))
+
+        expect(row.valid_from).to eq(Date.new(2026, 6, 1)),
+                                  "vigência nova em #{row.valid_from}: retroagiu por cima de faturas já fechadas"
+        row.save!
+
+        rows = card.card_schedules.reload.order(:valid_from).map { [_1.valid_from, _1.closing_day, _1.due_day] }
+        expect(rows).to eq([
+                             [Date.new(2026, 1, 1), 31, 10],
+                             [Date.new(2026, 3, 3), 1, 10],
+                             [Date.new(2026, 6, 1), 15, 20]
+                           ])
         expect_every_schedule_on_a_real_boundary
       end
     end

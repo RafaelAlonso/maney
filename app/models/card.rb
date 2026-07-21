@@ -28,9 +28,12 @@ class Card < ApplicationRecord
 
   private
 
-  # Garantia estrutural, além da monotonia já imposta por window_start: uma
-  # vigência nova jamais pode anteceder uma existente, senão reatribuiria
-  # compras de faturas já fechadas.
+  # O clamp NÃO protege a fronteira de janela — quem garante isso é
+  # window_start, que devolve o início da janela aberta por definição. Ele
+  # garante só ordenação: uma vigência nova jamais antecede uma já existente.
+  # É um backstop contra linhas escritas fora daqui (correção pelo console,
+  # migração de dados, spec montando card_schedules na mão), que podem estar
+  # em datas que não são fronteira de janela nenhuma.
   def schedule_start_on(today)
     boundary = Budgeting::StatementAttribution.window_start(card: self, date: today)
     # maximum nunca é nil aqui: Schedule.for já teria levantado sem vigência.

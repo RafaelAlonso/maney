@@ -12,11 +12,18 @@ class CardsController < ApplicationController
 
   def create
     @card = Card.new(name: card_params[:name])
-    @card.card_schedules.build(closing_day: card_params[:closing_day], due_day: card_params[:due_day],
-                               valid_from: Setting.instance.first_month)
+    schedule = @card.card_schedules.build(closing_day: card_params[:closing_day], due_day: card_params[:due_day],
+                                          valid_from: Setting.instance.first_month)
     if @card.save
       redirect_to cards_path, notice: "Cartão cadastrado."
     else
+      # `@card.save` invalida o schedule filho como efeito colateral do
+      # autosave e só deixa em @card.errors o genérico "Card schedules is
+      # invalid" — a mensagem específica ("Closing day is not included in
+      # the list") fica isolada em `schedule.errors`. Mescla para o usuário
+      # ver a causa e descarta o genérico, que não agrega nada depois disso.
+      @card.errors.merge!(schedule.errors)
+      @card.errors.delete(:card_schedules)
       @days = card_params.slice(:closing_day, :due_day)
       render :new, status: :unprocessable_entity
     end
@@ -30,7 +37,17 @@ class CardsController < ApplicationController
   def update
     @card.name = card_params[:name]
     schedule = @card.reschedule(closing_day: card_params[:closing_day], due_day: card_params[:due_day])
-    if [@card, *schedule].all?(&:valid?)
+    # Não usa `[@card, *schedule].all?(&:valid?)`: `Enumerable#all?`
+    # short-circuita, então se @card já for inválido `schedule.valid?` nunca
+    # roda. Isso passa despercebido quando `schedule` é uma linha nova (o
+    # autosave de `@card.valid?` valida os filhos não salvos como efeito
+    # colateral), mas `reschedule` pode devolver uma linha já persistida e
+    # suja (ver Card#reschedule) — para essa, autosave não valida sem
+    # `autosave: true`. Chama os dois `valid?` sempre, sem depender de
+    # short-circuit nem desse efeito colateral.
+    card_valid = @card.valid?
+    schedule_valid = schedule.nil? || schedule.valid?
+    if card_valid && schedule_valid
       ActiveRecord::Base.transaction { @card.save!; schedule&.save! }
       redirect_to cards_path, notice: "Cartão atualizado."
     else
@@ -48,9 +65,14 @@ class CardsController < ApplicationController
   def destroy
     if @card.expenses.exists? || @card.installment_purchases.exists?
       redirect_to new_card_migration_path(@card)
-    else
-      @card.destroy
+    elsif @card.destroy
       redirect_to cards_path, notice: "Cartão excluído."
+    else
+      # Hoje inatingível através do guard acima (que é completo contra o
+      # modelo atual), mas `dependent: :restrict_with_error` faz `destroy`
+      # devolver `false` em vez de levantar — sem este ramo, uma falha real
+      # anunciaria sucesso enquanto o registro continua existindo.
+      redirect_to cards_path, alert: @card.errors.full_messages.to_sentence
     end
   end
 

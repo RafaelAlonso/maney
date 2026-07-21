@@ -24,6 +24,12 @@ RSpec.describe "Cards", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
   end
 
+  it "shows the specific closing-day message instead of the generic association error (Fix 1)" do
+    post cards_path, params: { card: { name: "Azul", closing_day: 0, due_day: 12 } }
+    expect(response.body).to include("Closing day is not included in the list")
+    expect(response.body).not_to include("Card schedules is invalid")
+  end
+
   it "editing days creates a new schedule valid from today, keeping the old one (AC 16)" do
     card = create_card!(closing_day: 5, due_day: 12)
     patch card_path(card), params: { card: { name: "Azul", closing_day: 20, due_day: 27 } }
@@ -59,6 +65,46 @@ RSpec.describe "Cards", type: :request do
       expect(card.card_schedules.count).to eq 3
       expect(Budgeting::Schedule.for(card:, date: Date.current).closing_day).to eq 21
     end
+  end
+
+  # Azul (helper default) fecha dia 5, vence dia 12, primeira vigência em
+  # 01/03/2026. Em 21/07/2026 a janela aberta é [03/07, 05/08). A primeira
+  # correção adota o dia de fechamento 28 — ainda por vir dentro da janela —
+  # então não fecha fatura nenhuma e cria uma linha nova em 03/07 (ver
+  # spec/models/card_spec.rb, "duas correções no mesmo dia amendam a mesma
+  # linha"). A segunda correção cai na MESMA janela e por isso reaproveita
+  # essa linha já persistida — é o cenário que `Card#reschedule` documenta
+  # como "pode vir persistida" e que `all?(&:valid?)` mascara via
+  # short-circuit quando o nome também está inválido.
+  it "reports both the name error and the schedule's own error when a persisted schedule row is dirtied together with an invalid name (Fix 2)" do
+    travel_to(Time.zone.local(2026, 7, 21, 10, 0, 0)) do
+      card = create_card!
+      patch card_path(card), params: { card: { name: "Azul", closing_day: 28, due_day: 10 } }
+      expect(response).to redirect_to(cards_path)
+      expect(card.card_schedules.reload.count).to eq(2)
+
+      patch card_path(card), params: { card: { name: "", closing_day: 99, due_day: 10 } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Name can&#39;t be blank").or include("Name can't be blank")
+      expect(response.body).to include("Closing day is not included in the list")
+    end
+  end
+
+  it "reports failure via alert when destroy is refused despite passing the guard (Fix 3, latent)" do
+    card = create_card!
+    allow(Card).to receive(:find).with(card.id.to_s).and_return(card)
+    allow(card).to receive(:destroy) do
+      card.errors.add(:base, "não pode ser excluído")
+      false
+    end
+
+    delete card_path(card)
+
+    expect(response).to redirect_to(cards_path)
+    follow_redirect!
+    expect(response.body).to include("não pode ser excluído")
+    expect(Card.exists?(card.id)).to be true
   end
 
   it "destroys a card without expenses" do

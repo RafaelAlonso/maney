@@ -18,12 +18,27 @@
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
+    <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
+
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
-  <body>
-    <%= yield %>
+  <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">
+    <% unless Setting.instance.nil? %>
+      <nav class="flex gap-4 px-4 py-3 border-b bg-white text-sm overflow-x-auto">
+        <%= link_to "Início", root_path %>
+        <%= link_to "Gastos", expenses_path %>
+        <%= link_to "Ganhos", incomes_path %>
+        <%= link_to "Cartões", cards_path %>
+        <%= link_to "Categorias", categories_path %>
+        <%= link_to "Config", edit_settings_path %>
+      </nav>
+    <% end %>
+    <% if notice %><p class="bg-emerald-50 text-emerald-800 px-4 py-2 text-sm"><%= notice %></p><% end %>
+    <% if alert %><p class="bg-red-50 text-red-800 px-4 py-2 text-sm"><%= alert %></p><% end %>
+    <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
+    <%= render "shared/fab" unless Setting.instance.nil? %>
   </body>
 </html>

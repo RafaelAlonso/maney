@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_153352) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_21_153915) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -49,6 +49,22 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_153352) do
     t.index ["role"], name: "index_categories_on_role", unique: true, where: "(role IS NOT NULL)"
   end
 
+  create_table "expenses", force: :cascade do |t|
+    t.integer "amount_cents", null: false
+    t.bigint "card_id"
+    t.bigint "category_id", null: false
+    t.datetime "created_at", null: false
+    t.date "date"
+    t.integer "installment_number"
+    t.bigint "installment_purchase_id"
+    t.string "name", null: false
+    t.string "payment_method", null: false
+    t.datetime "updated_at", null: false
+    t.index ["card_id"], name: "index_expenses_on_card_id"
+    t.index ["category_id"], name: "index_expenses_on_category_id"
+    t.index ["installment_purchase_id"], name: "index_expenses_on_installment_purchase_id"
+  end
+
   create_table "incomes", force: :cascade do |t|
     t.integer "amount_cents", null: false
     t.datetime "created_at", null: false
@@ -66,4 +82,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_153352) do
 
   add_foreign_key "budgets", "categories"
   add_foreign_key "card_schedules", "cards"
+  add_foreign_key "expenses", "cards"
+  add_foreign_key "expenses", "categories"
 end

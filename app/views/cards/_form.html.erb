@@ -1,0 +1,19 @@
+<%# app/views/cards/_form.html.erb — locals: card:, days:, url: %>
+<%= form_with model: card, url: url, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: card %>
+  <div>
+    <%= f.label :name, "Nome", class: "block text-sm mb-1" %>
+    <%= f.text_field :name, class: "border rounded p-2 w-full" %>
+  </div>
+  <div class="flex gap-4">
+    <div>
+      <%= f.label :closing_day, "Dia de fechamento", class: "block text-sm mb-1" %>
+      <%= f.number_field :closing_day, value: days[:closing_day], min: 1, max: 31, class: "border rounded p-2 w-24" %>
+    </div>
+    <div>
+      <%= f.label :due_day, "Dia de vencimento", class: "block text-sm mb-1" %>
+      <%= f.number_field :due_day, value: days[:due_day], min: 1, max: 31, class: "border rounded p-2 w-24" %>
+    </div>
+  </div>
+  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>

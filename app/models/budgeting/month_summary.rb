@@ -9,7 +9,9 @@ module Budgeting
       @today = today
     end
 
-    def carried_balance_cents = BalanceChain.carried_into(month:)
+    def carried_balance_cents
+      @carried_balance_cents ||= BalanceChain.carried_into(month:)
+    end
 
     def incomes_total_cents
       carried_balance_cents + Income.where(date: month.all_month).sum(:amount_cents)
@@ -34,8 +36,10 @@ module Budgeting
     end
 
     def estimated_balance_cents
-      committed = Category.find_each.sum { |c| [budgeted_cents(c), spent_cents(c)].max }
-      incomes_total_cents - committed
+      # `role` é nulo na maioria das categorias — Category.where.not(role: "credit_card")
+      # excluiria essas linhas por três-valores em SQL, então filtramos em Ruby.
+      other_committed = Category.all.reject(&:credit_card?).sum { |c| [budgeted_cents(c), spent_cents(c)].max }
+      incomes_total_cents - other_committed - credit_card_committed_cents
     end
 
     def current_balance_cents
@@ -43,6 +47,23 @@ module Budgeting
     end
 
     private
+
+    # Termo do cartão de crédito calculado sem depender da linha reservada
+    # existir em Category — o orçado vem inteiramente das faturas derivadas
+    # e o consumido é filtrado pelo papel, não por uma referência à categoria.
+    def credit_card_committed_cents
+      [credit_card_budgeted_cents, credit_card_spent_cents].max
+    end
+
+    def credit_card_budgeted_cents
+      StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
+    end
+
+    def credit_card_spent_cents
+      Expense.joins(:category)
+             .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
+             .sum(:amount_cents)
+    end
 
     def installment_spent_cents(category)
       Expense.where(category:, date: nil).includes(:installment_purchase).sum do |expense|

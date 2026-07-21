@@ -11,6 +11,7 @@ class InstallmentPurchase < ApplicationRecord
   validate :first_installment_within_range
   validate :category_not_credit_card
   validate :date_within_timeline
+  validate :total_covers_installments
 
   after_create :generate_installments
 
@@ -31,6 +32,12 @@ class InstallmentPurchase < ApplicationRecord
     first = Setting.instance&.first_month
     return if date.nil? || first.nil? || date >= first
     errors.add(:date, "anterior ao primeiro mês — a linha do tempo começa nele")
+  end
+
+  def total_covers_installments
+    return if total_cents.nil? || installments_count.nil?
+    return if total_cents >= installments_count
+    errors.add(:total_cents, "não pode ser menor que o número de parcelas — cada parcela ficaria com menos de 1 centavo")
   end
 
   def generate_installments

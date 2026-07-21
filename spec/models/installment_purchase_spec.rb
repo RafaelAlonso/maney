@@ -32,4 +32,15 @@ RSpec.describe InstallmentPurchase do
   it "recusa a categoria reservada cartão de crédito (é compra no crédito)" do
     expect(InstallmentPurchase.new(**sofa_attrs, category: credit_card_category)).not_to be_valid
   end
+
+  it "Fix 4: recusa total menor que o número de parcelas (parcela ficaria com 0 centavos)" do
+    purchase = InstallmentPurchase.new(**sofa_attrs, total_cents: 9, installments_count: 10)
+    expect(purchase).not_to be_valid
+    expect(purchase.errors[:total_cents]).to be_present
+  end
+
+  it "Fix 4: total igual ao número de parcelas é o limite válido — gera parcelas de exatamente 1 centavo" do
+    purchase = InstallmentPurchase.create!(**sofa_attrs, total_cents: 10, installments_count: 10)
+    expect(purchase.expenses.pluck(:amount_cents).uniq).to eq([1])
+  end
 end

@@ -88,6 +88,16 @@ RSpec.describe Budgeting::MonthSummary do
     expect(summary.incomes_total_cents).to eq(700_000)
   end
 
+  it "Fix 2b: o orçado do cartão de crédito entra na estimativa mesmo sem a categoria reservada existir " \
+     "(não depende de credit_card_category ter sido chamado antes)" do
+    Income.create!(name: "salário", amount_cents: 500_000, date: march)
+    credit(120_000, Date.new(2026, 3, 4)) # fatura fecha 05/03, vence 12/03 -> conta em março
+
+    expect(Category.where(role: "credit_card")).to be_empty
+    # committed = mercado max(0, 120.000) + cartão max(120.000, 0) = 240.000
+    expect(summary.estimated_balance_cents).to eq(500_000 - 120_000 - 120_000)
+  end
+
   it "parcelas consomem seus meses: sofá 10x de março consome 100 em março e 100 em dezembro" do
     InstallmentPurchase.create!(
       name: "sofá", total_cents: 100_000, installments_count: 10,

@@ -110,4 +110,25 @@ RSpec.describe "Competence e StatementSet" do
     credit_expense(20_000, Date.new(2026, 3, 4))
     expect(Budgeting::StatementSet.due_in(month: Date.new(2026, 1, 1))).to eq({})
   end
+
+  it "Fix 1: mudança de vigência dentro da janela mantém faturas de mesmo fechamento nominal em buckets separados" do
+    # vigência nova a partir de 10/03, estritamente entre as duas compras abaixo
+    card.card_schedules.create!(closing_day: 5, due_day: 1, valid_from: Date.new(2026, 3, 10))
+
+    before_change = credit_expense(90_000, Date.new(2026, 3, 8))
+    after_change = credit_expense(9_000, Date.new(2026, 3, 15))
+
+    groups = Budgeting::StatementSet.for_card(card:)
+
+    # ambas caem no mesmo fechamento nominal — é o cenário que colidia antes do fix
+    expect(groups.keys.map(&:nominal_closing).uniq).to eq([Date.new(2026, 4, 5)])
+    expect(groups.keys.size).to eq(2)
+
+    april = groups.keys.find { |s| s.effective_due == Date.new(2026, 4, 13) }
+    may = groups.keys.find { |s| s.effective_due == Date.new(2026, 5, 1) }
+
+    expect(april).not_to eq(may)
+    expect(groups[april]).to contain_exactly(before_change)
+    expect(groups[may]).to contain_exactly(after_change)
+  end
 end

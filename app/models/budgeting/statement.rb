@@ -1,6 +1,8 @@
 module Budgeting
   # Fatura derivada — nunca persistida. Identidade natural:
-  # (cartão, data nominal de fechamento).
+  # (cartão, data nominal de fechamento, data nominal de vencimento) — o
+  # vencimento entra porque vem da vigência (schedule) em efeito, que pode
+  # divergir entre duas faturas com o mesmo fechamento nominal.
   class Statement
     attr_reader :card, :cycle, :schedule
 
@@ -33,10 +35,11 @@ module Budgeting
     end
 
     def ==(other)
-      other.is_a?(Statement) && other.card.id == card.id && other.nominal_closing == nominal_closing
+      other.is_a?(Statement) && other.card.id == card.id &&
+        other.nominal_closing == nominal_closing && other.nominal_due == nominal_due
     end
     alias eql? ==
 
-    def hash = [card.id, nominal_closing].hash
+    def hash = [card.id, nominal_closing, nominal_due].hash
   end
 end

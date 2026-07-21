@@ -9,4 +9,10 @@ module BrlMoney
     return nil unless normalized.match?(/\A-?\d+(\.\d{1,2})?\z/)
     (BigDecimal(normalized) * 100).to_i
   end
+
+  def format(cents)
+    sign = cents.negative? ? "-" : ""
+    reais, centavos = cents.abs.divmod(100)
+    "#{sign}#{reais.to_s.gsub(/(\d)(?=(\d{3})+\z)/, '\1.')},#{centavos.to_s.rjust(2, '0')}"
+  end
 end

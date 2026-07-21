@@ -52,6 +52,10 @@ class CardsController < ApplicationController
       redirect_to cards_path, notice: "Cartão atualizado."
     else
       @card.errors.merge!(schedule.errors) if schedule
+      # Mesmo motivo do `create`: quando a linha é nova, o autosave de
+      # `@card.valid?` planta o genérico "Card schedules is invalid" ao lado
+      # da mensagem específica. Uma causa por vez.
+      @card.errors.delete(:card_schedules)
       # `reschedule` pode ter sujado uma linha dentro da associação
       # `card_schedules` já carregada; recarrega para o form e a lista não
       # mostrarem dias que não foram de fato salvos.

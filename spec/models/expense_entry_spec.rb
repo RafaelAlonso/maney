@@ -165,6 +165,60 @@ RSpec.describe ExpenseEntry do
       expect(purchase.total_cents).to eq 100_000
       expect(purchase.installments_count).to eq 10
     end
+
+    it "Decision 2: a genuine no-op edit does not destroy/recreate the series (ids and created_at survive)" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                amount: "1.000,00", installments_count: "10", date: "2026-03-10")
+      e.save
+      purchase = e.record
+      original_ids = purchase.expenses.order(:installment_number).pluck(:id)
+      original_created_ats = purchase.expenses.order(:installment_number).pluck(:created_at)
+
+      resubmitted = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                          amount: "1.000,00", installments_count: "10", date: "2026-03-10")
+      expect(resubmitted.update(purchase)).to be true
+
+      purchase.reload
+      expect(purchase.expenses.order(:installment_number).pluck(:id)).to eq original_ids
+      expect(purchase.expenses.order(:installment_number).pluck(:created_at)).to eq original_created_ats
+    end
+
+    it "Decision 2: a purely non-series edit (date only) is saved but does not touch the series rows" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                amount: "1.000,00", installments_count: "10", date: "2026-03-10")
+      e.save
+      purchase = e.record
+      original_ids = purchase.expenses.order(:installment_number).pluck(:id)
+      original_created_ats = purchase.expenses.order(:installment_number).pluck(:created_at)
+
+      moved = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                    amount: "1.000,00", installments_count: "10", date: "2026-04-10")
+      expect(moved.update(purchase)).to be true
+
+      purchase.reload
+      expect(purchase.date).to eq Date.new(2026, 4, 10)
+      expect(purchase.expenses.order(:installment_number).pluck(:id)).to eq original_ids
+      expect(purchase.expenses.order(:installment_number).pluck(:created_at)).to eq original_created_ats
+    end
+
+    it "Decision 2: an edit that changes a series input (name and installments_count) still regenerates" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                amount: "1.000,00", installments_count: "10", date: "2026-03-10")
+      e.save
+      purchase = e.record
+      original_ids = purchase.expenses.order(:installment_number).pluck(:id)
+
+      updated = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá novo",
+                      amount: "500,00", installments_count: "5", date: "2026-03-10")
+      expect(updated.update(purchase)).to be true
+
+      purchase.reload
+      new_expenses = purchase.expenses.order(:installment_number)
+      expect(new_expenses.pluck(:id)).not_to eq original_ids
+      expect(new_expenses.count).to eq 5
+      expect(new_expenses.map(&:name)).to eq (1..5).map { |k| "sofá novo #{k}/5" }
+      expect(new_expenses.sum(&:amount_cents)).to eq 50_000
+    end
   end
 
   describe ".from" do

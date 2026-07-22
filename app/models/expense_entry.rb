@@ -81,9 +81,12 @@ class ExpenseEntry
     purchase.assign_attributes(name:, total_cents: amount_cents, date: date.presence, category:,
                                card_id: card_id.presence, installments_count:,
                                first_installment: first_installment.presence || 1)
+    # Precisa ser lido aqui, com `changed` ainda refletindo a edição pendente
+    # — depois do save bem-sucedido o dirty state já foi limpo.
+    regenerate = purchase.series_inputs_changed?
     ActiveRecord::Base.transaction do
       ok = persist(purchase)
-      purchase.regenerate_installments! if ok
+      purchase.regenerate_installments! if ok && regenerate
     end
     ok
   rescue ActiveRecord::RecordInvalid => e

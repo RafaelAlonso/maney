@@ -20,6 +20,31 @@ RSpec.describe "Incomes", type: :request do
     expect(response.body).to include("saldo inicial").and include(edit_settings_path)
   end
 
+  # A linha derivada mora no mesmo <ul> dos ganhos reais, e os exemplos acima
+  # só olham texto e ordem — passariam igual se ela fosse renderizada como um
+  # ganho editável. O saldo é derivado da cadeia, não um lançamento: não pode
+  # ter como ser editado nem excluído, senão o usuário tenta "corrigir" um
+  # número que nenhuma linha do banco produz.
+  it "renders the derived row with no way to act on it as an income (AC 18)" do
+    Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 4, 1))
+    income = Income.create!(name: "extra", amount_cents: 1_000, date: Date.new(2026, 4, 2))
+    get incomes_path(month: "2026-04")
+
+    derived, *real_rows = response.body.split(%(<li class=")).drop(1)
+    expect(derived).to include("saldo do mês anterior")
+    expect(derived).not_to include("excluir")
+    expect(derived).not_to include(edit_income_path(income))
+    expect(derived).not_to match(%r{/incomes/\d+})
+    # e o contraste: um ganho de verdade tem os dois controles
+    expect(real_rows.join).to include("excluir").and include(edit_income_path(income))
+  end
+
+  it "shows a negative carried balance as negative (AC 18)" do
+    Setting.instance.update!(initial_balance_cents: -25_000)
+    get incomes_path(month: "2026-03")
+    expect(response.body).to include("-R$ 250,00")
+  end
+
   it "rejects invalid amounts (AC 14)" do
     post incomes_path, params: { income: { name: "x", amount: "0,00", date: "2026-03-01" } }
     expect(response).to have_http_status(:unprocessable_entity)

@@ -159,6 +159,11 @@ RSpec.describe ExpenseEntry do
       expect(purchase.expenses.order(:installment_number).pluck(:name)).to eq original_names
       expect(purchase.expenses.order(:installment_number).pluck(:amount_cents)).to eq original_amounts
       expect(purchase.expenses.sum(:amount_cents)).to eq original_sum
+      # O cabeçalho volta atrás junto com a série: sem a transação em volta
+      # dos dois passos, o purchase ficaria dizendo 5 parcelas de R$ 500
+      # enquanto as 10 parcelas antigas de R$ 1.000 continuam no banco.
+      expect(purchase.total_cents).to eq 100_000
+      expect(purchase.installments_count).to eq 10
     end
   end
 

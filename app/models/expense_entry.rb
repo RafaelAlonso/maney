@@ -70,18 +70,21 @@ class ExpenseEntry
                             first_installment: first_installment.presence || 1)
   end
 
-  # regenerate_installments! agora é atômico por conta própria (fix na
-  # InstallmentPurchase), então esta função não precisa mais embrulhar nada
-  # para proteger o "apaga e recria" — só orquestra e, se o motor rejeitar a
-  # série nova, devolve o formulário com erro em vez de deixar a exceção
-  # escapar como página de erro.
+  # `regenerate_installments!` é atômico por conta própria, mas isso só protege
+  # a série. A transação aqui é o que mantém cabeçalho e série coerentes: sem
+  # ela o purchase commita e só as parcelas voltam atrás, deixando um registro
+  # que diz "5 parcelas de R$ 500" ao lado das 10 parcelas antigas de R$ 1.000.
+  # Se o motor rejeitar a série nova, devolve o formulário com erro em vez de
+  # deixar a exceção escapar como página de erro.
   def update_purchase(purchase)
     ok = false
     purchase.assign_attributes(name:, total_cents: amount_cents, date: date.presence, category:,
                                card_id: card_id.presence, installments_count:,
                                first_installment: first_installment.presence || 1)
-    ok = persist(purchase)
-    purchase.regenerate_installments! if ok
+    ActiveRecord::Base.transaction do
+      ok = persist(purchase)
+      purchase.regenerate_installments! if ok
+    end
     ok
   rescue ActiveRecord::RecordInvalid => e
     import_errors(e.record)

@@ -1,0 +1,28 @@
+<%# app/views/settings/edit.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Configurações</h1>
+
+<%= form_with url: settings_path, scope: :setting, method: :patch, class: "space-y-4 mb-8" do |f| %>
+  <%= render "shared/errors", model: @setting %>
+  <div>
+    <%= f.label :first_month, "Primeiro mês", class: "block text-sm mb-1" %>
+    <%= f.month_field :first_month, value: @setting.first_month.strftime("%Y-%m"), class: "border rounded p-2 w-full" %>
+    <p class="text-xs text-gray-500 mt-1">A linha do tempo começa aqui; não pode passar de um mês que já tem lançamentos.</p>
+  </div>
+  <div>
+    <%= f.label :initial_balance, "Saldo inicial (R$)", class: "block text-sm mb-1" %>
+    <%= f.text_field :initial_balance, value: BrlMoney.format(@setting.initial_balance_cents),
+          inputmode: "decimal", class: "border rounded p-2 w-full" %>
+  </div>
+  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>
+
+<h2 class="font-medium mb-2">Categorias reservadas</h2>
+<p class="text-sm text-gray-500 mb-3">Renomeáveis; não podem ser excluídas.</p>
+<div class="space-y-3">
+  <% @reserved.each do |category| %>
+    <%= form_with model: category, url: category_path(category), class: "flex gap-2" do |f| %>
+      <%= f.text_field :name, class: "border rounded p-2 flex-1" %>
+      <%= f.submit "Renomear", class: "bg-gray-700 text-white rounded px-3 py-2 text-sm" %>
+    <% end %>
+  <% end %>
+</div>

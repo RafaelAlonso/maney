@@ -26,9 +26,9 @@ RSpec.describe "Setup", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
-  # Um Setting sem as categorias reservadas é o pior estado possível: a
-  # aplicação sobe, `require_setup` deixa passar, e todo lançamento sem
-  # categoria quebra procurando a "outros" que nunca foi criada.
+  # O saldo inicial ancora a BalanceChain inteira: todo mês herda dele. Um
+  # valor ilegível virando zero em silêncio apaga o número real do usuário em
+  # toda a aplicação, atrás de uma mensagem de sucesso.
   it "rejects an unparseable initial balance without creating the Setting" do
     post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "abc" } }
     expect(response).to have_http_status(:unprocessable_entity)
@@ -55,6 +55,9 @@ RSpec.describe "Setup", type: :request do
     expect(Setting.instance.initial_balance_cents).to eq(-25_000)
   end
 
+  # Um Setting sem as categorias reservadas é o pior estado possível: a
+  # aplicação sobe, `require_setup` deixa passar, e todo lançamento sem
+  # categoria quebra procurando a "outros" que nunca foi criada.
   it "leaves no Setting behind when the reserved categories cannot be created" do
     allow(Category).to receive(:find_or_create_by!).and_raise(ActiveRecord::RecordInvalid.new(Category.new))
 

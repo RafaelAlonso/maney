@@ -86,16 +86,17 @@ class CategoriesController < ApplicationController
     ok
   end
 
-  # Orçado da categoria no mês em contexto. A categoria "cartão de crédito"
-  # não aceita orçado manual (validação no model) — o form nem mostra o
-  # campo, então um valor que chegasse aqui de qualquer forma é ignorado, não
-  # tratado como erro do usuário. Um orçado em branco é válido e significa
-  # "sem orçado neste mês". Um valor que não parseia ganha erro próprio (não
-  # tem no que a validação do Budget pegar, já que nem chega a virar
-  # amount_cents); negativo e "cartão de crédito" são recusados pelo próprio
-  # Budget — o erro dele é importado, não duplicado aqui.
+  # Orçado da categoria no mês em contexto. O form não mostra o campo para a
+  # categoria "cartão de crédito" (o orçado dela é derivado das faturas), mas
+  # um valor forjado/direto para ela não é ignorado: um orçado em branco
+  # continua um no-op válido (é o que um submit normal do form manda), mas um
+  # orçado presente segue o mesmo caminho de qualquer outra categoria e
+  # esbarra em `Budget#not_on_credit_card_category` — 422, erro visível,
+  # nenhuma escrita. Um valor que não parseia ganha erro próprio (não tem no
+  # que a validação do Budget pegar, já que nem chega a virar amount_cents);
+  # negativo e "cartão de crédito" são recusados pelo próprio Budget — o erro
+  # dele é importado, não duplicado aqui.
   def save_budget
-    return true if @category.credit_card?
     amount = category_params[:budget_amount]
     return true if amount.blank?
     cents = BrlMoney.parse(amount)

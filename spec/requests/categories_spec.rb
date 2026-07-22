@@ -44,6 +44,10 @@ RSpec.describe "Categories", type: :request do
     expect(Category.exists?(category.id)).to be false
     expect(expense.reload.category).to eq others
     expect(purchase.reload.category).to eq others
+    # Cada parcela tem seu próprio category_id desnormalizado — reatribuir a
+    # InstallmentPurchase não arrasta as parcelas junto. É só o update_all
+    # irrestrito em @category.expenses que hoje varre todas elas também.
+    expect(purchase.expenses.reload.map(&:category)).to all(eq(others))
   end
 
   it "refuses to delete reserved categories (AC 15)" do
@@ -90,5 +94,23 @@ RSpec.describe "Categories", type: :request do
     post categories_path, params: { category: { name: "mercado", budget_amount: "-10,00" }, month: "2026-03" }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(Category.exists?(name: "mercado")).to be false
+  end
+
+  # Fix 1: o form nunca mostra o campo orçado para a reservada de cartão de
+  # crédito, mas um submit forjado/direto precisa do mesmo tratamento das
+  # demais categorias — em branco é no-op, presente é 422 pelo erro do model.
+  it "a blank orçado on the credit-card category stays a no-op success" do
+    cc = credit_card_category
+    patch category_path(cc), params: { category: { name: cc.name, budget_amount: "" }, month: "2026-03" }
+    expect(response).to redirect_to(categories_path(month: "2026-03"))
+    expect(Budget.where(category: cc).count).to eq 0
+  end
+
+  it "rejects a present orçado on the credit-card category (422, model's message, no write)" do
+    cc = credit_card_category
+    patch category_path(cc), params: { category: { name: cc.name, budget_amount: "100,00" }, month: "2026-03" }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("cartão de crédito não aceita orçado manual")
+    expect(Budget.where(category: cc).count).to eq 0
   end
 end

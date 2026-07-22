@@ -58,4 +58,25 @@ RSpec.describe InstallmentPurchase do
     purchase = InstallmentPurchase.create!(**sofa_attrs, total_cents: 10, installments_count: 10)
     expect(purchase.expenses.pluck(:amount_cents).uniq).to eq([1])
   end
+
+  # regenerate_installments! declara que a transação vive nele justamente para
+  # não depender de quem chama. Hoje o único chamador (ExpenseEntry) embrulha
+  # tudo numa transação própria, então essa garantia nunca é exercida — este
+  # exemplo chama o método direto, sem transação externa, e prova que uma falha
+  # no meio do recria não deixa a série pela metade.
+  it "recupera a série inteira quando a regeneração falha, sem transação externa" do
+    credit_card_category
+    purchase = InstallmentPurchase.create!(**sofa_attrs)
+    original = purchase.expenses.order(:installment_number).pluck(:name, :amount_cents)
+    expect(original.size).to eq 10
+
+    # Toda parcela gerada passa a ser inválida (Expense recusa a categoria
+    # reservada de cartão num gasto no crédito), sem passar pelas validações
+    # do purchase — que barrariam a troca.
+    purchase.update_column(:category_id, Category.find_by!(role: "credit_card").id)
+    purchase.reload
+
+    expect { purchase.regenerate_installments! }.to raise_error(ActiveRecord::RecordInvalid)
+    expect(purchase.expenses.reload.order(:installment_number).pluck(:name, :amount_cents)).to eq original
+  end
 end

@@ -25,4 +25,16 @@ RSpec.describe "Setup", type: :request do
     get setup_path
     expect(response).to redirect_to(root_path)
   end
+
+  # Um Setting sem as categorias reservadas é o pior estado possível: a
+  # aplicação sobe, `require_setup` deixa passar, e todo lançamento sem
+  # categoria quebra procurando a "outros" que nunca foi criada.
+  it "leaves no Setting behind when the reserved categories cannot be created" do
+    allow(Category).to receive(:find_or_create_by!).and_raise(ActiveRecord::RecordInvalid.new(Category.new))
+
+    post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "1.234,56" } }
+
+    expect(Setting.instance).to be_nil
+    expect(Category.count).to eq 0
+  end
 end

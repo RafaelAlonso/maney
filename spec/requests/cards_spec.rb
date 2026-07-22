@@ -107,6 +107,22 @@ RSpec.describe "Cards", type: :request do
     expect(Card.exists?(card.id)).to be true
   end
 
+  # Fix 1 (task-6 review pass): the app-wide `record_not_found` rescue used to
+  # carry `ExpensesController`'s parcela-specific explanation ("editar uma
+  # parcela recalcula a compra inteira...") for every controller, including
+  # this one, where it's simply false — a stale card id has nothing to do
+  # with installments. Paired with `spec/requests/expenses_spec.rb`'s
+  # "parcela-aware alert" example, which asserts that same text IS present
+  # there.
+  it "redirects with a neutral alert (no parcela-specific wording) when the card id no longer exists (Fix 1)" do
+    stale_id = Card.maximum(:id).to_i + 1_000
+    get edit_card_path(stale_id)
+    expect(response).to redirect_to(root_path)
+    follow_redirect!
+    expect(response.body).to include("não existe mais")
+    expect(response.body).not_to include("editar uma parcela recalcula a compra inteira")
+  end
+
   it "destroys a card without expenses" do
     card = create_card!
     delete card_path(card)

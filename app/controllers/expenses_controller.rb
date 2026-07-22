@@ -48,6 +48,18 @@ class ExpensesController < ApplicationController
 
   private
 
+  # Sobrescreve o handler genérico de `ApplicationController`: aqui, e só
+  # aqui, o id obsoleto tem uma causa concreta e explicável — editar uma
+  # parcela destrói e regenera a série inteira, então um link `/expenses/:id`
+  # que ficou aberto em outra aba pode passar a apontar para uma parcela que
+  # não existe mais. Fora deste controller (ex.: `CardsController`) essa
+  # explicação não se aplica e não deve aparecer.
+  def record_not_found
+    redirect_to root_path,
+                alert: "Este registro não existe mais — editar uma parcela recalcula a compra inteira " \
+                       "e pode ter substituído os ids das parcelas."
+  end
+
   def source_for(expense) = expense.installment? ? expense.installment_purchase : expense
 
   # Para um gasto avulso, `record.date` já é a data certa: `ExpenseEntry#update`

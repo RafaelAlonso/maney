@@ -170,12 +170,18 @@ RSpec.describe "Expenses", type: :request do
   # recreates its parcelas, so a stale `/expenses/:id` link (e.g. from an
   # already-open page) now 404s at the AR layer. App-wide rescue instead of
   # an unhandled 500.
-  it "redirects with an alert instead of a 500 when the expense id no longer exists" do
+  # Fix 1 (task-6 review pass): `ExpensesController` overrides the app-wide
+  # `record_not_found` handler with the parcela-aware wording, since it's
+  # the only controller where that explanation is actually true. Asserted
+  # here alongside `spec/requests/cards_spec.rb`'s "stale card URL" example,
+  # which asserts the same rendered text is ABSENT there.
+  it "redirects with the parcela-aware alert when the expense id no longer exists (Fix 1)" do
     stale_id = Expense.maximum(:id).to_i + 1_000
     get edit_expense_path(stale_id)
     expect(response).to redirect_to(root_path)
     follow_redirect!
     expect(response.body).to include("não existe mais")
+    expect(response.body).to include("editar uma parcela recalcula a compra inteira")
   end
 
   # Point 5: `month_of` must read the competence of the specific installment
@@ -196,5 +202,35 @@ RSpec.describe "Expenses", type: :request do
                                                           installments_count: "5" } }
 
     expect(response).to redirect_to(expenses_path(month: "2026-05"))
+  end
+
+  # Fix 3 (task-6 review pass): the rendered edit form disables the parcelado
+  # checkbox and the three payment-method radios on a purchase edit (Point 3
+  # above) — disabled inputs submit nothing, so a real browser PATCH from
+  # that page carries no `payment_method` and no `installment` key at all.
+  # Every other example in this file hands both keys to `patch` by hand,
+  # which only proves `ExpenseEntry#update`'s CURRENT dispatch (a `case
+  # source` on the record's own class) survives; it would stay green even if
+  # someone rewrote that dispatch to key on `entry.installment?` instead
+  # (`nil.to_s == "1"` is false when the key is simply absent), which would
+  # silently skip `update_purchase` — and its series regeneration — for
+  # every real parcelado edit. This spec omits both keys the way the
+  # disabled browser form actually would, so it catches that regression.
+  it "regenerates a parcelado series from a PATCH with payment_method and installment genuinely absent (Fix 3)" do
+    purchase = InstallmentPurchase.create!(name: "sofá", total_cents: 100_000, installments_count: 10,
+                                           card:, category: others, date: Date.new(2026, 3, 10))
+
+    patch expense_path(purchase.expenses.first), params: { expense_entry: {
+      name: "sofá", amount: "500,00", date: "2026-03-10",
+      category_id: others.id, card_id: card.id, installments_count: "5"
+    } }
+
+    expect(response).to redirect_to(expenses_path(month: "2026-03"))
+    purchase.reload
+    expect(purchase.expenses.count).to eq 5
+    expect(purchase.expenses.sum(:amount_cents)).to eq 50_000
+    expect(purchase.expenses.pluck(:payment_method).uniq).to eq ["credit"]
+    expect(purchase.category).to eq others
+    expect(purchase.card).to eq card
   end
 end

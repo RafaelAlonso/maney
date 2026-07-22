@@ -13,7 +13,25 @@ export default class extends Controller {
       const blocked = credit && option.dataset.role === "credit_card"
       option.disabled = blocked
       option.hidden = blocked
-      if (blocked && option.selected) option.selected = false
+      // Este <select> não tem `multiple`: se a option bloqueada for a única
+      // selecionada, simplesmente desmarcá-la (`selected = false`) deixa o
+      // <select> sem nenhuma option selecionada, e o navegador cai
+      // silenciosamente na primeira option habilitada em ordem de DOM — uma
+      // categoria arbitrária assim que o usuário tiver mais de duas opções,
+      // não a intenção dele. Isso é alcançável sem clique nenhum: quando o
+      // servidor rejeita um gasto crédito na categoria reservada de cartão,
+      // Rails re-renderiza o form com essa option ainda `selected` e o rádio
+      // crédito ainda `checked`; `connect()` chama `refresh()` e a troca
+      // aconteceria na re-renderização, não numa ação do usuário. Por isso
+      // selecionamos explicitamente "outros" no lugar — mesma categoria que
+      // o servidor já usa quando `category_id` vem em branco (ver
+      // `ExpenseEntry#category`), então o fallback fica determinístico e
+      // semanticamente certo, não uma decisão do navegador.
+      if (blocked && option.selected) {
+        option.selected = false
+        const fallback = this.categoryOptionTargets.find(o => o.dataset.role === "others")
+        if (fallback) fallback.selected = true
+      }
     })
     const parcelado = credit && this.installmentCheckbox?.checked
     this.installmentFieldsTarget.hidden = !parcelado

@@ -8,10 +8,14 @@ class ApplicationController < ActionController::Base
   before_action :require_setup
   helper_method :current_month
 
-  # Editar uma compra parcelada destrói e regenera a série inteira — um link
-  # `/expenses/:id` que ficou aberto em outra aba (ou voltou pelo histórico)
-  # pode passar a apontar para uma parcela que não existe mais. Sem isso,
-  # `Expense.find` levantaria e a tela quebraria com um 500 cru.
+  # Qualquer `find` (Expense, Card, ...) pode receber um id obsoleto — um
+  # link que ficou aberto em outra aba, ou voltou pelo histórico, para um
+  # registro que já não existe. Sem isso, `Model.find` levantaria e a tela
+  # quebraria com um 500 cru. A mensagem aqui é deliberadamente neutra: o
+  # motivo de um id ficar obsoleto varia por controller (ver
+  # `ExpensesController#record_not_found` para o caso das parcelas), e este
+  # handler é herdado por todos eles — dar aqui uma explicação específica de
+  # um controller contaria uma mentira nos outros.
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
   private
@@ -21,9 +25,7 @@ class ApplicationController < ActionController::Base
   end
 
   def record_not_found
-    redirect_to root_path,
-                alert: "Este registro não existe mais — editar uma parcela recalcula a compra inteira " \
-                       "e pode ter substituído os ids das parcelas."
+    redirect_to root_path, alert: "Este registro não existe mais."
   end
 
   def current_month

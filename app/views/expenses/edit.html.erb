@@ -1,0 +1,9 @@
+<%# app/views/expenses/edit.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Editar gasto</h1>
+<% if @expense.installment? %>
+  <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+    Este gasto é uma parcela — as alterações recalculam a compra inteira.
+    Para transformar em gasto avulso, exclua a compra e lance de novo.
+  </p>
+<% end %>
+<%= render "form", entry: @entry, url: expense_path(@expense), method: :patch, locked: @expense.installment? %>

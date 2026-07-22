@@ -1,0 +1,3 @@
+<%# app/views/expenses/new.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Lançar gasto</h1>
+<%= render "form", entry: @entry, url: expenses_path, method: :post, locked: false %>

@@ -1,0 +1,67 @@
+<%# app/views/expenses/_form.html.erb — locals: entry:, url:, method:, locked:
+    `method:` é passado explicitamente pelo chamador (:post do new, :patch do
+    edit): `entry` é um ExpenseEntry (ActiveModel::Model), então
+    `persisted?` é sempre falso e `form_with` inferiria POST também no edit —
+    rota que só existe na coleção, não no membro (ver task-6, ponto 1).
+    `locked:` desabilita parcelado/método quando é edição de uma compra
+    parcelada já existente (não há conversão avulso<->parcelado). %>
+<%= form_with model: entry, url: url, method: method, scope: :expense_entry, class: "space-y-4",
+      data: { controller: "expense-form" } do |f| %>
+  <%= render "shared/errors", model: entry %>
+  <div>
+    <%= f.label :name, "Nome", class: "block text-sm mb-1" %>
+    <%= f.text_field :name, class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :amount, class: "block text-sm mb-1" do %><span data-expense-form-target="amountLabel">Valor (R$)</span><% end %>
+    <%= f.text_field :amount, inputmode: "decimal", class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :date, "Data", class: "block text-sm mb-1" %>
+    <%= f.date_field :date, value: entry.date, class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :category_id, "Categoria", class: "block text-sm mb-1" %>
+    <%= f.select :category_id,
+          Category.order(:name).map { |c| [c.name, c.id, { data: { role: c.role, expense_form_target: "categoryOption" } }] },
+          {}, class: "border rounded p-2 w-full" %>
+  </div>
+  <fieldset>
+    <legend class="text-sm mb-1">Método</legend>
+    <div class="flex gap-4">
+      <% payment_method_labels.each do |value, label| %>
+        <label class="flex items-center gap-1 text-sm">
+          <%= f.radio_button :payment_method, value, disabled: locked, data: { action: "expense-form#refresh" } %> <%= label %>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
+  <div data-expense-form-target="cardSection" hidden>
+    <% if Card.none? %>
+      <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3">
+        Para lançar no crédito, cadastre um cartão antes.
+        <%= link_to "Cadastrar cartão", new_card_path, class: "text-blue-600 underline" %>
+      </p>
+    <% else %>
+      <%= f.label :card_id, "Cartão", class: "block text-sm mb-1" %>
+      <%= f.select :card_id, Card.order(:name).pluck(:name, :id), { include_blank: "escolha…" },
+            class: "border rounded p-2 w-full" %>
+    <% end %>
+  </div>
+  <div data-expense-form-target="installmentSection" hidden>
+    <label class="flex items-center gap-2 text-sm">
+      <%= f.check_box :installment, disabled: locked, data: { action: "expense-form#refresh" } %> parcelado
+    </label>
+    <div data-expense-form-target="installmentFields" hidden class="flex gap-4 mt-2">
+      <div>
+        <%= f.label :installments_count, "Nº de parcelas", class: "block text-sm mb-1" %>
+        <%= f.number_field :installments_count, min: 2, class: "border rounded p-2 w-28" %>
+      </div>
+      <div>
+        <%= f.label :first_installment, "Parcela inicial", class: "block text-sm mb-1" %>
+        <%= f.number_field :first_installment, min: 1, value: entry.first_installment || 1, class: "border rounded p-2 w-28" %>
+      </div>
+    </div>
+  </div>
+  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>

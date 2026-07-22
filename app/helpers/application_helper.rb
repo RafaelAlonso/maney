@@ -8,4 +8,14 @@ module ApplicationHelper
     return "-R$ #{BrlMoney.format(cents.abs)}" if cents.negative?
     "R$ #{BrlMoney.format(cents)}"
   end
+
+  # Única fonte para os rótulos de método de pagamento — usada pelo form de
+  # gasto (radios) e pela linha de gasto (`expenses/_row`, reaproveitada por
+  # categories#show). Repetir este hash em cada view é como o Task 6 achou o
+  # form original: a mesma tradução transcrita três vezes.
+  PAYMENT_METHOD_LABELS = { "credit" => "crédito", "debit" => "débito", "cash" => "dinheiro" }.freeze
+
+  def payment_method_labels = PAYMENT_METHOD_LABELS
+
+  def payment_method_label(method) = PAYMENT_METHOD_LABELS[method]
 end

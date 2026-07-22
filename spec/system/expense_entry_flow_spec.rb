@@ -106,4 +106,32 @@ RSpec.describe "Expense entry flow", type: :system do
     expect(page).to have_content("cartão de crédito não pode ser usada em gastos no crédito")
     expect(page).to have_select("expense_entry[category_id]", selected: "outros")
   end
+
+  # The client half of the Critical fix. `hidden` does not disable an input,
+  # so before this the parcelado box and the card select kept their values
+  # when the user switched away from crédito, and a débito expense submitted
+  # with them still set became a credit parcelado — which BalanceChain, that
+  # sums only debit/cash, then dropped from the balance entirely.
+  #
+  # The server rejects that combination outright now, and a request spec
+  # covers it. This example covers the other half: that the invalid state
+  # is not reachable from the UI at all, which only a real browser can show.
+  it "clears the card and the parcelado box when the method leaves crédito (Fix 1, client half)" do
+    create_card!(name: "Azul")
+    visit new_expense_path
+
+    choose "crédito"
+    select "Azul", from: "expense_entry[card_id]"
+    check "parcelado"
+    expect(page).to have_field("parcelado", checked: true)
+    expect(page).to have_select("expense_entry[card_id]", selected: "Azul")
+
+    choose "débito"
+
+    expect(page).to have_field("parcelado", checked: false, visible: :all)
+    # Assert the submitted value, not the visible label: an empty value is
+    # exactly what stops a card riding along on a débito expense.
+    card_select = find("select[name='expense_entry[card_id]']", visible: :all)
+    expect(card_select.value).to be_blank
+  end
 end

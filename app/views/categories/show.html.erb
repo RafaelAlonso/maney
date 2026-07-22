@@ -1,0 +1,10 @@
+<%# app/views/categories/show.html.erb — reaproveita expenses/_row (Task 6),
+    show_delete: false: o drill-down de categoria só oferece editar. %>
+<h1 class="text-lg font-semibold mb-2"><%= @category.name %></h1>
+<%= render "shared/month_nav", path_helper: ->(month:) { category_path(@category, month:) } %>
+<ul class="divide-y bg-white rounded border">
+  <% @expenses.each do |expense| %>
+    <%= render "expenses/row", expense:, show_delete: false %>
+  <% end %>
+  <% if @expenses.empty? %><li class="p-3 text-sm text-gray-500">Nenhum gasto nesta categoria no mês.</li><% end %>
+</ul>

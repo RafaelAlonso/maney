@@ -29,6 +29,32 @@ RSpec.describe "Setup", type: :request do
   # Um Setting sem as categorias reservadas é o pior estado possível: a
   # aplicação sobe, `require_setup` deixa passar, e todo lançamento sem
   # categoria quebra procurando a "outros" que nunca foi criada.
+  it "rejects an unparseable initial balance without creating the Setting" do
+    post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "abc" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("não é um valor válido")
+    expect(Setting.instance).to be_nil
+  end
+
+  it "rejects a blank initial balance without creating the Setting" do
+    post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("não é um valor válido")
+    expect(Setting.instance).to be_nil
+  end
+
+  it "accepts a legitimate zero initial balance" do
+    post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "0,00" } }
+    expect(response).to redirect_to(root_path)
+    expect(Setting.instance.initial_balance_cents).to eq 0
+  end
+
+  it "accepts a legitimate negative initial balance" do
+    post setup_path, params: { setup: { first_month: "2026-03", initial_balance: "-250,00" } }
+    expect(response).to redirect_to(root_path)
+    expect(Setting.instance.initial_balance_cents).to eq(-25_000)
+  end
+
   it "leaves no Setting behind when the reserved categories cannot be created" do
     allow(Category).to receive(:find_or_create_by!).and_raise(ActiveRecord::RecordInvalid.new(Category.new))
 

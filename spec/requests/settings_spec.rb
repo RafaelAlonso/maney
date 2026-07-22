@@ -21,4 +21,31 @@ RSpec.describe "Settings", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(Setting.instance.first_month).to eq Date.new(2026, 3, 1)
   end
+
+  it "rejects an unparseable initial balance without silently zeroing it" do
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "abc" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("não é um valor válido")
+    expect(Setting.instance.initial_balance_cents).to eq 10_000
+  end
+
+  it "rejects a blank initial balance without silently zeroing it" do
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("não é um valor válido")
+    expect(Setting.instance.initial_balance_cents).to eq 10_000
+  end
+
+  it "accepts a legitimate zero initial balance" do
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "0,00" } }
+    expect(response).to redirect_to(edit_settings_path)
+    expect(Setting.instance.initial_balance_cents).to eq 0
+  end
+
+  it "does not partially apply a valid first_month when the initial balance is unparseable" do
+    patch settings_path, params: { setting: { first_month: "2026-02", initial_balance: "abc" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(Setting.instance.first_month).to eq Date.new(2026, 3, 1)
+    expect(Setting.instance.initial_balance_cents).to eq 10_000
+  end
 end

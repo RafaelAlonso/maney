@@ -5,11 +5,11 @@
   <%= render "shared/errors", model: @setting %>
   <div>
     <%= f.label :first_month, "Primeiro mês", class: "block text-sm mb-1" %>
-    <%= f.month_field :first_month, value: @setting.first_month&.strftime("%Y-%m"), class: "border rounded p-2 w-full" %>
+    <%= f.month_field :first_month, value: @first_month_input, class: "border rounded p-2 w-full" %>
   </div>
   <div>
     <%= f.label :initial_balance, "Saldo inicial (R$)", class: "block text-sm mb-1" %>
-    <%= f.text_field :initial_balance, value: "0,00", inputmode: "decimal", class: "border rounded p-2 w-full" %>
+    <%= f.text_field :initial_balance, value: @initial_balance_input, inputmode: "decimal", class: "border rounded p-2 w-full" %>
   </div>
   <%= f.submit "Começar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
 <% end %>

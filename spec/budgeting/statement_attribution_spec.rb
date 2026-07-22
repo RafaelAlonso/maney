@@ -113,4 +113,137 @@ RSpec.describe Budgeting::StatementAttribution do
     expect(described_class.statement_for_installment(purchase:, number: 2).effective_closing)
       .to eq(Date.new(2026, 3, 13))
   end
+
+  # Fronteira real de janela: a data em que a janela que contém `date` abriu.
+  # É onde uma vigência nova pode entrar sem bisseccionar uma janela.
+  describe ".window_start" do
+    # Azul: fecha 5, vence 12, primeira vigência em 01/03/2026 (first_month).
+    let(:card) do
+      create_setting!(first_month: Date.new(2026, 3, 1))
+      create_card!
+    end
+    let(:today) { Date.new(2026, 7, 21) } # terça
+
+    def window_start(date)
+      described_class.window_start(card:, date:)
+    end
+
+    # A propriedade que dá sentido a window_start, sem depender de datas
+    # escolhidas a dedo: w é o MENOR dia que ainda cai na fatura de `date`.
+    # Se a véspera de w caísse na mesma fatura, a fronteira teria retrocedido
+    # para dentro de faturas já fechadas — que é exatamente como uma edição de
+    # dias vira retroativa. Vale para qualquer cartão; use em cada fixture nova.
+    def expect_window_start_to_bound_the_statement(subject_card, date)
+      w = described_class.window_start(card: subject_card, date:)
+      earliest = subject_card.card_schedules.minimum(:valid_from)
+      today_statement = described_class.statement_for(card: subject_card, date:)
+
+      aggregate_failures("janela de #{date} no cartão #{subject_card.name}") do
+        expect(w).to be <= date, "janela de #{date} começou depois dele, em #{w}"
+        expect(described_class.statement_for(card: subject_card, date: w)).to eq(today_statement),
+                                                                             "#{w} não cai na mesma fatura que #{date}"
+        if w > earliest
+          expect(described_class.statement_for(card: subject_card, date: w - 1)).not_to eq(today_statement),
+                                                                                     "#{w - 1} ainda cai na fatura de #{date}: a fronteira retrocedeu para dentro de faturas já fechadas"
+        end
+      end
+    end
+
+    # Fechamentos efetivos desta vigência (nominal dia 5, recuo no fim de semana):
+    #   03: 05/03 quinta -> 05/03 | 04: 05/04 DOMINGO -> 03/04 sexta
+    #   05: 05/05 terça  -> 05/05 | 06: 05/06 sexta   -> 05/06
+    #   07: 05/07 DOMINGO -> 03/07 sexta | 08: 05/08 quarta -> 05/08
+    it "devolve 03/07 para 21/07 — a janela aberta é [03/07, 05/08), não o mês nem hoje" do
+      expect(window_start(today)).to eq(Date.new(2026, 7, 3))
+      expect(window_start(today)).not_to eq(today)
+      expect(window_start(today)).not_to eq(today.beginning_of_month)
+    end
+
+    it "invariante: a data devolvida é sempre o fechamento efetivo da fatura anterior" do
+      {
+        Date.new(2026, 4, 10) => Date.new(2026, 4, 3),  # 05/04 é domingo
+        Date.new(2026, 6, 30) => Date.new(2026, 6, 5),
+        Date.new(2026, 7, 21) => Date.new(2026, 7, 3)   # 05/07 é domingo
+      }.each do |probe, expected|
+        w = window_start(probe)
+        aggregate_failures("janela de #{probe}") do
+          expect(w).to eq(expected)
+          expect(statement_for(w - 1).effective_closing).to eq(w),
+                                                            "janela de #{probe} abriu em #{w}, que não é fechamento efetivo de fatura nenhuma"
+        end
+      end
+    end
+
+    it "toda data em [w, próximo fechamento) resolve para a mesma fatura" do
+      w = window_start(today)
+
+      expect(statement_for(w)).to eq(statement_for(w + 5))
+      expect(statement_for(w)).to eq(statement_for(today))
+      expect(statement_for(w).effective_closing).to eq(Date.new(2026, 8, 5))
+      expect(statement_for(w - 1)).not_to eq(statement_for(w)) # véspera é outra janela
+    end
+
+    it "não recua além do início da linha do tempo do cartão" do
+      expect(window_start(Date.new(2026, 3, 2))).to eq(Date.new(2026, 3, 1))
+      expect(window_start(Date.new(2026, 3, 1))).to eq(Date.new(2026, 3, 1))
+      expect(window_start(Date.new(2025, 12, 31))).to eq(Date.new(2026, 3, 1))
+    end
+
+    # Regressão do bug que motivou a terceira tentativa desta função: fechar
+    # dia 28 e passar a fechar dia 1 faz o ciclo seguinte fechar ANTES da
+    # fronteira que o abriu (01/03 é domingo -> efetivo 27/02). Qualquer
+    # travessia com succ mergulha aí e para, devolvendo uma fronteira de meses
+    # atrás — a edição de dias viraria retroativa por cima de faturas pagas.
+    context "quando a troca de vigência faz a cadeia de faturas recuar" do
+      let(:card) do
+        create_card(name: "Vira-mês", closing_day: 28, due_day: 15, valid_from: Date.new(2026, 1, 1)).tap do |c|
+          c.card_schedules.create!(closing_day: 1, due_day: 20, valid_from: Date.new(2026, 2, 27))
+        end
+      end
+
+      it "devolve a fronteira da janela corrente, não a data em que a cadeia mergulhou" do
+        aggregate_failures do
+          {
+            Date.new(2026, 4, 5) => Date.new(2026, 4, 1),
+            Date.new(2026, 5, 10) => Date.new(2026, 5, 1),
+            Date.new(2026, 6, 20) => Date.new(2026, 6, 1),
+            Date.new(2026, 12, 20) => Date.new(2026, 12, 1)
+          }.each do |probe, expected|
+            expect(window_start(probe)).to eq(expected),
+                                           "janela de #{probe} começou em #{window_start(probe)}, esperado #{expected}"
+          end
+        end
+      end
+
+      it "propriedade: a fronteira delimita a fatura em cada mês da vigência nova" do
+        [Date.new(2026, 4, 5), Date.new(2026, 5, 10), Date.new(2026, 6, 20), Date.new(2026, 12, 20)].each do |probe|
+          expect_window_start_to_bound_the_statement(card, probe)
+        end
+      end
+    end
+
+    describe "propriedade de não retroatividade" do
+      it "cartão de referência: a fronteira delimita a fatura de hoje" do
+        expect_window_start_to_bound_the_statement(card, today)
+        expect_window_start_to_bound_the_statement(card, Date.new(2026, 4, 10))
+        expect_window_start_to_bound_the_statement(card, Date.new(2026, 3, 2))
+      end
+
+      it "cartão que fecha 31, depois de uma edição: a fronteira delimita a fatura de hoje" do
+        card31 = create_card(name: "Trinta e um", closing_day: 31, due_day: 10, valid_from: Date.new(2026, 1, 1))
+        card31.reschedule(closing_day: 1, due_day: 10, today: Date.new(2026, 3, 10)).save!
+
+        [Date.new(2026, 3, 20), Date.new(2026, 6, 15), Date.new(2026, 9, 8)].each do |probe|
+          expect_window_start_to_bound_the_statement(card31, probe)
+        end
+      end
+    end
+
+    it "levanta ArgumentError quando o cartão não tem nenhuma vigência" do
+      naked = Card.create!(name: "Sem vigência")
+
+      expect { described_class.window_start(card: naked, date: today) }
+        .to raise_error(ArgumentError, /card #{naked.id} has no schedule/)
+    end
+  end
 end

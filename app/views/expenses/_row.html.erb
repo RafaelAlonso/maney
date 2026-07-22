@@ -1,0 +1,25 @@
+<%# app/views/expenses/_row.html.erb — locals: expense:, show_delete: (bool),
+    show_category: (bool, default true)
+    Reaproveitado por categories#show (Task 8) com show_delete: false e
+    show_category: false — lá só faz sentido editar, não excluir, a partir do
+    drill-down de categoria, e o nome dela já está no <h1> da página, então
+    repeti-lo em toda linha é só ruído. %>
+<% show_category = local_assigns.fetch(:show_category, true) %>
+<li class="p-3 flex items-center justify-between gap-2">
+  <div>
+    <p class="font-medium"><%= expense.name %></p>
+    <p class="text-sm text-gray-500">
+      <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if show_category %>
+      · <%= expense.category.name %><% end %>
+    </p>
+  </div>
+  <div class="flex gap-3 text-sm shrink-0">
+    <%= link_to "editar", edit_expense_path(expense), class: "text-blue-600" %>
+    <% if show_delete %>
+      <%= button_to "excluir", expense_path(expense), method: :delete, class: "text-red-600",
+            data: { turbo_confirm: expense.installment? ?
+              "Excluir remove a compra parcelada inteira (#{expense.installment_purchase.installments_count} parcelas). Confirmar?" :
+              "Excluir o gasto #{expense.name}?" } %>
+    <% end %>
+  </div>
+</li>

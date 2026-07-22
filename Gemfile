@@ -47,3 +47,8 @@ group :development do
 end
 
 gem "rspec-rails", "~> 8.0", :groups => [:development, :test]
+
+gem "tailwindcss-rails", "~> 4.6"
+
+gem "capybara", "~> 3.40", :group => :test
+gem "selenium-webdriver", "~> 4.46", :group => :test

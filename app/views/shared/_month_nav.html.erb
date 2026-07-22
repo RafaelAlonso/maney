@@ -1,0 +1,11 @@
+<%# app/views/shared/_month_nav.html.erb — locals: path_helper (lambda month: -> path) %>
+<% first = Setting.instance.first_month %>
+<div class="flex items-center justify-between mb-4">
+  <% if current_month > first %>
+    <%= link_to "‹", path_helper.call(month: (current_month << 1).strftime("%Y-%m")), class: "px-3 py-1 text-lg" %>
+  <% else %>
+    <span class="px-3 py-1 text-lg text-gray-300">‹</span>
+  <% end %>
+  <h2 class="font-medium"><%= current_month.strftime("%m/%Y") %></h2>
+  <%= link_to "›", path_helper.call(month: (current_month >> 1).strftime("%Y-%m")), class: "px-3 py-1 text-lg" %>
+</div>

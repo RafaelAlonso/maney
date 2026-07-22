@@ -1,0 +1,22 @@
+<%# app/views/cards/index.html.erb %>
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-lg font-semibold">Cartões</h1>
+  <%= link_to "novo cartão", new_card_path, class: "text-blue-600 text-sm" %>
+</div>
+<ul class="divide-y bg-white rounded border">
+  <% @cards.each do |card| %>
+    <% schedule = Budgeting::Schedule.for(card:, date: Date.current) %>
+    <li class="p-3 flex items-center justify-between">
+      <div>
+        <p class="font-medium"><%= card.name %></p>
+        <p class="text-sm text-gray-500">fecha dia <%= schedule.closing_day %> · vence dia <%= schedule.due_day %></p>
+      </div>
+      <div class="flex gap-3 text-sm">
+        <%= link_to "editar", edit_card_path(card), class: "text-blue-600" %>
+        <%= button_to "excluir", card_path(card), method: :delete, class: "text-red-600",
+              data: { turbo_confirm: "Excluir o cartão #{card.name}?" } %>
+      </div>
+    </li>
+  <% end %>
+  <% if @cards.empty? %><li class="p-3 text-sm text-gray-500">Nenhum cartão ainda.</li><% end %>
+</ul>

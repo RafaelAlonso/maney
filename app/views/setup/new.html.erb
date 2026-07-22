@@ -1,0 +1,15 @@
+<%# app/views/setup/new.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Primeiro acesso</h1>
+<p class="text-sm text-gray-600 mb-4">Defina quando sua linha do tempo começa e com quanto.</p>
+<%= form_with url: setup_path, scope: :setup, method: :post, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: @setting %>
+  <div>
+    <%= f.label :first_month, "Primeiro mês", class: "block text-sm mb-1" %>
+    <%= f.month_field :first_month, value: @first_month_input, class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :initial_balance, "Saldo inicial (R$)", class: "block text-sm mb-1" %>
+    <%= f.text_field :initial_balance, value: @initial_balance_input, inputmode: "decimal", class: "border rounded p-2 w-full" %>
+  </div>
+  <%= f.submit "Começar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>

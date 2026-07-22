@@ -30,3 +30,6 @@
 # Workspace de PM (visão, requisitos, roadmap, decisões, epics, stories, specs,
 # planos). Documenta o projeto, não faz parte do código-fonte.
 /project/
+
+/app/assets/builds/*
+!/app/assets/builds/.keep

@@ -1,0 +1,18 @@
+<%# app/views/incomes/_form.html.erb — locals: income:, url: %>
+<%= form_with model: income, url: url, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: income %>
+  <div>
+    <%= f.label :name, "Nome", class: "block text-sm mb-1" %>
+    <%= f.text_field :name, class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :amount, "Valor (R$)", class: "block text-sm mb-1" %>
+    <%= f.text_field :amount, value: income.amount_cents && BrlMoney.format(income.amount_cents),
+          inputmode: "decimal", class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :date, "Data", class: "block text-sm mb-1" %>
+    <%= f.date_field :date, value: income.date, class: "border rounded p-2 w-full" %>
+  </div>
+  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>

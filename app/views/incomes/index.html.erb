@@ -1,0 +1,28 @@
+<%# app/views/incomes/index.html.erb %>
+<h1 class="text-lg font-semibold mb-2">Ganhos</h1>
+<%= render "shared/month_nav", path_helper: ->(month:) { incomes_path(month:) } %>
+<ul class="divide-y bg-white rounded border">
+  <li class="p-3 flex items-center justify-between bg-gray-50">
+    <div>
+      <p class="font-medium"><%= @first_month ? "saldo inicial" : "saldo do mês anterior" %></p>
+      <p class="text-sm text-gray-500"><%= brl(@carried_cents) %> · derivado</p>
+    </div>
+    <% if @first_month %>
+      <%= link_to "editar", edit_settings_path, class: "text-blue-600 text-sm" %>
+    <% end %>
+  </li>
+  <% @incomes.each do |income| %>
+    <li class="p-3 flex items-center justify-between">
+      <div>
+        <p class="font-medium"><%= income.name %></p>
+        <p class="text-sm text-gray-500"><%= brl(income.amount_cents) %> · <%= income.date.strftime("%d/%m/%Y") %></p>
+      </div>
+      <div class="flex gap-3 text-sm">
+        <%= link_to "editar", edit_income_path(income), class: "text-blue-600" %>
+        <%= button_to "excluir", income_path(income), method: :delete, class: "text-red-600",
+              data: { turbo_confirm: "Excluir o ganho #{income.name}?" } %>
+      </div>
+    </li>
+  <% end %>
+  <% if @incomes.empty? %><li class="p-3 text-sm text-gray-500">Nenhum ganho lançado neste mês.</li><% end %>
+</ul>

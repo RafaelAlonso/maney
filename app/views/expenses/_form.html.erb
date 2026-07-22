@@ -1,10 +1,20 @@
-<%# app/views/expenses/_form.html.erb — locals: entry:, url:, method:, locked:
+<%# app/views/expenses/_form.html.erb — locals: entry:, url:, method:, locked:,
+    installment_locked:
     `method:` é passado explicitamente pelo chamador (:post do new, :patch do
     edit): `entry` é um ExpenseEntry (ActiveModel::Model), então
     `persisted?` é sempre falso e `form_with` inferiria POST também no edit —
     rota que só existe na coleção, não no membro (ver task-6, ponto 1).
-    `locked:` desabilita parcelado/método quando é edição de uma compra
-    parcelada já existente (não há conversão avulso<->parcelado). %>
+    `locked:` desabilita os rádios de método quando é edição de uma compra
+    parcelada já existente — nesse caso o método já é sempre crédito e
+    `update_purchase` nem lê o campo, então travar não perde nada.
+    `installment_locked:` desabilita só a checkbox "parcelado", em QUALQUER
+    edição (avulso ou parcelada): não há conversão avulso<->parcelado em
+    nenhuma direção (Fix 2, review final). Ela não pode compartilhar `locked`
+    porque, ao contrário do método de uma parcela, o `payment_method` de um
+    gasto avulso É lido e persistido em `update` — travar os rádios também
+    num edit avulso faria o navegador parar de enviar o campo (input
+    disabled não submete), e `ExpenseEntry#update` cairia num
+    `payment_method` ausente, quebrando toda edição de gasto avulso. %>
 <%= form_with model: entry, url: url, method: method, scope: :expense_entry, class: "space-y-4",
       data: { controller: "expense-form" } do |f| %>
   <%= render "shared/errors", model: entry %>
@@ -50,7 +60,7 @@
   </div>
   <div data-expense-form-target="installmentSection" hidden>
     <label class="flex items-center gap-2 text-sm">
-      <%= f.check_box :installment, disabled: locked, data: { action: "expense-form#refresh" } %> parcelado
+      <%= f.check_box :installment, disabled: installment_locked, data: { action: "expense-form#refresh" } %> parcelado
     </label>
     <div data-expense-form-target="installmentFields" hidden class="flex gap-4 mt-2">
       <div>

@@ -9,6 +9,19 @@ export default class extends Controller {
     const credit = this.method === "credit"
     this.cardSectionTarget.hidden = !credit
     this.installmentSectionTarget.hidden = !credit
+    // Leaving crédito must clear both parcelado and the card choice right
+    // here — not just hide their sections. `hidden` does not disable an
+    // input, so a checked "parcelado" box and a chosen card would still
+    // submit even though they're no longer visible: pick crédito, choose a
+    // card, check parcelado, then switch to débito/dinheiro and Salvar was
+    // reachable with no devtools (Fix 1). The server rejects that
+    // combination now too, but the invalid state shouldn't be reachable
+    // from the UI in the first place.
+    if (!credit) {
+      if (this.installmentCheckbox) this.installmentCheckbox.checked = false
+      const cardSelect = this.element.querySelector('select[name="expense_entry[card_id]"]')
+      if (cardSelect) cardSelect.value = ""
+    }
     this.categoryOptionTargets.forEach(option => {
       const blocked = credit && option.dataset.role === "credit_card"
       option.disabled = blocked

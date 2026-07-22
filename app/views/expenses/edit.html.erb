@@ -5,5 +5,18 @@
     Este gasto é uma parcela — as alterações recalculam a compra inteira.
     Para transformar em gasto avulso, exclua a compra e lance de novo.
   </p>
+<% else %>
+  <%# Fix 2 (review final): a conversão avulso -> parcelado era oferecida
+      (checkbox habilitada) mas descartada em silêncio — `ExpenseEntry#update`
+      despacha em `case source`, e para um `Expense` o ramo de parcelamento é
+      inalcançável, então `installment`/`installments_count` eram
+      simplesmente ignorados e o usuário via "Gasto atualizado." sem
+      conversão nenhuma. Mesma regra já aplicada na direção espelhada acima:
+      travar o controle e explicar como conseguir o que o usuário queria. %>
+  <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+    Este gasto é avulso — não é possível transformá-lo em parcelado aqui.
+    Para lançar como parcelado, exclua este gasto e lance de novo marcando "parcelado".
+  </p>
 <% end %>
-<%= render "form", entry: @entry, url: expense_path(@expense), method: :patch, locked: @expense.installment? %>
+<%= render "form", entry: @entry, url: expense_path(@expense), method: :patch,
+      locked: @expense.installment?, installment_locked: true %>

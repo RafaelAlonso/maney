@@ -45,6 +45,55 @@ RSpec.describe "Expenses", type: :request do
     expect(InstallmentPurchase.find_by(name: "sofá").expenses.count).to eq 10
   end
 
+  # Fix 1 (final review pass): `installment?` used to dispatch `save` on its
+  # own, and `build_purchase` never read `payment_method` — so a submission
+  # that started as crédito (card chosen, parcelado checked) and was then
+  # switched to débito/dinheiro before Salvar stored a real InstallmentPurchase
+  # anyway. Since `Budgeting::BalanceChain.current_balance` only sums
+  # `payment_method: %w[debit cash]`, that expense vanished from the balance
+  # chain entirely behind a successful "Gasto lançado." — permanently
+  # inflating every later month's carried balance. Reject the conflict
+  # instead of silently downgrading to avulso or upgrading the method to
+  # crédito; both would discard what the user actually typed.
+  describe "installment requires crédito (Fix 1)" do
+    it "rejects débito + parcelado, creating no InstallmentPurchase" do
+      expect do
+        post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
+                                                        category_id: others.id, payment_method: "debit",
+                                                        card_id: card.id, installment: "1",
+                                                        installments_count: "12" } }
+      end.not_to change(InstallmentPurchase, :count)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("só se aplica a gastos no crédito")
+    end
+
+    # This is the reported related symptom: dinheiro + parcelado + no card
+    # used to 422 with "Card must exist" — an English message about a field
+    # (`card_id`) this form never shows for dinheiro. The real conflict
+    # (parcelado without crédito) must be the one reported, not a downstream
+    # validation on a record that should never have been built.
+    it "rejects dinheiro + parcelado, creating no InstallmentPurchase, without naming the card column" do
+      expect do
+        post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
+                                                        category_id: others.id, payment_method: "cash",
+                                                        installment: "1", installments_count: "12" } }
+      end.not_to change(InstallmentPurchase, :count)
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("só se aplica a gastos no crédito")
+      expect(response.body).not_to include("Card must exist")
+    end
+
+    it "still accepts crédito + parcelado (regression guard)" do
+      expect do
+        post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
+                                                        category_id: others.id, payment_method: "credit",
+                                                        card_id: card.id, installment: "1",
+                                                        installments_count: "12" } }
+      end.to change(InstallmentPurchase, :count).by(1)
+      expect(response).to redirect_to(expenses_path(month: "2026-03"))
+    end
+  end
+
   it "rejects invalid amounts with a message (AC 14)" do
     post expenses_path, params: { expense_entry: { name: "x", amount: "0,00", date: "2026-03-10",
                                                    category_id: others.id, payment_method: "cash" } }
@@ -143,16 +192,31 @@ RSpec.describe "Expenses", type: :request do
       expect(response.body).to include("exclua a compra e lance de novo")
     end
 
-    it "leaves them enabled when editing a plain (avulso) expense" do
+    # Fix 2 (review final): the mirror direction. The project owner ruled
+    # that avulso<->parcelado conversion is impossible in either direction —
+    # so the parcelado checkbox must be locked on an avulso edit too, not
+    # just on a purchase edit. This used to assert the opposite (the broken
+    # affordance: checkbox enabled, offered, accepted, and silently
+    # discarded by `ExpenseEntry#update`'s `case source` dispatch). The
+    # payment-method radios stay enabled here on purpose: unlike a parcela's
+    # method (hardcoded "credit", never read by `update_purchase`), an
+    # avulso's `payment_method` is genuinely read and persisted by
+    # `ExpenseEntry#update` — locking those radios too would make a real
+    # browser submit no `payment_method` at all (disabled inputs don't
+    # submit), breaking ordinary avulso edits.
+    it "locks the parcelado checkbox (but not the payment-method radios) when editing a plain (avulso) expense" do
       expense = Expense.create!(name: "padaria", amount_cents: 100, payment_method: "cash",
                                 category: others, date: Date.new(2026, 3, 10))
       get edit_expense_path(expense)
       doc = Nokogiri::HTML::Document.parse(response.body)
 
       installment_checkbox = doc.at_css('input[name="expense_entry[installment]"][type="checkbox"]')
-      expect(installment_checkbox["disabled"]).to be_nil
+      expect(installment_checkbox["disabled"]).to eq "disabled"
 
       doc.css('input[name="expense_entry[payment_method]"]').each { |radio| expect(radio["disabled"]).to be_nil }
+
+      expect(response.body).to include("Este gasto é avulso")
+      expect(response.body).to include("exclua este gasto e lance de novo marcando")
     end
 
     it "leaves them enabled on the new form" do

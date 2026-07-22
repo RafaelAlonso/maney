@@ -50,6 +50,40 @@ RSpec.describe "Incomes", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
   end
 
+  # Fix 3 (final review pass): every other money surface in the wave (see
+  # CategoriesController#save_budget, ExpenseEntry#amount_must_parse) parses
+  # first, remaps the model's error onto the field the form actually shows,
+  # and re-renders with what the user typed. Incomes did neither: an
+  # unparseable amount fell through to `amount_cents: nil`, and Income's own
+  # numericality validation fired on the DB column — "Amount cents is not a
+  # number" — with the field re-rendered blank, throwing away the input.
+  describe "money-input parity with the rest of the wave (Fix 3)" do
+    it "rejects an unparseable amount with a Portuguese message on the visible field, preserving the typed value" do
+      post incomes_path, params: { income: { name: "salário", amount: "abc", date: "2026-03-01" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("não é um valor válido")
+      expect(response.body).not_to include("Amount cents")
+      expect(response.body).to include('value="abc"')
+      expect(Income.find_by(name: "salário")).to be_nil
+    end
+
+    it "still rejects a parsed-but-non-positive amount via Income's own validation, on the visible field" do
+      post incomes_path, params: { income: { name: "salário", amount: "0,00", date: "2026-03-01" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).not_to include("Amount cents")
+      expect(response.body).to include('value="0,00"')
+    end
+
+    it "preserves the typed value across a 422 on update too" do
+      income = Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 1))
+      patch income_path(income), params: { income: { name: "salário", amount: "xyz", date: "2026-03-01" } }
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("não é um valor válido")
+      expect(response.body).to include('value="xyz"')
+      expect(income.reload.amount_cents).to eq 500_000
+    end
+  end
+
   it "blocks dates before the first month (AC 19)" do
     post incomes_path, params: { income: { name: "x", amount: "10,00", date: "2026-02-01" } }
     expect(response).to have_http_status(:unprocessable_entity)

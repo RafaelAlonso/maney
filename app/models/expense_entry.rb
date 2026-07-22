@@ -9,6 +9,7 @@ class ExpenseEntry
   attr_reader :record
 
   validate :amount_must_parse
+  validate :installment_requires_credit
 
   def self.from(source)
     case source
@@ -49,6 +50,22 @@ class ExpenseEntry
 
   def amount_must_parse
     errors.add(:amount, "não é um valor válido") if amount_cents.nil? || amount_cents <= 0
+  end
+
+  # `installment?` só olha a checkbox. Sem esta validação, `save`/`update`
+  # despacham só nisso e `build_purchase` nunca lê `payment_method` — então
+  # um submit que começou como crédito (cartão escolhido, parcelado marcado)
+  # e foi trocado para débito/dinheiro antes do Salvar vira uma
+  # InstallmentPurchase de verdade. `Budgeting::BalanceChain.current_balance`
+  # só soma `payment_method: %w[debit cash]`, então esse gasto some da
+  # cadeia de saldos por trás de um "Gasto lançado." — inflando pra sempre o
+  # saldo carregado de todo mês seguinte. Rejeitar em vez de corrigir
+  # sozinho: tanto descer para avulso quanto subir o método para crédito
+  # jogariam fora o que o usuário pediu. Mesmo registro de
+  # `Expense#card_matches_method`'s "só se aplica a gastos no crédito".
+  def installment_requires_credit
+    return unless installment? && payment_method != "credit"
+    errors.add(:installment, "só se aplica a gastos no crédito")
   end
 
   # Um category_id presente mas que não resolve mais (categoria excluída entre

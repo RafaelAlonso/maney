@@ -12,8 +12,12 @@
     <label class="block text-sm">Migrar tudo para:</label>
     <%= select_tag :target_card_id, options_from_collection_for_select(@other_cards, :id, :name),
           include_blank: "escolha…", class: "border rounded p-2 w-full" %>
+    <p class="text-xs text-gray-600">
+      Os gastos migrados passam a seguir os dias de fechamento e vencimento do
+      cartão de destino — as faturas podem cair em outro mês.
+    </p>
     <%= submit_tag "Migrar e excluir cartão", class: "bg-blue-600 text-white rounded px-4 py-2",
-          data: { turbo_confirm: "Migrar todos os gastos e excluir o cartão #{@card.name}?" } %>
+          data: { turbo_confirm: "Migrar #{pluralize(@expense_count, "gasto avulso")} e #{pluralize(@purchase_count, "compra parcelada")} para o cartão escolhido e excluir #{@card.name}? As faturas seguirão os dias do cartão de destino e podem cair em outro mês." } %>
   <% end %>
 <% end %>
 

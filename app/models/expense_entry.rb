@@ -63,9 +63,14 @@ class ExpenseEntry
   # sozinho: tanto descer para avulso quanto subir o método para crédito
   # jogariam fora o que o usuário pediu. Mesmo registro de
   # `Expense#card_matches_method`'s "só se aplica a gastos no crédito".
+  #
+  # Vai em :base de propósito. Em :installment o `full_message` vira
+  # "Installment só se aplica…" — sem locale pt-BR, o prefixo é o nome
+  # humanizado do atributo em inglês, e esta é a mensagem mais importante
+  # da tela. Em :base a frase sai inteira em português.
   def installment_requires_credit
     return unless installment? && payment_method != "credit"
-    errors.add(:installment, "só se aplica a gastos no crédito")
+    errors.add(:base, "Parcelado só se aplica a gastos no crédito")
   end
 
   # Um category_id presente mas que não resolve mais (categoria excluída entre

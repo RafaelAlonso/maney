@@ -16,9 +16,14 @@ class InstallmentPurchase < ApplicationRecord
   after_create :generate_installments
 
   # Recalcula a série inteira após edição — apaga e regenera pelo motor.
+  # A transação vive aqui, não em quem chama: quem destrói e recria é quem
+  # tem que garantir que uma falha no meio do caminho não deixe a série pela
+  # metade — não dá para confiar que todo chamador vai lembrar de embrulhar.
   def regenerate_installments!
-    expenses.destroy_all
-    generate_installments
+    transaction do
+      expenses.destroy_all
+      generate_installments
+    end
   end
 
   private

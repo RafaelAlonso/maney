@@ -51,8 +51,12 @@ class ExpenseEntry
     errors.add(:amount, "não é um valor válido") if amount_cents.nil? || amount_cents <= 0
   end
 
+  # Um category_id presente mas que não resolve mais (categoria excluída entre
+  # o form ser aberto e o submit) cai em "outros" — mesma regra usada quando o
+  # campo vem em branco e quando uma categoria é excluída de verdade.
   def category
-    category_id.present? ? Category.find(category_id) : Category.find_by!(role: "others")
+    return Category.find_by!(role: "others") if category_id.blank?
+    Category.find_by(id: category_id) || Category.find_by!(role: "others")
   end
 
   def expense_attributes
@@ -66,23 +70,41 @@ class ExpenseEntry
                             first_installment: first_installment.presence || 1)
   end
 
+  # regenerate_installments! agora é atômico por conta própria (fix na
+  # InstallmentPurchase), então esta função não precisa mais embrulhar nada
+  # para proteger o "apaga e recria" — só orquestra e, se o motor rejeitar a
+  # série nova, devolve o formulário com erro em vez de deixar a exceção
+  # escapar como página de erro.
   def update_purchase(purchase)
+    ok = false
     purchase.assign_attributes(name:, total_cents: amount_cents, date: date.presence, category:,
                                card_id: card_id.presence, installments_count:,
                                first_installment: first_installment.presence || 1)
-    ok = false
-    ActiveRecord::Base.transaction do
-      ok = persist(purchase)
-      purchase.regenerate_installments! if ok
-      raise ActiveRecord::Rollback unless ok
-    end
-    purchase.reload unless ok
+    ok = persist(purchase)
+    purchase.regenerate_installments! if ok
     ok
+  rescue ActiveRecord::RecordInvalid => e
+    import_errors(e.record)
+    ok = false
+  ensure
+    purchase.reload unless ok
   end
+
+  # A validação de total_cents vive na InstallmentPurchase (nome interno do
+  # model), mas o campo do formulário é "amount" — sem este remapeamento a
+  # mensagem fica presa numa chave que a view nunca olha.
+  ERROR_ATTRIBUTE_REMAP = { total_cents: :amount }.freeze
+  private_constant :ERROR_ATTRIBUTE_REMAP
 
   def persist(model)
     return true if model.save
-    model.errors.each { |error| errors.import(error) }
+    import_errors(model)
     false
+  end
+
+  def import_errors(model)
+    model.errors.each do |error|
+      errors.import(error, attribute: ERROR_ATTRIBUTE_REMAP.fetch(error.attribute, error.attribute))
+    end
   end
 end

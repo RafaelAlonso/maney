@@ -47,6 +47,16 @@ RSpec.describe ExpenseEntry do
       expect(e.save).to be false
       expect(e.errors[:date]).to be_present
     end
+
+    it "falls back to the reserved 'others' category when category_id no longer resolves (Fix 5)" do
+      stale = category("temporária")
+      stale_id = stale.id
+      stale.destroy!
+
+      e = entry(category_id: stale_id.to_s)
+      expect(e.save).to be true
+      expect(e.record.category).to eq others
+    end
   end
 
   describe "#save (parcelado)" do
@@ -73,6 +83,13 @@ RSpec.describe ExpenseEntry do
       e.save
       expect(e.record.expenses.order(:installment_number).map(&:installment_number)).to eq (4..10).to_a
     end
+
+    it "maps the total_cents validation error onto :amount, the form's own field (Fix 4)" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                amount: "0,03", installments_count: "10", date: "2026-03-10")
+      expect(e.save).to be false
+      expect(e.errors[:amount]).to be_present
+    end
   end
 
   describe "#update" do
@@ -96,14 +113,52 @@ RSpec.describe ExpenseEntry do
       expect(purchase.expenses.sum(:amount_cents)).to eq 50_000
     end
 
-    it "keeps the series intact when the purchase edit is invalid" do
+    it "keeps the series' actual content intact when the purchase edit is invalid" do
       e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
                 amount: "1.000,00", installments_count: "10", date: "2026-03-10")
       e.save
+      purchase = e.record
+      original_names = purchase.expenses.order(:installment_number).pluck(:name)
+      original_amounts = purchase.expenses.order(:installment_number).pluck(:amount_cents)
+      original_sum = purchase.expenses.sum(:amount_cents)
+
       bad = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "",
                   amount: "1.000,00", installments_count: "10", date: "2026-03-10")
-      expect(bad.update(e.record.reload)).to be false
-      expect(e.record.reload.expenses.count).to eq 10
+      expect(bad.update(purchase.reload)).to be false
+
+      purchase.reload
+      expect(purchase.expenses.order(:installment_number).pluck(:name)).to eq original_names
+      expect(purchase.expenses.order(:installment_number).pluck(:amount_cents)).to eq original_amounts
+      expect(purchase.expenses.sum(:amount_cents)).to eq original_sum
+    end
+
+    it "keeps the series' actual content intact when regenerate_installments! itself fails after the purchase save succeeded (Fix 1/Fix 3)" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                amount: "1.000,00", installments_count: "10", date: "2026-03-10")
+      e.save
+      purchase = e.record
+      original_names = purchase.expenses.order(:installment_number).pluck(:name)
+      original_amounts = purchase.expenses.order(:installment_number).pluck(:amount_cents)
+      original_sum = purchase.expenses.sum(:amount_cents)
+
+      # Força regenerate_installments! a falhar depois que o purchase.save já
+      # foi aceito — o cenário que expõe se update_purchase deixa a exceção
+      # escapar ao invés de devolver false com o form re-renderizável.
+      allow(purchase).to receive(:regenerate_installments!) do
+        purchase.errors.add(:base, "falha forçada para teste")
+        raise ActiveRecord::RecordInvalid, purchase
+      end
+
+      updated = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1", name: "sofá",
+                      amount: "500,00", installments_count: "5", date: "2026-03-10")
+      result = nil
+      expect { result = updated.update(purchase) }.not_to raise_error
+      expect(result).to be false
+
+      purchase.reload
+      expect(purchase.expenses.order(:installment_number).pluck(:name)).to eq original_names
+      expect(purchase.expenses.order(:installment_number).pluck(:amount_cents)).to eq original_amounts
+      expect(purchase.expenses.sum(:amount_cents)).to eq original_sum
     end
   end
 

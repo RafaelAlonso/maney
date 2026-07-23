@@ -74,4 +74,53 @@ RSpec.describe "Home month view", type: :request do
     get root_path
     expect(response.body).to include(new_expense_path).and include(new_income_path)
   end
+
+  it "shows a red alert when next month's statements exceed the current balance (AC 9)" do
+    Income.create!(name: "salário", amount_cents: 100_000, date: march)
+    card = create_card!
+    Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 6),
+                    payment_method: "credit", card:, category: Category.create!(name: "mercado"))
+    get root_path(month: "2026-03")
+    expect(response.body).to include("ultrapassam o saldo atual")
+  end
+
+  it "shows a yellow alert at/above the threshold (AC 9)" do
+    Income.create!(name: "salário", amount_cents: 100_000, date: march)
+    card = create_card!
+    Expense.create!(name: "compra", amount_cents: 85_000, date: Date.new(2026, 3, 6),
+                    payment_method: "credit", card:, category: Category.create!(name: "mercado"))
+    get root_path(month: "2026-03")
+    expect(response.body).to include("se aproximam do saldo atual")
+  end
+
+  it "shows no alert below the threshold (AC 9)" do
+    Income.create!(name: "salário", amount_cents: 100_000, date: march)
+    card = create_card!
+    Expense.create!(name: "compra", amount_cents: 70_000, date: Date.new(2026, 3, 6),
+                    payment_method: "credit", card:, category: Category.create!(name: "mercado"))
+    get root_path(month: "2026-03")
+    expect(response.body).not_to include("saldo atual deste mês")
+  end
+
+  it "respects the configured threshold (AC 10)" do
+    Setting.instance.update!(alert_threshold_percent: 90)
+    Income.create!(name: "salário", amount_cents: 100_000, date: march)
+    card = create_card!
+    Expense.create!(name: "compra", amount_cents: 85_000, date: Date.new(2026, 3, 6),
+                    payment_method: "credit", card:, category: Category.create!(name: "mercado"))
+    get root_path(month: "2026-03")
+    expect(response.body).not_to include("se aproximam")
+  end
+
+  it "projects a future month: inherited budget and projected spending (AC 11)" do
+    card = create_card!
+    casa = Category.create!(name: "casa")
+    InstallmentPurchase.create!(name: "sofá", total_cents: 100_000, installments_count: 10,
+                                date: Date.new(2026, 3, 10), card:, category: casa)
+    get root_path(month: "2026-06")
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("06/2026")
+    # casa spends 10.000 in June and inherits May's 10.000 as June's budget
+    expect(response.body).to include("gasto R$ 100,00").and include("orçado R$ 100,00")
+  end
 end

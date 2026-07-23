@@ -51,7 +51,7 @@ RSpec.describe "Expense entry flow", type: :system do
   # Task 6 fixed a bug in expense_form_controller.js that had zero executable
   # coverage until this system spec existed: when the reserved "cartão de
   # crédito" category option gets disabled+hidden (payment method switched to
-  # crédito) while it happens to be the selected one, merely deselecting it
+  # credit) while it happens to be the selected one, merely deselecting it
   # (`selected = false`) leaves the <select> with nothing selected, and the
   # browser silently falls back to the first ENABLED option in DOM order —
   # an arbitrary category, not the user's intent. The fix explicitly selects
@@ -61,12 +61,12 @@ RSpec.describe "Expense entry flow", type: :system do
   # not reachable by clicking through this page: the controller's own
   # `refresh()` runs on every `change` of the payment-method radio and
   # disables the reserved option before a user could ever pick it while
-  # crédito is selected. The one real way to reach it — per the comment in
+  # credit is selected. The one real way to reach it — per the comment in
   # `expense_form_controller.js` — is the server round-trip: a credit
   # expense filed under that reserved category is rejected server-side
   # (Expense#credit_never_in_credit_card_category), and Rails re-renders
   # `new` with the rejected values still in place (category still selected,
-  # crédito radio still checked); `connect()` then calls `refresh()` on that
+  # credit radio still checked); `connect()` then calls `refresh()` on that
   # freshly rendered form, which is exactly where the bug lived. We drive
   # the real POST-then-422-render round trip and bypass only the piece a
   # real user CAN'T avoid triggering client-side (the change event on the
@@ -108,15 +108,15 @@ RSpec.describe "Expense entry flow", type: :system do
   end
 
   # The client half of the Critical fix. `hidden` does not disable an input,
-  # so before this the parcelado box and the card select kept their values
-  # when the user switched away from crédito, and a débito expense submitted
-  # with them still set became a credit parcelado — which BalanceChain, that
+  # so before this the installment box and the card select kept their values
+  # when the user switched away from credit, and a debit expense submitted
+  # with them still set became a credit installment — which BalanceChain, that
   # sums only debit/cash, then dropped from the balance entirely.
   #
   # The server rejects that combination outright now, and a request spec
   # covers it. This example covers the other half: that the invalid state
   # is not reachable from the UI at all, which only a real browser can show.
-  it "clears the card and the parcelado box when the method leaves crédito (Fix 1, client half)" do
+  it "clears the card and the installment box when the method leaves credit (Fix 1, client half)" do
     create_card!(name: "Azul")
     visit new_expense_path
 
@@ -130,7 +130,7 @@ RSpec.describe "Expense entry flow", type: :system do
 
     expect(page).to have_field("parcelado", checked: false, visible: :all)
     # Assert the submitted value, not the visible label: an empty value is
-    # exactly what stops a card riding along on a débito expense.
+    # exactly what stops a card riding along on a debit expense.
     card_select = find("select[name='expense_entry[card_id]']", visible: :all)
     expect(card_select.value).to be_blank
   end

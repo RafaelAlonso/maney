@@ -1,9 +1,9 @@
 class Income < ApplicationRecord
-  # Não persistido: guarda o texto exatamente como o usuário digitou (ex.:
-  # "abc", "0,00") para o form re-renderizar com ele depois de um 422 — sem
-  # isso o campo cairia de volta em `amount_cents` (que fica nil quando o
-  # parse falha) e o usuário veria o campo vazio, tendo que redigitar tudo.
-  # Mesma técnica do `ExpenseEntry#amount` (app/models/expense_entry.rb).
+  # Not persisted: holds the text exactly as the user typed it (e.g. "abc",
+  # "0,00") so the form can re-render with it after a 422 — without this the
+  # field would fall back to `amount_cents` (which is nil when the parse fails)
+  # and the user would see an empty field, having to retype everything. Same
+  # technique as `ExpenseEntry#amount` (app/models/expense_entry.rb).
   attr_accessor :amount
 
   validates :name, presence: true

@@ -3,13 +3,13 @@ require "bigdecimal"
 module BrlMoney
   module_function
 
-  # "1.234,56" | "1234,56" | "-50" | "R$ 900" -> integer cents; nil se inválido.
+  # "1.234,56" | "1234,56" | "-50" | "R$ 900" -> integer cents; nil if invalid.
   #
-  # O ponto é ambíguo sem a vírgula: com vírgula, ela é o separador decimal e
-  # todo ponto é milhar (como já era). Sem vírgula, um único ponto seguido de
-  # 1 ou 2 dígitos até o fim É o decimal ("12.34" -> R$ 12,34); qualquer outro
-  # padrão (dois pontos, ou três dígitos após o ponto) é milhar ("1.000" ->
-  # R$ 1.000,00), igual ao formato de exibição.
+  # The dot is ambiguous without the comma: with a comma, the comma is the
+  # decimal separator and every dot is a thousands separator (as before).
+  # Without a comma, a single dot followed by 1 or 2 digits to the end IS the
+  # decimal ("12.34" -> R$ 12,34); any other pattern (two dots, or three digits
+  # after the dot) is thousands ("1.000" -> R$ 1.000,00), matching the display format.
   def parse(text)
     stripped = text.to_s.gsub(/[R$\s]/, "")
     if stripped.include?(",")
@@ -25,7 +25,7 @@ module BrlMoney
 
   def format(cents)
     sign = cents.negative? ? "-" : ""
-    reais, centavos = cents.abs.divmod(100)
-    "#{sign}#{reais.to_s.gsub(/(\d)(?=(\d{3})+\z)/, '\1.')},#{centavos.to_s.rjust(2, '0')}"
+    whole, fraction = cents.abs.divmod(100)
+    "#{sign}#{whole.to_s.gsub(/(\d)(?=(\d{3})+\z)/, '\1.')},#{fraction.to_s.rjust(2, '0')}"
   end
 end

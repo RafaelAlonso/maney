@@ -1,8 +1,8 @@
 module Budgeting
-  # Fatura derivada — nunca persistida. Identidade natural:
-  # (cartão, data nominal de fechamento, data nominal de vencimento) — o
-  # vencimento entra porque vem da vigência (schedule) em efeito, que pode
-  # divergir entre duas faturas com o mesmo fechamento nominal.
+  # Derived statement — never persisted. Natural identity:
+  # (card, nominal closing date, nominal due date) — the due date is included
+  # because it comes from the schedule (validity window) in effect, which can
+  # diverge between two statements with the same nominal closing.
   class Statement
     attr_reader :card, :cycle, :schedule
 
@@ -15,7 +15,7 @@ module Budgeting
     def nominal_closing = Calendar.nominal_date(cycle.year, cycle.month, schedule.closing_day)
     def effective_closing = Calendar.effective_closing(nominal_closing)
 
-    # Vencimento menor que o fechamento => vence no mês seguinte ao do ciclo.
+    # A due date earlier than the closing => it's due in the month after the cycle's.
     def nominal_due
       base = schedule.due_day < schedule.closing_day ? cycle >> 1 : cycle
       Calendar.nominal_date(base.year, base.month, schedule.due_day)
@@ -28,9 +28,9 @@ module Budgeting
 
     def succ
       next_cycle = cycle >> 1
-      # A janela N+1 abre exatamente quando a janela N fecha, então a vigência
-      # em efeito para ela é a que vale nesse fechamento — não o dia 1º do mês
-      # calendário, que um transbordo de dia de fechamento pode anteceder.
+      # Window N+1 opens exactly when window N closes, so the validity window in
+      # effect for it is the one valid at that closing — not the 1st of the
+      # calendar month, which a closing-day overflow can precede.
       Statement.new(card:, cycle: next_cycle, schedule: Schedule.for(card:, date: effective_closing))
     end
 

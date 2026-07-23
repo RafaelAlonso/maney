@@ -8,14 +8,13 @@ class ApplicationController < ActionController::Base
   before_action :require_setup
   helper_method :current_month
 
-  # Qualquer `find` (Expense, Card, ...) pode receber um id obsoleto — um
-  # link que ficou aberto em outra aba, ou voltou pelo histórico, para um
-  # registro que já não existe. Sem isso, `Model.find` levantaria e a tela
-  # quebraria com um 500 cru. A mensagem aqui é deliberadamente neutra: o
-  # motivo de um id ficar obsoleto varia por controller (ver
-  # `ExpensesController#record_not_found` para o caso das parcelas), e este
-  # handler é herdado por todos eles — dar aqui uma explicação específica de
-  # um controller contaria uma mentira nos outros.
+  # Any `find` (Expense, Card, ...) can receive a stale id — a link left open in
+  # another tab, or reached via the back button, pointing at a record that no
+  # longer exists. Without this, `Model.find` would raise and the screen would
+  # break with a raw 500. The message here is deliberately neutral: the reason an
+  # id goes stale varies by controller (see `ExpensesController#record_not_found`
+  # for the installment case), and this handler is inherited by all of them —
+  # giving a controller-specific explanation here would tell a lie in the others.
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
   private

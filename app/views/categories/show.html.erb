@@ -1,7 +1,7 @@
-<%# app/views/categories/show.html.erb — reaproveita expenses/_row (Task 6),
-    show_delete: false: o drill-down de categoria só oferece editar.
-    show_category: false: toda linha já é desta categoria — o <h1> acima já
-    diz qual — repetir o nome em cada linha seria só ruído. %>
+<%# app/views/categories/show.html.erb — reuses expenses/_row (Task 6),
+    show_delete: false: the category drill-down only offers editing.
+    show_category: false: every row is already of this category — the <h1> above
+    already says which — repeating the name on each row would be just noise. %>
 <h1 class="text-lg font-semibold mb-2"><%= @category.name %></h1>
 <%= render "shared/month_nav", path_helper: ->(month:) { category_path(@category, month:) } %>
 <ul class="divide-y bg-white rounded border">

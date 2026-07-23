@@ -1,6 +1,7 @@
 module Budgeting
-  # Divide um parcelado em centavos: sempre pelo número total de parcelas,
-  # com a sobra de centavos na primeira parcela criada (regra da story w1).
+  # Splits an installment purchase into cents: always by the total number of
+  # installments, with the leftover cents on the first installment created
+  # (rule from story w1).
   module InstallmentSplit
     Part = Data.define(:number, :amount_cents)
 

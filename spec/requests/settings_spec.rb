@@ -15,7 +15,7 @@ RSpec.describe "Settings", type: :request do
     expect(Setting.instance.initial_balance_cents).to eq(-25_000)
   end
 
-  it "refuses moving first month after existing entries (motor rule)" do
+  it "refuses moving first month after existing entries (engine rule)" do
     Income.create!(name: "salário", amount_cents: 100, date: Date.new(2026, 3, 1))
     patch settings_path, params: { setting: { first_month: "2026-04", initial_balance: "100,00" } }
     expect(response).to have_http_status(:unprocessable_entity)

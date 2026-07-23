@@ -1,7 +1,7 @@
 module Budgeting
-  # Cadeia de saldos: o saldo inicial ancora o primeiro mês; cada mês
-  # seguinte carrega o saldo atual do anterior. Sempre derivado, nunca
-  # gravado — um lançamento retroativo muda a cadeia inteira à frente.
+  # Balance chain: the initial balance anchors the first month; each following
+  # month carries the current balance from the previous one. Always derived,
+  # never stored — a retroactive entry changes the whole chain ahead.
   module BalanceChain
     module_function
 
@@ -19,8 +19,8 @@ module Budgeting
       carried
     end
 
-    # Saldo atual: ganhos (com o carregado) menos débito/dinheiro do mês.
-    # Compras no crédito nunca entram; independe da data de hoje.
+    # Current balance: incomes (plus the carried balance) minus the month's
+    # debit/cash. Credit purchases never count; independent of today's date.
     def current_balance(month:, carried:)
       range = month.beginning_of_month.all_month
       incomes = Income.where(date: range).sum(:amount_cents)

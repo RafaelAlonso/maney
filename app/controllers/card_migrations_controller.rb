@@ -1,5 +1,5 @@
-# Fluxo em lote antes de excluir um cartão com gastos: migrar tudo para
-# outro cartão ou excluir tudo; ao concluir, o cartão é excluído junto.
+# Batch flow before deleting a card that has expenses: migrate everything to
+# another card or delete everything; on completion, the card is deleted too.
 class CardMigrationsController < ApplicationController
   before_action :set_card
 
@@ -27,8 +27,8 @@ class CardMigrationsController < ApplicationController
       redirect_to new_card_migration_path(@card), alert: "Escolha o cartão de destino." and return
     end
     ActiveRecord::Base.transaction do
-      # update_all: reatribuição em massa sem callbacks — as validações dos
-      # gastos não mudam (mesmo método, categoria e datas), só o cartão.
+      # update_all: bulk reassignment without callbacks — the expenses'
+      # validations don't change (same method, category and dates), only the card.
       @card.expenses.update_all(card_id: target.id)
       @card.installment_purchases.update_all(card_id: target.id)
       @card.reload.destroy!

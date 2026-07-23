@@ -1,12 +1,12 @@
 require "rails_helper"
 
 RSpec.describe Budgeting::BalanceChain do
-  it "AC 17: o saldo inicial informado entra como carregado do primeiro mês" do
+  it "AC 17: the given initial balance enters as the first month's carried balance" do
     Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: 200_000)
     expect(described_class.carried_into(month: Date.new(2026, 3, 1))).to eq(200_000)
   end
 
-  it "AC 16: março encerrado com saldo atual 2.800 → abril carrega 2.800; fechado em −300 → abril carrega −300" do
+  it "AC 16: March closed with current balance 2.800 → April carries 2.800; closed at −300 → April carries −300" do
     Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: 0)
     Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 1))
     Expense.create!(name: "gastos", amount_cents: 220_000, date: Date.new(2026, 3, 10),
@@ -18,12 +18,12 @@ RSpec.describe Budgeting::BalanceChain do
     expect(described_class.carried_into(month: Date.new(2026, 4, 1))).to eq(-30_000)
   end
 
-  it "edge: saldo negativo se propaga por vários meses vazios" do
+  it "edge: a negative balance propagates through several empty months" do
     Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: -30_000)
     expect(described_class.carried_into(month: Date.new(2026, 6, 1))).to eq(-30_000)
   end
 
-  it "sem configuração ou antes do primeiro mês, o carregado é zero" do
+  it "with no setting or before the first month, the carried balance is zero" do
     expect(described_class.carried_into(month: Date.new(2026, 3, 1))).to eq(0)
     Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: 100)
     expect(described_class.carried_into(month: Date.new(2026, 2, 1))).to eq(0)

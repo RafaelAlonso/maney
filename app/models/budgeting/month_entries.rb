@@ -1,6 +1,7 @@
 module Budgeting
-  # Gastos exibíveis de um mês: os com data dentro do mês civil + as
-  # parcelas cuja competência cai no mês. Só leitura, para as listas.
+  # An expense's displayable entries for a month: those dated within the civil
+  # month + the installments whose competence falls in the month. Read-only,
+  # for the lists.
   module MonthEntries
     module_function
 

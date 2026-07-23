@@ -11,7 +11,7 @@ RSpec.describe ExpenseEntry do
                           category_id: others.id.to_s, payment_method: "debit" }.merge(overrides))
   end
 
-  describe "#save (avulso)" do
+  describe "#save (standalone)" do
     it "creates a debit expense (AC 4)" do
       e = entry
       expect(e.save).to be true
@@ -59,7 +59,7 @@ RSpec.describe ExpenseEntry do
     end
   end
 
-  describe "#save (parcelado)" do
+  describe "#save (installment)" do
     it "creates the whole series at once (AC 6)" do
       e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1",
                 name: "sofá", amount: "1.000,00", installments_count: "10", date: "2026-03-10")
@@ -141,11 +141,11 @@ RSpec.describe ExpenseEntry do
       original_amounts = purchase.expenses.order(:installment_number).pluck(:amount_cents)
       original_sum = purchase.expenses.sum(:amount_cents)
 
-      # Força regenerate_installments! a falhar depois que o purchase.save já
-      # foi aceito — o cenário que expõe se update_purchase deixa a exceção
-      # escapar ao invés de devolver false com o form re-renderizável.
+      # Force regenerate_installments! to fail after purchase.save was already
+      # accepted — the scenario that exposes whether update_purchase lets the
+      # exception escape instead of returning false with a re-renderable form.
       allow(purchase).to receive(:regenerate_installments!) do
-        purchase.errors.add(:base, "falha forçada para teste")
+        purchase.errors.add(:base, "forced failure for test")
         raise ActiveRecord::RecordInvalid, purchase
       end
 
@@ -159,9 +159,9 @@ RSpec.describe ExpenseEntry do
       expect(purchase.expenses.order(:installment_number).pluck(:name)).to eq original_names
       expect(purchase.expenses.order(:installment_number).pluck(:amount_cents)).to eq original_amounts
       expect(purchase.expenses.sum(:amount_cents)).to eq original_sum
-      # O cabeçalho volta atrás junto com a série: sem a transação em volta
-      # dos dois passos, o purchase ficaria dizendo 5 parcelas de R$ 500
-      # enquanto as 10 parcelas antigas de R$ 1.000 continuam no banco.
+      # The header rolls back together with the series: without the transaction
+      # around both steps, the purchase would say 5 installments of R$ 500 while
+      # the 10 old installments of R$ 1.000 remain in the database.
       expect(purchase.total_cents).to eq 100_000
       expect(purchase.installments_count).to eq 10
     end

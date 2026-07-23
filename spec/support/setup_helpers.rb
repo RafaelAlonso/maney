@@ -8,10 +8,10 @@ module SetupHelpers
      Category.find_or_create_by!(role: "credit_card") { |c| c.name = "cartão de crédito" }]
   end
 
-  # Mesmo cartão do cenário de referência (ReferenceScenario#create_card), mas
-  # com a primeira vigência ancorada no início da linha do tempo — é o que a
-  # tela de cartões faz ao cadastrar. Delega de propósito: dois helpers com
-  # corpo igual e valid_from diferente já foram fonte de confusão.
+  # Same card as the reference scenario (ReferenceScenario#create_card), but with
+  # the first validity window anchored at the start of the timeline — which is
+  # what the cards screen does on registration. Delegates on purpose: two helpers
+  # with the same body and different valid_from were already a source of confusion.
   def create_card!(name: "Azul", closing_day: 5, due_day: 12, valid_from: nil)
     create_card(name:, closing_day:, due_day:,
                 valid_from: valid_from || Setting.instance&.first_month || Date.new(2026, 3, 1))

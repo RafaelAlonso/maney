@@ -15,16 +15,16 @@ RSpec.describe "Incomes", type: :request do
     expect(response.body.index("saldo do mês anterior")).to be < response.body.index("salário")
   end
 
-  it "labels the first month's derived row as saldo inicial with a link to settings (AC 18)" do
+  it "labels the first month's derived row as 'saldo inicial' with a link to settings (AC 18)" do
     get incomes_path(month: "2026-03")
     expect(response.body).to include("saldo inicial").and include(edit_settings_path)
   end
 
-  # A linha derivada mora no mesmo <ul> dos ganhos reais, e os exemplos acima
-  # só olham texto e ordem — passariam igual se ela fosse renderizada como um
-  # ganho editável. O saldo é derivado da cadeia, não um lançamento: não pode
-  # ter como ser editado nem excluído, senão o usuário tenta "corrigir" um
-  # número que nenhuma linha do banco produz.
+  # The derived row lives in the same <ul> as the real incomes, and the examples
+  # above only look at text and order — they'd pass just the same if it were
+  # rendered as an editable income. The balance is derived from the chain, not an
+  # entry: it must be impossible to edit or delete, otherwise the user tries to
+  # "fix" a number that no database row produces.
   it "renders the derived row with no way to act on it as an income (AC 18)" do
     Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 4, 1))
     income = Income.create!(name: "extra", amount_cents: 1_000, date: Date.new(2026, 4, 2))
@@ -35,7 +35,7 @@ RSpec.describe "Incomes", type: :request do
     expect(derived).not_to include("excluir")
     expect(derived).not_to include(edit_income_path(income))
     expect(derived).not_to match(%r{/incomes/\d+})
-    # e o contraste: um ganho de verdade tem os dois controles
+    # and the contrast: a real income has both controls
     expect(real_rows.join).to include("excluir").and include(edit_income_path(income))
   end
 

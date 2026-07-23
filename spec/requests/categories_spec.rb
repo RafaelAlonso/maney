@@ -44,9 +44,9 @@ RSpec.describe "Categories", type: :request do
     expect(Category.exists?(category.id)).to be false
     expect(expense.reload.category).to eq others
     expect(purchase.reload.category).to eq others
-    # Cada parcela tem seu próprio category_id desnormalizado — reatribuir a
-    # InstallmentPurchase não arrasta as parcelas junto. É só o update_all
-    # irrestrito em @category.expenses que hoje varre todas elas também.
+    # Each installment has its own denormalized category_id — reassigning the
+    # InstallmentPurchase doesn't drag the installments along. It's only the
+    # unrestricted update_all on @category.expenses that today sweeps them all too.
     expect(purchase.expenses.reload.map(&:category)).to all(eq(others))
   end
 
@@ -66,17 +66,17 @@ RSpec.describe "Categories", type: :request do
     expect(others.reload.name).to eq "geral"
   end
 
-  # Ponto 1 do brief revisado: um orçado que não parseia (ou é negativo) não
-  # pode ser engolido em silêncio — precisa 422 + erro visível + nenhuma
-  # escrita parcial (categoria e orçado nascem juntos ou não nascem).
-  it "does not create a category when orçado is unparseable (422, no partial write)" do
+  # Point 1 of the revised brief: a budget that doesn't parse (or is negative)
+  # must not be swallowed silently — it needs 422 + visible error + no partial
+  # write (category and budget are born together or not at all).
+  it "does not create a category when the budget is unparseable (422, no partial write)" do
     post categories_path, params: { category: { name: "mercado", budget_amount: "abc" }, month: "2026-03" }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("não é um valor válido")
     expect(Category.exists?(name: "mercado")).to be false
   end
 
-  it "does not apply the name change when orçado is unparseable on update" do
+  it "does not apply the name change when the budget is unparseable on update" do
     category = Category.create!(name: "mercado")
     patch category_path(category), params: { category: { name: "feira", budget_amount: "abc" }, month: "2026-03" }
     expect(response).to have_http_status(:unprocessable_entity)
@@ -84,29 +84,29 @@ RSpec.describe "Categories", type: :request do
     expect(category.reload.name).to eq "mercado"
   end
 
-  it "creates a category with a blank orçado (no budget for the month)" do
+  it "creates a category with a blank budget (no budget for the month)" do
     post categories_path, params: { category: { name: "lazer", budget_amount: "" }, month: "2026-03" }
     category = Category.find_by!(name: "lazer")
     expect(Budget.find_by(category:, month: Date.new(2026, 3, 1))).to be_nil
   end
 
-  it "surfaces the model's error for a negative orçado (422, no partial write)" do
+  it "surfaces the model's error for a negative budget (422, no partial write)" do
     post categories_path, params: { category: { name: "mercado", budget_amount: "-10,00" }, month: "2026-03" }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(Category.exists?(name: "mercado")).to be false
   end
 
-  # Fix 1: o form nunca mostra o campo orçado para a reservada de cartão de
-  # crédito, mas um submit forjado/direto precisa do mesmo tratamento das
-  # demais categorias — em branco é no-op, presente é 422 pelo erro do model.
-  it "a blank orçado on the credit-card category stays a no-op success" do
+  # Fix 1: the form never shows the budget field for the reserved credit-card
+  # category, but a forged/direct submit needs the same treatment as the other
+  # categories — blank is a no-op, present is a 422 from the model's error.
+  it "a blank budget on the credit-card category stays a no-op success" do
     cc = credit_card_category
     patch category_path(cc), params: { category: { name: cc.name, budget_amount: "" }, month: "2026-03" }
     expect(response).to redirect_to(categories_path(month: "2026-03"))
     expect(Budget.where(category: cc).count).to eq 0
   end
 
-  it "rejects a present orçado on the credit-card category (422, model's message, no write)" do
+  it "rejects a present budget on the credit-card category (422, model's message, no write)" do
     cc = credit_card_category
     patch category_path(cc), params: { category: { name: cc.name, budget_amount: "100,00" }, month: "2026-03" }
     expect(response).to have_http_status(:unprocessable_entity)

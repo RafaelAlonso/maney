@@ -5,17 +5,17 @@ class Card < ApplicationRecord
 
   validates :name, presence: true
 
-  # Editar os dias nunca reescreve a vigência antiga: cria uma nova valendo do
-  # início da janela aberta hoje — faturas já fechadas seguem derivadas da
-  # antiga, e a fronteira é sempre uma data real de fechamento (ver
-  # Budgeting::StatementAttribution.window_start). Devolve nil se os dias
-  # pedidos já são os vigentes.
+  # Editing the days never rewrites the old validity window: it creates a new
+  # one effective from the start of the window open today — already-closed
+  # statements stay derived from the old one, and the boundary is always a real
+  # closing date (see Budgeting::StatementAttribution.window_start). Returns nil
+  # if the requested days are already the current ones.
   #
-  # A linha devolvida costuma ser nova, mas pode vir persistida: quando a
-  # fronteira coincide com uma vigência que já existe (segunda correção na
-  # mesma janela, ou cartão cuja linha do tempo começa no futuro), a própria
-  # linha existente volta suja. Quem chama salva sempre — nunca ramifique em
-  # `persisted?` / `new_record?`.
+  # The returned row is usually new, but it can come back persisted: when the
+  # boundary coincides with a validity window that already exists (a second
+  # correction within the same window, or a card whose timeline starts in the
+  # future), the existing row itself comes back dirty. The caller always saves —
+  # never branch on `persisted?` / `new_record?`.
   def reschedule(closing_day:, due_day:, today: Date.current)
     wanted = [closing_day.to_i, due_day.to_i]
     current = Budgeting::Schedule.for(card: self, date: today)
@@ -28,15 +28,15 @@ class Card < ApplicationRecord
 
   private
 
-  # O clamp NÃO protege a fronteira de janela — quem garante isso é
-  # window_start, que devolve o início da janela aberta por definição. Ele
-  # garante só ordenação: uma vigência nova jamais antecede uma já existente.
-  # É um backstop contra linhas escritas fora daqui (correção pelo console,
-  # migração de dados, spec montando card_schedules na mão), que podem estar
-  # em datas que não são fronteira de janela nenhuma.
+  # The clamp does NOT protect the window boundary — window_start is what
+  # guarantees that, returning the start of the open window by definition. It
+  # only guarantees ordering: a new validity window never precedes an existing
+  # one. It's a backstop against rows written outside here (a console fix, a
+  # data migration, a spec building card_schedules by hand) that might sit on
+  # dates that are no window boundary at all.
   def schedule_start_on(today)
     boundary = Budgeting::StatementAttribution.window_start(card: self, date: today)
-    # maximum nunca é nil aqui: Schedule.for já teria levantado sem vigência.
+    # maximum is never nil here: Schedule.for would have raised without a validity window.
     [boundary, card_schedules.maximum(:valid_from)].max
   end
 end

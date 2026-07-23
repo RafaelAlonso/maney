@@ -1,6 +1,6 @@
 module Budgeting
-  # Regras de data do cartão: transbordo de dia inexistente e ajuste a dia
-  # útil (fechamento recua, vencimento avança). Feriados fora de escopo.
+  # Card date rules: overflow of a nonexistent day and adjustment to a business
+  # day (closing moves back, due date moves forward). Holidays out of scope.
   module Calendar
     module_function
 

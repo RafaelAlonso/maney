@@ -20,7 +20,7 @@ RSpec.describe "Expenses", type: :request do
     expect(Expense.find_by(name: "padaria").payment_method).to eq "debit"
   end
 
-  it "accepts a debit expense in the credit-card category — fatura payment (AC 11)" do
+  it "accepts a debit expense in the credit-card category — statement payment (AC 11)" do
     post expenses_path, params: { expense_entry: { name: "fatura azul", amount: "800,00", date: "2026-03-12",
                                                    category_id: credit_card_cat.id, payment_method: "debit" } }
     expect(Expense.find_by(name: "fatura azul").category).to eq credit_card_cat
@@ -47,16 +47,16 @@ RSpec.describe "Expenses", type: :request do
 
   # Fix 1 (final review pass): `installment?` used to dispatch `save` on its
   # own, and `build_purchase` never read `payment_method` — so a submission
-  # that started as crédito (card chosen, parcelado checked) and was then
-  # switched to débito/dinheiro before Salvar stored a real InstallmentPurchase
+  # that started as credit (card chosen, installment checked) and was then
+  # switched to debit/cash before Save stored a real InstallmentPurchase
   # anyway. Since `Budgeting::BalanceChain.current_balance` only sums
   # `payment_method: %w[debit cash]`, that expense vanished from the balance
   # chain entirely behind a successful "Gasto lançado." — permanently
   # inflating every later month's carried balance. Reject the conflict
-  # instead of silently downgrading to avulso or upgrading the method to
-  # crédito; both would discard what the user actually typed.
-  describe "installment requires crédito (Fix 1)" do
-    it "rejects débito + parcelado, creating no InstallmentPurchase" do
+  # instead of silently downgrading to standalone or upgrading the method to
+  # credit; both would discard what the user actually typed.
+  describe "installment requires credit (Fix 1)" do
+    it "rejects debit + installment, creating no InstallmentPurchase" do
       expect do
         post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
                                                         category_id: others.id, payment_method: "debit",
@@ -67,12 +67,12 @@ RSpec.describe "Expenses", type: :request do
       expect(response.body).to include("só se aplica a gastos no crédito")
     end
 
-    # This is the reported related symptom: dinheiro + parcelado + no card
+    # This is the reported related symptom: cash + installment + no card
     # used to 422 with "Card must exist" — an English message about a field
-    # (`card_id`) this form never shows for dinheiro. The real conflict
-    # (parcelado without crédito) must be the one reported, not a downstream
+    # (`card_id`) this form never shows for cash. The real conflict
+    # (installment without credit) must be the one reported, not a downstream
     # validation on a record that should never have been built.
-    it "rejects dinheiro + parcelado, creating no InstallmentPurchase, without naming the card column" do
+    it "rejects cash + installment, creating no InstallmentPurchase, without naming the card column" do
       expect do
         post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
                                                         category_id: others.id, payment_method: "cash",
@@ -83,7 +83,7 @@ RSpec.describe "Expenses", type: :request do
       expect(response.body).not_to include("Card must exist")
     end
 
-    it "still accepts crédito + parcelado (regression guard)" do
+    it "still accepts credit + installment (regression guard)" do
       expect do
         post expenses_path, params: { expense_entry: { name: "sofá", amount: "1.200,00", date: "2026-03-10",
                                                         category_id: others.id, payment_method: "credit",
@@ -171,11 +171,11 @@ RSpec.describe "Expenses", type: :request do
     expect(Expense.find(expense.id).name).to eq "padaria atualizada"
   end
 
-  # Point 3 (project owner's decision): there is no avulso<->parcelado
-  # conversion, so unchecking "parcelado" or switching method away from
-  # crédito on a purchase edit must be impossible to request, not just
+  # Point 3 (project owner's decision): there is no standalone<->installment
+  # conversion, so unchecking the installment box or switching method away from
+  # credit on a purchase edit must be impossible to request, not just
   # ignored server-side.
-  describe "locking parcelado/method controls on a purchase edit" do
+  describe "locking installment/method controls on a purchase edit" do
     it "disables them when editing an existing installment purchase" do
       purchase = InstallmentPurchase.create!(name: "sofá", total_cents: 100_000, installments_count: 10,
                                              card:, category: others, date: Date.new(2026, 3, 10))
@@ -192,19 +192,19 @@ RSpec.describe "Expenses", type: :request do
       expect(response.body).to include("exclua a compra e lance de novo")
     end
 
-    # Fix 2 (review final): the mirror direction. The project owner ruled
-    # that avulso<->parcelado conversion is impossible in either direction —
-    # so the parcelado checkbox must be locked on an avulso edit too, not
+    # Fix 2 (final review): the mirror direction. The project owner ruled
+    # that standalone<->installment conversion is impossible in either direction —
+    # so the installment checkbox must be locked on a standalone edit too, not
     # just on a purchase edit. This used to assert the opposite (the broken
     # affordance: checkbox enabled, offered, accepted, and silently
     # discarded by `ExpenseEntry#update`'s `case source` dispatch). The
-    # payment-method radios stay enabled here on purpose: unlike a parcela's
-    # method (hardcoded "credit", never read by `update_purchase`), an
-    # avulso's `payment_method` is genuinely read and persisted by
+    # payment-method radios stay enabled here on purpose: unlike an installment's
+    # method (hardcoded "credit", never read by `update_purchase`), a
+    # standalone's `payment_method` is genuinely read and persisted by
     # `ExpenseEntry#update` — locking those radios too would make a real
     # browser submit no `payment_method` at all (disabled inputs don't
-    # submit), breaking ordinary avulso edits.
-    it "locks the parcelado checkbox (but not the payment-method radios) when editing a plain (avulso) expense" do
+    # submit), breaking ordinary standalone edits.
+    it "locks the installment checkbox (but not the payment-method radios) when editing a plain (standalone) expense" do
       expense = Expense.create!(name: "padaria", amount_cents: 100, payment_method: "cash",
                                 category: others, date: Date.new(2026, 3, 10))
       get edit_expense_path(expense)
@@ -230,16 +230,16 @@ RSpec.describe "Expenses", type: :request do
     end
   end
 
-  # Point 4 (project owner's decision): editing a parcelado destroys and
-  # recreates its parcelas, so a stale `/expenses/:id` link (e.g. from an
+  # Point 4 (project owner's decision): editing an installment purchase destroys
+  # and recreates its installments, so a stale `/expenses/:id` link (e.g. from an
   # already-open page) now 404s at the AR layer. App-wide rescue instead of
   # an unhandled 500.
   # Fix 1 (task-6 review pass): `ExpensesController` overrides the app-wide
-  # `record_not_found` handler with the parcela-aware wording, since it's
+  # `record_not_found` handler with the installment-aware wording, since it's
   # the only controller where that explanation is actually true. Asserted
   # here alongside `spec/requests/cards_spec.rb`'s "stale card URL" example,
   # which asserts the same rendered text is ABSENT there.
-  it "redirects with the parcela-aware alert when the expense id no longer exists (Fix 1)" do
+  it "redirects with the installment-aware alert when the expense id no longer exists (Fix 1)" do
     stale_id = Expense.maximum(:id).to_i + 1_000
     get edit_expense_path(stale_id)
     expect(response).to redirect_to(root_path)
@@ -268,7 +268,7 @@ RSpec.describe "Expenses", type: :request do
     expect(response).to redirect_to(expenses_path(month: "2026-05"))
   end
 
-  # Fix 3 (task-6 review pass): the rendered edit form disables the parcelado
+  # Fix 3 (task-6 review pass): the rendered edit form disables the installment
   # checkbox and the three payment-method radios on a purchase edit (Point 3
   # above) — disabled inputs submit nothing, so a real browser PATCH from
   # that page carries no `payment_method` and no `installment` key at all.
@@ -278,9 +278,9 @@ RSpec.describe "Expenses", type: :request do
   # someone rewrote that dispatch to key on `entry.installment?` instead
   # (`nil.to_s == "1"` is false when the key is simply absent), which would
   # silently skip `update_purchase` — and its series regeneration — for
-  # every real parcelado edit. This spec omits both keys the way the
+  # every real installment edit. This spec omits both keys the way the
   # disabled browser form actually would, so it catches that regression.
-  it "regenerates a parcelado series from a PATCH with payment_method and installment genuinely absent (Fix 3)" do
+  it "regenerates an installment series from a PATCH with payment_method and installment genuinely absent (Fix 3)" do
     purchase = InstallmentPurchase.create!(name: "sofá", total_cents: 100_000, installments_count: 10,
                                            card:, category: others, date: Date.new(2026, 3, 10))
 

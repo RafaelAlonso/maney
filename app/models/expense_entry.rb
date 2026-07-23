@@ -1,6 +1,6 @@
-# Form object do lançamento de gasto: decide entre Expense avulso e
-# InstallmentPurchase (parcelado) e traduz valor BRL -> centavos. Toda regra
-# financeira permanece nos models/motor; aqui só orquestração e parse.
+# Form object for entering an expense: decides between a standalone Expense and
+# an InstallmentPurchase (installment) and converts a BRL amount -> cents. All
+# financial rules stay in the models/engine; here it's only orchestration and parsing.
 class ExpenseEntry
   include ActiveModel::Model
 
@@ -52,30 +52,31 @@ class ExpenseEntry
     errors.add(:amount, "não é um valor válido") if amount_cents.nil? || amount_cents <= 0
   end
 
-  # `installment?` só olha a checkbox. Sem esta validação, `save`/`update`
-  # despacham só nisso e `build_purchase` nunca lê `payment_method` — então
-  # um submit que começou como crédito (cartão escolhido, parcelado marcado)
-  # e foi trocado para débito/dinheiro antes do Salvar vira uma
-  # InstallmentPurchase de verdade. `Budgeting::BalanceChain.current_balance`
-  # só soma `payment_method: %w[debit cash]`, então esse gasto some da
-  # cadeia de saldos por trás de um "Gasto lançado." — inflando pra sempre o
-  # saldo carregado de todo mês seguinte. Rejeitar em vez de corrigir
-  # sozinho: tanto descer para avulso quanto subir o método para crédito
-  # jogariam fora o que o usuário pediu. Mesmo registro de
+  # `installment?` only looks at the checkbox. Without this validation,
+  # `save`/`update` dispatch on that alone and `build_purchase` never reads
+  # `payment_method` — so a submit that started as credit (card chosen,
+  # installment checked) and was switched to debit/cash before Save becomes a
+  # real InstallmentPurchase. `Budgeting::BalanceChain.current_balance` only
+  # sums `payment_method: %w[debit cash]`, so that expense vanishes from the
+  # balance chain behind a "Gasto lançado." — permanently inflating every later
+  # month's carried balance. Reject instead of fixing it silently: both
+  # downgrading to standalone and upgrading the method to credit would throw
+  # away what the user asked for. Same rationale as
   # `Expense#card_matches_method`'s "só se aplica a gastos no crédito".
   #
-  # Vai em :base de propósito. Em :installment o `full_message` vira
-  # "Installment só se aplica…" — sem locale pt-BR, o prefixo é o nome
-  # humanizado do atributo em inglês, e esta é a mensagem mais importante
-  # da tela. Em :base a frase sai inteira em português.
+  # Goes on :base on purpose. On :installment the `full_message` becomes
+  # "Installment só se aplica…" — without a pt-BR locale, the prefix is the
+  # humanized attribute name in English, and this is the most important message
+  # on the screen. On :base the whole sentence comes out in Portuguese.
   def installment_requires_credit
     return unless installment? && payment_method != "credit"
     errors.add(:base, "Parcelado só se aplica a gastos no crédito")
   end
 
-  # Um category_id presente mas que não resolve mais (categoria excluída entre
-  # o form ser aberto e o submit) cai em "outros" — mesma regra usada quando o
-  # campo vem em branco e quando uma categoria é excluída de verdade.
+  # A category_id that is present but no longer resolves (category deleted
+  # between the form opening and the submit) falls back to the "outros" category
+  # — the same rule used when the field comes in blank and when a category is
+  # genuinely deleted.
   def category
     return Category.find_by!(role: "others") if category_id.blank?
     Category.find_by(id: category_id) || Category.find_by!(role: "others")
@@ -92,19 +93,19 @@ class ExpenseEntry
                             first_installment: first_installment.presence || 1)
   end
 
-  # `regenerate_installments!` é atômico por conta própria, mas isso só protege
-  # a série. A transação aqui é o que mantém cabeçalho e série coerentes: sem
-  # ela o purchase commita e só as parcelas voltam atrás, deixando um registro
-  # que diz "5 parcelas de R$ 500" ao lado das 10 parcelas antigas de R$ 1.000.
-  # Se o motor rejeitar a série nova, devolve o formulário com erro em vez de
-  # deixar a exceção escapar como página de erro.
+  # `regenerate_installments!` is atomic on its own, but that only protects the
+  # series. The transaction here is what keeps the header and series consistent:
+  # without it the purchase commits and only the installments roll back, leaving
+  # a record that says "5 installments of R$ 500" next to the 10 old installments of
+  # R$ 1.000. If the engine rejects the new series, return the form with an error
+  # instead of letting the exception escape as an error page.
   def update_purchase(purchase)
     ok = false
     purchase.assign_attributes(name:, total_cents: amount_cents, date: date.presence, category:,
                                card_id: card_id.presence, installments_count:,
                                first_installment: first_installment.presence || 1)
-    # Precisa ser lido aqui, com `changed` ainda refletindo a edição pendente
-    # — depois do save bem-sucedido o dirty state já foi limpo.
+    # Must be read here, while `changed` still reflects the pending edit —
+    # after a successful save the dirty state has already been cleared.
     regenerate = purchase.series_inputs_changed?
     ActiveRecord::Base.transaction do
       ok = persist(purchase)
@@ -118,9 +119,9 @@ class ExpenseEntry
     purchase.reload unless ok
   end
 
-  # A validação de total_cents vive na InstallmentPurchase (nome interno do
-  # model), mas o campo do formulário é "amount" — sem este remapeamento a
-  # mensagem fica presa numa chave que a view nunca olha.
+  # The total_cents validation lives on InstallmentPurchase (the model's
+  # internal name), but the form field is "amount" — without this remap the
+  # message stays stuck on a key the view never looks at.
   ERROR_ATTRIBUTE_REMAP = { total_cents: :amount }.freeze
   private_constant :ERROR_ATTRIBUTE_REMAP
 

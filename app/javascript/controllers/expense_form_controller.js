@@ -9,14 +9,13 @@ export default class extends Controller {
     const credit = this.method === "credit"
     this.cardSectionTarget.hidden = !credit
     this.installmentSectionTarget.hidden = !credit
-    // Leaving crédito must clear both parcelado and the card choice right
-    // here — not just hide their sections. `hidden` does not disable an
-    // input, so a checked "parcelado" box and a chosen card would still
-    // submit even though they're no longer visible: pick crédito, choose a
-    // card, check parcelado, then switch to débito/dinheiro and Salvar was
-    // reachable with no devtools (Fix 1). The server rejects that
-    // combination now too, but the invalid state shouldn't be reachable
-    // from the UI in the first place.
+    // Leaving credit must clear both the installment box and the card choice
+    // right here — not just hide their sections. `hidden` does not disable an
+    // input, so a checked installment box and a chosen card would still submit
+    // even though they're no longer visible: pick credit, choose a card, check
+    // installment, then switch to debit/cash and Save was reachable with no
+    // devtools (Fix 1). The server rejects that combination now too, but the
+    // invalid state shouldn't be reachable from the UI in the first place.
     if (!credit) {
       if (this.installmentCheckbox) this.installmentCheckbox.checked = false
       const cardSelect = this.element.querySelector('select[name="expense_entry[card_id]"]')
@@ -26,20 +25,18 @@ export default class extends Controller {
       const blocked = credit && option.dataset.role === "credit_card"
       option.disabled = blocked
       option.hidden = blocked
-      // Este <select> não tem `multiple`: se a option bloqueada for a única
-      // selecionada, simplesmente desmarcá-la (`selected = false`) deixa o
-      // <select> sem nenhuma option selecionada, e o navegador cai
-      // silenciosamente na primeira option habilitada em ordem de DOM — uma
-      // categoria arbitrária assim que o usuário tiver mais de duas opções,
-      // não a intenção dele. Isso é alcançável sem clique nenhum: quando o
-      // servidor rejeita um gasto crédito na categoria reservada de cartão,
-      // Rails re-renderiza o form com essa option ainda `selected` e o rádio
-      // crédito ainda `checked`; `connect()` chama `refresh()` e a troca
-      // aconteceria na re-renderização, não numa ação do usuário. Por isso
-      // selecionamos explicitamente "outros" no lugar — mesma categoria que
-      // o servidor já usa quando `category_id` vem em branco (ver
-      // `ExpenseEntry#category`), então o fallback fica determinístico e
-      // semanticamente certo, não uma decisão do navegador.
+      // This <select> has no `multiple`: if the blocked option is the only one
+      // selected, simply unselecting it (`selected = false`) leaves the <select>
+      // with no option selected, and the browser silently falls back to the
+      // first enabled option in DOM order — an arbitrary category as soon as the
+      // user has more than two options, not their intent. This is reachable with
+      // no click at all: when the server rejects a credit expense in the reserved
+      // card category, Rails re-renders the form with that option still `selected`
+      // and the credit radio still `checked`; `connect()` calls `refresh()` and
+      // the swap would happen on the re-render, not on a user action. So we
+      // explicitly select "outros" instead — the same category the server already
+      // uses when `category_id` comes in blank (see `ExpenseEntry#category`), so
+      // the fallback stays deterministic and semantically correct, not a browser decision.
       if (blocked && option.selected) {
         option.selected = false
         const fallback = this.categoryOptionTargets.find(o => o.dataset.role === "others")

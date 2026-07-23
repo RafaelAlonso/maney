@@ -38,8 +38,8 @@ class CategoriesController < ApplicationController
     end
   end
 
-  # Excluir move os gastos (e compras parceladas) para a padrão — o aviso
-  # com a contagem fica no turbo_confirm da lista.
+  # Deleting moves the expenses (and installment purchases) to the default one —
+  # the notice with the count lives in the list's turbo_confirm.
   def destroy
     if @category.reserved?
       redirect_to categories_path, alert: "Categoria reservada não pode ser excluída."
@@ -67,12 +67,12 @@ class CategoriesController < ApplicationController
           &.amount_cents&.then { |cents| BrlMoney.format(cents) }
   end
 
-  # Persiste a categoria e, no mesmo mês em contexto, o orçado — as duas
-  # coisas nascem juntas ou nenhuma nasce. Um orçado que não parseia, ou que
-  # o model recusa (negativo, ou a reservada de cartão de crédito), não pode
-  # deixar a categoria criada/renomeada com o orçado perdido em silêncio
-  # (decisão pós-brief, ponto 1) — por isso a transação e o rollback
-  # explícito em vez do `return` isolado do brief original.
+  # Persists the category and, in the same month in context, the budget — the two
+  # are born together or neither is. A budget that doesn't parse, or that the
+  # model rejects (negative, or the reserved credit-card one), must not leave the
+  # category created/renamed with the budget silently lost (post-brief decision,
+  # point 1) — hence the transaction and the explicit rollback instead of the
+  # isolated `return` in the original brief.
   def save_category_and_budget(update: false)
     ok = false
     ActiveRecord::Base.transaction do
@@ -86,16 +86,16 @@ class CategoriesController < ApplicationController
     ok
   end
 
-  # Orçado da categoria no mês em contexto. O form não mostra o campo para a
-  # categoria "cartão de crédito" (o orçado dela é derivado das faturas), mas
-  # um valor forjado/direto para ela não é ignorado: um orçado em branco
-  # continua um no-op válido (é o que um submit normal do form manda), mas um
-  # orçado presente segue o mesmo caminho de qualquer outra categoria e
-  # esbarra em `Budget#not_on_credit_card_category` — 422, erro visível,
-  # nenhuma escrita. Um valor que não parseia ganha erro próprio (não tem no
-  # que a validação do Budget pegar, já que nem chega a virar amount_cents);
-  # negativo e "cartão de crédito" são recusados pelo próprio Budget — o erro
-  # dele é importado, não duplicado aqui.
+  # The category's budget in the month in context. The form doesn't show the
+  # field for the "cartão de crédito" category (its budget is derived from the
+  # statements), but a forged/direct value for it isn't ignored: a blank budget
+  # stays a valid no-op (what a normal form submit sends), but a present budget
+  # follows the same path as any other category and hits
+  # `Budget#not_on_credit_card_category` — 422, visible error, no write. A value
+  # that doesn't parse gets its own error (there's nothing for the Budget
+  # validation to catch, since it never becomes amount_cents); negative and the
+  # "cartão de crédito" category are rejected by Budget itself — its error is
+  # imported, not duplicated here.
   def save_budget
     amount = category_params[:budget_amount]
     return true if amount.blank?
@@ -111,9 +111,9 @@ class CategoriesController < ApplicationController
     false
   end
 
-  # Mesma técnica do ExpenseEntry (app/models/expense_entry.rb): o campo do
-  # form é "budget_amount", mas a validação mora em Budget#amount_cents — sem
-  # o remap a mensagem fica presa numa chave que a view nunca olha.
+  # Same technique as ExpenseEntry (app/models/expense_entry.rb): the form field
+  # is "budget_amount", but the validation lives on Budget#amount_cents — without
+  # the remap the message stays stuck on a key the view never looks at.
   BUDGET_ERROR_ATTRIBUTE_REMAP = { amount_cents: :budget_amount }.freeze
 
   def import_budget_errors(budget)

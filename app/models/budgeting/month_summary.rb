@@ -1,6 +1,6 @@
 module Budgeting
-  # Agregado de um mês civil: ganhos, consumo vs. orçado por categoria e os
-  # dois saldos. Tudo derivado na hora; nenhum valor é gravado.
+  # Aggregate of a civil month: incomes, spent vs. budgeted per category and the
+  # two balances. Everything derived on the fly; no value is stored.
   class MonthSummary
     attr_reader :month
 
@@ -35,8 +35,8 @@ module Budgeting
     end
 
     def estimated_balance_cents
-      # `role` é nulo na maioria das categorias — Category.where.not(role: "credit_card")
-      # excluiria essas linhas por três-valores em SQL, então filtramos em Ruby.
+      # `role` is null on most categories — Category.where.not(role: "credit_card")
+      # would exclude those rows via SQL three-valued logic, so we filter in Ruby.
       other_committed = Category.all.reject(&:credit_card?).sum { |c| [budgeted_cents(c), spent_cents(c)].max }
       incomes_total_cents - other_committed - credit_card_committed_cents
     end
@@ -47,18 +47,19 @@ module Budgeting
 
     private
 
-    # Termo do cartão de crédito calculado sem depender da linha reservada
-    # existir em Category — o orçado vem inteiramente das faturas derivadas
-    # e o consumido é filtrado pelo papel, não por uma referência à categoria.
+    # Credit-card term computed without relying on the reserved row existing in
+    # Category — the budgeted amount comes entirely from the derived statements
+    # and the spent amount is filtered by role, not by a reference to the category.
     def credit_card_committed_cents
       [credit_card_budgeted_cents, credit_card_spent_cents].max
     end
 
-    # Memoizados porque derivar as faturas do mês percorre todos os cartões e
-    # todas as parcelas — caro, e pedido mais de uma vez por resumo (o orçado
-    # da categoria reservada e o estimado usam o mesmo número). Seguro pelo
-    # mesmo motivo que carried_balance_cents: a instância é descartável, de um
-    # mês só. Nada aqui pode virar estado de processo (ver Budgeting::Schedule).
+    # Memoized because deriving the month's statements walks every card and every
+    # installment — expensive, and asked for more than once per summary (the
+    # reserved category's budgeted amount and the estimate use the same number).
+    # Safe for the same reason as carried_balance_cents: the instance is
+    # disposable, for a single month. Nothing here may become process state (see
+    # Budgeting::Schedule).
     def credit_card_budgeted_cents
       @credit_card_budgeted_cents ||= StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
     end

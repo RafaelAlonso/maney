@@ -9,33 +9,33 @@ RSpec.describe Expense do
                   payment_method: "debit", category: mercado }.merge(attrs))
   end
 
-  it "exige valor positivo e método conhecido" do
+  it "requires a positive amount and a known method" do
     expect(expense).to be_valid
     expect(expense(amount_cents: 0)).not_to be_valid
     expect(expense(amount_cents: -100)).not_to be_valid
     expect(expense(payment_method: "pix")).not_to be_valid
   end
 
-  it "crédito exige cartão; débito e dinheiro não levam cartão" do
+  it "credit requires a card; debit and cash carry no card" do
     expect(expense(payment_method: "credit")).not_to be_valid
     expect(expense(payment_method: "credit", card: card)).to be_valid
     expect(expense(payment_method: "debit", card: card)).not_to be_valid
     expect(expense(payment_method: "cash", card: nil)).to be_valid
   end
 
-  it "a categoria cartão de crédito é aceita no débito (pagamento de fatura) e recusada no crédito" do
+  it "the credit-card category is accepted on debit (statement payment) and rejected on credit" do
     expect(expense(payment_method: "debit", category: credit_card_category)).to be_valid
     expect(expense(payment_method: "credit", card: card, category: credit_card_category)).not_to be_valid
   end
 
-  it "gasto comum exige data; data anterior ao primeiro mês é bloqueada" do
+  it "a standalone expense requires a date; a date before the first month is blocked" do
     expect(expense(date: nil)).not_to be_valid
     Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: 0)
     expect(expense(date: Date.new(2026, 2, 28))).not_to be_valid
     expect(expense(date: Date.new(2026, 3, 1))).to be_valid
   end
 
-  it "parcela exige número, não tem data própria e é sempre no crédito" do
+  it "an installment requires a number, has no date of its own and is always on credit" do
     purchase = InstallmentPurchase.create!(
       name: "sofá", total_cents: 100_000, installments_count: 10,
       date: Date.new(2026, 3, 10), card: card, category: mercado
@@ -55,7 +55,7 @@ RSpec.describe Expense do
     expect(not_credit.errors[:payment_method]).to include("parcela é sempre no crédito")
   end
 
-  it "número de parcela só se aplica a parcelas" do
+  it "an installment number only applies to installments" do
     non_installment = expense(installment_number: 2)
     expect(non_installment).not_to be_valid
     expect(non_installment.errors[:installment_number]).to include("só se aplica a parcelas")

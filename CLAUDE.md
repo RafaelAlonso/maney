@@ -1,32 +1,40 @@
 # Maney
 
-App Rails 8 de orçamento pessoal (single-user). Motor financeiro em
-`app/models` + `app/models/budgeting`; specs em `spec/`. Rode testes com
+A Rails 8 personal-budgeting app (single-user). The financial engine lives in
+`app/models` + `app/models/budgeting`; specs in `spec/`. Run the tests with
 `bin/rspec`.
 
-## Pasta `project/` — SEMPRE visível para o Claude
+## Language policy
 
-`/project/` está no `.gitignore` de propósito (workspace de PM, não é
-código-fonte), mas **somente o git deve ignorá-la**. Para o Claude ela é
-parte integral do workspace:
+Everything a developer reads is in English: code, identifiers, comments, test
+descriptions, and all documentation (this file and `project/`). Only text a
+user sees stays in Portuguese: view copy, flash messages, validation messages,
+UI labels, seeded category names, and any spec assertion that matches those
+strings.
 
-- Sempre considere `project/` ao explorar, buscar ou listar o repositório.
-  Ferramentas de busca que respeitam `.gitignore` (Glob/Grep) vão pulá-la —
-  quando a tarefa envolver documentação de produto, liste/busque
-  `project/` explicitamente (ex.: `ls project/...`, grep com o caminho).
-- Nunca commite nada dentro de `project/`.
+## The `project/` folder — ALWAYS visible to Claude
 
-## Onde salvar artefatos de PM e de design
+`/project/` is in `.gitignore` on purpose (a PM workspace, not source code),
+but **only git should ignore it**. For Claude it is an integral part of the
+workspace:
 
-Nunca use `docs/` — esse diretório não existe neste repo. Os defaults dos
-skills (ex.: `docs/superpowers/specs`, `docs/superpowers/plans`) são
-sobrescritos por estes caminhos:
+- Always consider `project/` when exploring, searching, or listing the repo.
+  Search tools that respect `.gitignore` (Glob/Grep) will skip it — when the
+  task involves product documentation, list/search `project/` explicitly
+  (e.g. `ls project/...`, grep with the path).
+- Never commit anything inside `project/`.
+
+## Where to save PM and design artifacts
+
+Never use `docs/` — that directory does not exist in this repo. The skills'
+defaults (e.g. `docs/superpowers/specs`, `docs/superpowers/plans`) are
+overridden by these paths:
 
 - Epics: `project/pm/epics/`
-- Stories/bugs: `project/pm/<decomposição>/` (ex.:
-  `project/pm/fechar-o-mes-sem-planilha/`)
-- Specs de design (brainstorming): `project/pm/specs/`
-- Planos de implementação (writing-plans): `project/pm/plans/`
+- Stories/bugs: `project/pm/<decomposition>/` (e.g.
+  `project/pm/closing-the-month-without-a-spreadsheet/`)
+- Design specs (brainstorming): `project/pm/specs/`
+- Implementation plans (writing-plans): `project/pm/plans/`
 
-Convenção de nome: prefixo da wave + tema, sem data — ex.:
-`w2-lancamento-manual.md`.
+Naming convention: wave prefix + theme, no date — e.g.
+`w2-manual-entry.md`.

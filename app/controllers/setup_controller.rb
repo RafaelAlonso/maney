@@ -8,17 +8,17 @@ class SetupController < ApplicationController
     @initial_balance_input = "0,00"
   end
 
-  # Os três registros nascem juntos ou nenhum nasce. Sem a transação, uma
-  # falha entre o Setting e as categorias deixa o app num estado que nada
-  # mais detecta: `require_setup` passa (o Setting existe), mas a categoria
-  # reservada "outros" não — e ela é o destino padrão de todo gasto sem
-  # categoria e de toda categoria excluída. O app fica de pé quebrando em
-  # qualquer lançamento.
+  # The three records are born together or none is. Without the transaction, a
+  # failure between the Setting and the categories leaves the app in a state
+  # nothing else detects: `require_setup` passes (the Setting exists), but the
+  # reserved "outros" category doesn't — and it's the default destination for
+  # every expense without a category and every deleted category. The app stays up
+  # while breaking on any entry.
   #
-  # initial_balance_cents ancora o Budgeting::BalanceChain do app inteiro; um
-  # valor que não parseia não pode virar 0 em silêncio (era o bug:
-  # BrlMoney.parse(...) || 0). O corte acontece antes de qualquer Setting.new
-  # com initial_balance_cents e antes da transação — nada é criado.
+  # initial_balance_cents anchors the whole app's Budgeting::BalanceChain; a value
+  # that doesn't parse must not silently become 0 (that was the bug:
+  # BrlMoney.parse(...) || 0). The cutoff happens before any Setting.new with
+  # initial_balance_cents and before the transaction — nothing is created.
   def create
     @first_month_input = params[:setup][:first_month]
     @initial_balance_input = params[:setup][:initial_balance]

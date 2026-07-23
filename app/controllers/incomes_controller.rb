@@ -39,14 +39,14 @@ class IncomesController < ApplicationController
 
   def set_income = @income = Income.find(params[:id])
 
-  # Mesma técnica do ExpenseEntry/CategoriesController#save_budget: parseia
-  # antes de tocar `amount_cents`. Sem isso, um valor que não parseia caía
-  # direto em `amount_cents: nil` e a numericality do model estourava na
-  # coluna que a view nunca mostra ("Amount cents is not a number") com o
-  # campo re-renderizado em branco — jogando fora o que o usuário digitou
-  # (Fix 3, review final). `income.amount` (attr_accessor, não persistido)
-  # guarda o texto exatamente como foi submetido, com sucesso ou falha no
-  # parse, para o form sempre re-renderizar com ele.
+  # Same technique as ExpenseEntry/CategoriesController#save_budget: parse before
+  # touching `amount_cents`. Without this, a value that doesn't parse fell
+  # straight into `amount_cents: nil` and the model's numericality blew up on the
+  # column the view never shows ("Amount cents is not a number") with the field
+  # re-rendered blank — throwing away what the user typed (Fix 3, final review).
+  # `income.amount` (attr_accessor, not persisted) holds the text exactly as it
+  # was submitted, whether the parse succeeds or fails, so the form always
+  # re-renders with it.
   def assign_and_save(income)
     permitted = params.require(:income).permit(:name, :amount, :date)
     income.name = permitted[:name]
@@ -54,10 +54,10 @@ class IncomesController < ApplicationController
     income.amount = permitted[:amount]
     cents = BrlMoney.parse(permitted[:amount])
     if cents.nil?
-      # Roda as outras validações (nome, data) mesmo com o valor não
-      # parseando, para não esconder um segundo erro real; só a mensagem de
-      # `amount_cents` (presa numa coluna que a view não mostra) é trocada
-      # pela nossa, no campo que o form de fato exibe.
+      # Run the other validations (name, date) even with the amount not parsing,
+      # so a second real error isn't hidden; only the `amount_cents` message
+      # (stuck on a column the view doesn't show) is swapped for ours, on the
+      # field the form actually displays.
       income.valid?
       income.errors.delete(:amount_cents)
       income.errors.add(:amount, "não é um valor válido")
@@ -69,10 +69,10 @@ class IncomesController < ApplicationController
     false
   end
 
-  # A validação de `amount_cents > 0` (negativo, zero) mora no model, no
-  # nome interno da coluna — mas o campo do form é "amount". Sem este remap
-  # a mensagem fica presa numa chave que a view nunca olha. Mesma técnica do
-  # ExpenseEntry (ERROR_ATTRIBUTE_REMAP) e do CategoriesController
+  # The `amount_cents > 0` validation (negative, zero) lives on the model, under
+  # the column's internal name — but the form field is "amount". Without this
+  # remap the message stays stuck on a key the view never looks at. Same technique
+  # as ExpenseEntry (ERROR_ATTRIBUTE_REMAP) and CategoriesController
   # (BUDGET_ERROR_ATTRIBUTE_REMAP).
   def remap_amount_cents_errors(income)
     amount_cents_errors = income.errors.where(:amount_cents).to_a

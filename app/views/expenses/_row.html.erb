@@ -1,9 +1,9 @@
 <%# app/views/expenses/_row.html.erb — locals: expense:, show_delete: (bool),
     show_category: (bool, default true)
-    Reaproveitado por categories#show (Task 8) com show_delete: false e
-    show_category: false — lá só faz sentido editar, não excluir, a partir do
-    drill-down de categoria, e o nome dela já está no <h1> da página, então
-    repeti-lo em toda linha é só ruído. %>
+    Reused by categories#show (Task 8) with show_delete: false and
+    show_category: false — there it only makes sense to edit, not delete, from
+    the category drill-down, and its name is already in the page's <h1>, so
+    repeating it on every row is just noise. %>
 <% show_category = local_assigns.fetch(:show_category, true) %>
 <li class="p-3 flex items-center justify-between gap-2">
   <div>

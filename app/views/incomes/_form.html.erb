@@ -7,11 +7,11 @@
   </div>
   <div>
     <%= f.label :amount, "Valor (R$)", class: "block text-sm mb-1" %>
-    <%# Fix 3 (review final): depois de um 422, `income.amount` (attr_accessor,
-        ver app/models/income.rb) guarda o texto exatamente como foi
-        submetido — preferido aqui para o campo nunca voltar em branco nem
-        reformatado. Em new/edit sem submit ainda, `amount` é nil e cai no
-        formatado a partir de `amount_cents` (comportamento de sempre). %>
+    <%# Fix 3 (final review): after a 422, `income.amount` (attr_accessor, see
+        app/models/income.rb) holds the text exactly as it was submitted —
+        preferred here so the field never comes back blank or reformatted. On
+        new/edit with no submit yet, `amount` is nil and falls back to the
+        formatted value from `amount_cents` (the usual behavior). %>
     <%= f.text_field :amount, value: income.amount.presence || (income.amount_cents && BrlMoney.format(income.amount_cents)),
           inputmode: "decimal", class: "border rounded p-2 w-full" %>
   </div>

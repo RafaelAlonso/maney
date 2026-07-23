@@ -1,6 +1,6 @@
 require "rails_helper"
 
-RSpec.describe "Competence e StatementSet" do
+RSpec.describe "Competence and StatementSet" do
   let(:card) { create_card }
   let(:mercado) { category("mercado") }
 
@@ -9,7 +9,7 @@ RSpec.describe "Competence e StatementSet" do
                     card: on, category: cat)
   end
 
-  it "competência: gasto comum consome o mês da data; parcela k consome o k-ésimo mês da sequência" do
+  it "competence: a standalone expense consumes its date's month; installment k consumes the k-th month of the sequence" do
     expense = credit_expense(20_000, Date.new(2026, 3, 4))
     expect(Budgeting::Competence.month_of(expense)).to eq(Date.new(2026, 3, 1))
 
@@ -20,10 +20,10 @@ RSpec.describe "Competence e StatementSet" do
     months = purchase.expenses.order(:installment_number).map { |e| Budgeting::Competence.month_of(e) }
     expect(months.first).to eq(Date.new(2026, 3, 1))
     expect(months[1]).to eq(Date.new(2026, 4, 1))
-    expect(months.last).to eq(Date.new(2026, 12, 1)) # AC 9: parcela 10 consome dezembro/2026
+    expect(months.last).to eq(Date.new(2026, 12, 1)) # AC 9: installment 10 consumes December/2026
   end
 
-  it "competência com parcela inicial 4: a parcela 4 consome o mês da compra (AC 11)" do
+  it "competence with first installment 4: installment 4 consumes the purchase month (AC 11)" do
     purchase = InstallmentPurchase.create!(
       name: "sofá", total_cents: 100_000, installments_count: 10, first_installment: 4,
       date: Date.new(2026, 3, 10), card:, category: category("casa")
@@ -33,7 +33,7 @@ RSpec.describe "Competence e StatementSet" do
     expect(months.last).to eq(Date.new(2026, 9, 1))
   end
 
-  it "agrupa gastos do cartão por fatura e soma o total certo" do
+  it "groups the card's expenses by statement and sums the right total" do
     a = credit_expense(20_000, Date.new(2026, 3, 4))
     b = credit_expense(10_000, Date.new(2026, 3, 4))
     c = credit_expense(5_000, Date.new(2026, 3, 6))
@@ -47,7 +47,7 @@ RSpec.describe "Competence e StatementSet" do
     expect(groups[april]).to contain_exactly(c)
   end
 
-  it "AC 14: faturas de dois cartões vencendo no mesmo mês aparecem juntas em due_in" do
+  it "AC 14: statements from two cards due in the same month appear together in due_in" do
     card_b = create_card(name: "Roxo", closing_day: 5, due_day: 12)
     credit_expense(120_000, Date.new(2026, 3, 4))
     credit_expense(80_000, Date.new(2026, 3, 4), on: card_b)
@@ -56,8 +56,8 @@ RSpec.describe "Competence e StatementSet" do
     expect(due.keys.map { |s| s.card.id }).to contain_exactly(card.id, card_b.id)
   end
 
-  it "for_card agrupa as parcelas de uma compra em faturas distintas e consecutivas, " \
-     "e a competência diverge do mês de vencimento" do
+  it "for_card groups a purchase's installments into distinct, consecutive statements, " \
+     "and the competence diverges from the due month" do
     purchase = InstallmentPurchase.create!(
       name: "sofá", total_cents: 100_000, installments_count: 10,
       date: Date.new(2026, 3, 10), card:, category: category("casa")
@@ -69,36 +69,35 @@ RSpec.describe "Competence e StatementSet" do
       group_expenses.each { |expense| acc[expense.id] = statement }
     end
 
-    # Fechamento dia 5 / vencimento dia 12, com o ajuste de dia útil do
-    # Calendar (Task 7) já aplicado — verificado via ruby -e antes de escrever
-    # o teste.
+    # Closing day 5 / due day 12, with Calendar's business-day adjustment
+    # (Task 7) already applied — verified via ruby -e before writing the test.
     expected_due_dates = [
-      Date.new(2026, 4, 13), # abr/12 cai domingo -> avança p/ segunda 13
+      Date.new(2026, 4, 13), # Apr/12 falls on Sunday -> moves to Monday 13
       Date.new(2026, 5, 12),
       Date.new(2026, 6, 12),
-      Date.new(2026, 7, 13), # jul/12 cai domingo -> avança p/ segunda 13
+      Date.new(2026, 7, 13), # Jul/12 falls on Sunday -> moves to Monday 13
       Date.new(2026, 8, 12),
-      Date.new(2026, 9, 14), # set/12 cai sábado -> avança p/ segunda 14
+      Date.new(2026, 9, 14), # Sep/12 falls on Saturday -> moves to Monday 14
       Date.new(2026, 10, 12),
       Date.new(2026, 11, 12),
-      Date.new(2026, 12, 14), # dez/12 cai sábado -> avança p/ segunda 14
+      Date.new(2026, 12, 14), # Dec/12 falls on Saturday -> moves to Monday 14
       Date.new(2027, 1, 12)
     ]
 
     actual_due_dates = expenses.map { |expense| statement_by_expense.fetch(expense.id).effective_due }
     expect(actual_due_dates).to eq(expected_due_dates)
-    expect(actual_due_dates.uniq.size).to eq(10) # uma fatura distinta por parcela, nenhuma colisão
+    expect(actual_due_dates.uniq.size).to eq(10) # one distinct statement per installment, no collision
 
     first_installment = expenses.first
     first_statement = statement_by_expense.fetch(first_installment.id)
     competence_month = Budgeting::Competence.month_of(first_installment)
     due_month = first_statement.effective_due.beginning_of_month
-    expect(competence_month).to eq(Date.new(2026, 3, 1)) # consome março (mês da compra)
-    expect(due_month).to eq(Date.new(2026, 4, 1)) # mas só vence em abril
-    expect(competence_month).not_to eq(due_month) # competência e vencimento divergem de propósito
+    expect(competence_month).to eq(Date.new(2026, 3, 1)) # consumes March (the purchase month)
+    expect(due_month).to eq(Date.new(2026, 4, 1)) # but is only due in April
+    expect(competence_month).not_to eq(due_month) # competence and due date diverge on purpose
   end
 
-  it "for_card retorna vazio para um cartão sem gastos no crédito" do
+  it "for_card returns empty for a card with no credit expenses" do
     Expense.create!(name: "pix mercado", amount_cents: 5_000, date: Date.new(2026, 3, 4),
                      payment_method: "debit", category: mercado)
     Expense.create!(name: "feira", amount_cents: 3_000, date: Date.new(2026, 3, 5),
@@ -106,13 +105,13 @@ RSpec.describe "Competence e StatementSet" do
     expect(Budgeting::StatementSet.for_card(card:)).to eq({})
   end
 
-  it "due_in retorna vazio para um mês sem nenhuma fatura vencendo" do
+  it "due_in returns empty for a month with no statement due" do
     credit_expense(20_000, Date.new(2026, 3, 4))
     expect(Budgeting::StatementSet.due_in(month: Date.new(2026, 1, 1))).to eq({})
   end
 
-  it "Fix 1: mudança de vigência dentro da janela mantém faturas de mesmo fechamento nominal em buckets separados" do
-    # vigência nova a partir de 10/03, estritamente entre as duas compras abaixo
+  it "Fix 1: a validity-window change within the window keeps statements with the same nominal closing in separate buckets" do
+    # new validity window from 10/03, strictly between the two purchases below
     card.card_schedules.create!(closing_day: 5, due_day: 1, valid_from: Date.new(2026, 3, 10))
 
     before_change = credit_expense(90_000, Date.new(2026, 3, 8))
@@ -120,7 +119,7 @@ RSpec.describe "Competence e StatementSet" do
 
     groups = Budgeting::StatementSet.for_card(card:)
 
-    # ambas caem no mesmo fechamento nominal — é o cenário que colidia antes do fix
+    # both fall on the same nominal closing — the scenario that collided before the fix
     expect(groups.keys.map(&:nominal_closing).uniq).to eq([Date.new(2026, 4, 5)])
     expect(groups.keys.size).to eq(2)
 

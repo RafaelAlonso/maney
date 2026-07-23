@@ -3,7 +3,7 @@ require "rails_helper"
 RSpec.describe "Home", type: :request do
   before { create_setting!; create_reserved_categories! }
 
-  it "shows the saldo placeholder row and one row per category with its budget" do
+  it "shows the 'saldo' placeholder row and one row per category with its budget" do
     category = Category.create!(name: "mercado")
     Budget.create!(category:, month: Date.new(2026, 3, 1), amount_cents: 90_000)
     get root_path(month: "2026-03")

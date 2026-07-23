@@ -1,15 +1,14 @@
 module Budgeting
-  # Vigência dos dias do cartão em efeito numa data. Editar os dias do
-  # cartão = nova linha em card_schedules valendo da janela aberta em
-  # diante; faturas fechadas seguem sendo derivadas da vigência antiga.
+  # The card's day settings in effect on a date. Editing the card's days = a new
+  # row in card_schedules effective from the open window onward; closed
+  # statements stay derived from the old validity window.
   #
-  # A consulta é sempre refeita: nada aqui é memoizado. Um cache de processo
-  # chegou a ser escrito e foi revertido — ele servia vigência velha depois
-  # de qualquer escrita que não passasse pelos callbacks do model
-  # (update_all, migração de dados, correção pelo console), ou seja, dinheiro
-  # errado a partir de código de aparência correta. Se o custo por consulta
-  # virar problema quando houver tela, memoize por derivação (um memo
-  # passado adiante por StatementSet/MonthSummary), nunca em estado global.
+  # The query is always redone: nothing here is memoized. A process cache was
+  # once written and reverted — it served a stale validity window after any write
+  # that skipped the model callbacks (update_all, a data migration, a console
+  # fix), i.e. wrong money out of correct-looking code. If the per-query cost
+  # becomes a problem once there's a screen, memoize by derivation (a memo passed
+  # along by StatementSet/MonthSummary), never in global state.
   Schedule = Data.define(:closing_day, :due_day, :valid_from) do
     def self.for(card:, date:)
       row = card.card_schedules.where(valid_from: ..date).order(valid_from: :desc).first ||

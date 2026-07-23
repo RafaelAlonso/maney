@@ -6,11 +6,11 @@ class SettingsController < ApplicationController
     @initial_balance_input = BrlMoney.format(@setting.initial_balance_cents)
   end
 
-  # initial_balance_cents ancora o Budgeting::BalanceChain do app inteiro —
-  # todo saldo carregado de mês a mês descende dele. Um valor que não parseia
-  # não pode virar 0 em silêncio (era o bug: BrlMoney.parse(...) || 0), por
-  # isso o corte acontece aqui, antes de qualquer assign_attributes/save,
-  # igual ao save_budget de CategoriesController.
+  # initial_balance_cents anchors the whole app's Budgeting::BalanceChain — every
+  # month-to-month carried balance descends from it. A value that doesn't parse
+  # must not silently become 0 (that was the bug: BrlMoney.parse(...) || 0), so
+  # the cutoff happens here, before any assign_attributes/save, just like
+  # CategoriesController's save_budget.
   def update
     @setting = Setting.instance
     @first_month_input = params[:setting][:first_month]

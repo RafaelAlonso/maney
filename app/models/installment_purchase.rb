@@ -5,9 +5,9 @@ class InstallmentPurchase < ApplicationRecord
 
   validates :name, presence: true
   validates :total_cents, numericality: { only_integer: true, greater_than: 0 }
-  # 120 = dez anos de parcelas mensais — bem além dos 12x/24x que os cartões
-  # brasileiros oferecem de fato, mas o suficiente para barrar um dígito
-  # sobrando (1200 no lugar de 120) sem incomodar ninguém de verdade.
+  # 120 = ten years of monthly installments — well beyond the 12x/24x that
+  # Brazilian cards actually offer, but enough to catch a stray extra digit
+  # (1200 instead of 120) without getting in anyone's way.
   validates :installments_count, numericality: {
     only_integer: true, greater_than_or_equal_to: 2, less_than_or_equal_to: 120,
     message: "deve ter entre 2 e 120 parcelas"
@@ -21,10 +21,10 @@ class InstallmentPurchase < ApplicationRecord
 
   after_create :generate_installments
 
-  # Recalcula a série inteira após edição — apaga e regenera pelo motor.
-  # A transação vive aqui, não em quem chama: quem destrói e recria é quem
-  # tem que garantir que uma falha no meio do caminho não deixe a série pela
-  # metade — não dá para confiar que todo chamador vai lembrar de embrulhar.
+  # Recomputes the whole series after an edit — wipes and regenerates via the
+  # engine. The transaction lives here, not in the caller: whoever destroys and
+  # recreates is who must guarantee that a mid-way failure doesn't leave the
+  # series half-built — you can't trust every caller to remember to wrap it.
   def regenerate_installments!
     transaction do
       expenses.destroy_all
@@ -32,20 +32,20 @@ class InstallmentPurchase < ApplicationRecord
     end
   end
 
-  # Atributos que `generate_installments` de fato consome: nome (compõe o
-  # nome de cada parcela), total e número de parcelas (dividem o valor via
-  # Budgeting::InstallmentSplit), parcela inicial (define o intervalo
-  # gerado) e cartão/categoria (copiados para cada gasto). `date` fica de
-  # fora de propósito — toda parcela nasce com `date: nil`; competência e
-  # atribuição de fatura são derivadas depois a partir da data da compra
-  # (Budgeting::Competence, Budgeting::StatementAttribution), não
-  # armazenadas na linha. Mudar a data da compra muda como as parcelas já
-  # existentes são *lidas*, não o que foi *gravado* nelas — então não é um
-  # motivo para destruir e recriar a série.
+  # Attributes that `generate_installments` actually consumes: name (composes
+  # each installment's name), total and installment count (split the amount via
+  # Budgeting::InstallmentSplit), first installment (defines the generated
+  # range) and card/category (copied onto each expense). `date` is left out on
+  # purpose — every installment is born with `date: nil`; competence and
+  # statement attribution are derived later from the purchase date
+  # (Budgeting::Competence, Budgeting::StatementAttribution), not stored on the
+  # row. Changing the purchase date changes how the existing installments are
+  # *read*, not what was *written* to them — so it's not a reason to destroy and
+  # recreate the series.
   SERIES_INPUT_ATTRIBUTES = %w[name total_cents installments_count first_installment card_id category_id].freeze
 
-  # Chamar depois de `assign_attributes` e antes de salvar: `changed` só
-  # reflete a edição pendente até o save persistir e limpar o dirty state.
+  # Call after `assign_attributes` and before saving: `changed` only reflects
+  # the pending edit until the save persists and clears the dirty state.
   def series_inputs_changed?
     changed.intersect?(SERIES_INPUT_ATTRIBUTES)
   end

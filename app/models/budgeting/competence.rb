@@ -1,6 +1,6 @@
 module Budgeting
-  # Mês de competência de um gasto: o mês da compra; parcela k consome o
-  # k-ésimo mês a partir do mês da compra (âncora = primeira parcela criada).
+  # Competence month of an expense: the purchase month; installment k consumes
+  # the k-th month from the purchase month (anchor = first installment created).
   module Competence
     module_function
 

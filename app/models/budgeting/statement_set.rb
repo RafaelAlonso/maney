@@ -1,5 +1,5 @@
 module Budgeting
-  # Faturas derivadas dos gastos lançados — só existe fatura onde existe gasto.
+  # Statements derived from the entered expenses — a statement exists only where an expense does.
   module StatementSet
     module_function
 

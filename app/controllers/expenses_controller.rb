@@ -23,9 +23,9 @@ class ExpensesController < ApplicationController
 
   def update
     @expense = Expense.find(params[:id])
-    # Precisa ser lido antes de `update`: se for uma parcela, a série inteira
-    # é destruída e regenerada, e este número é a única forma de reencontrar
-    # depois "a mesma parcela" que o usuário abriu (ver `month_of`).
+    # Must be read before `update`: if it's an installment, the whole series is
+    # destroyed and regenerated, and this number is the only way to find again
+    # afterward "the same installment" the user opened (see `month_of`).
     original_installment_number = @expense.installment_number
     @entry = ExpenseEntry.new(entry_params)
     if @entry.update(source_for(@expense))
@@ -48,12 +48,12 @@ class ExpensesController < ApplicationController
 
   private
 
-  # Sobrescreve o handler genérico de `ApplicationController`: aqui, e só
-  # aqui, o id obsoleto tem uma causa concreta e explicável — editar uma
-  # parcela destrói e regenera a série inteira, então um link `/expenses/:id`
-  # que ficou aberto em outra aba pode passar a apontar para uma parcela que
-  # não existe mais. Fora deste controller (ex.: `CardsController`) essa
-  # explicação não se aplica e não deve aparecer.
+  # Overrides `ApplicationController`'s generic handler: here, and only here, the
+  # stale id has a concrete, explainable cause — editing an installment destroys
+  # and regenerates the whole series, so an `/expenses/:id` link left open in
+  # another tab can start pointing at an installment that no longer exists.
+  # Outside this controller (e.g. `CardsController`) that explanation doesn't
+  # apply and must not appear.
   def record_not_found
     redirect_to root_path,
                 alert: "Este registro não existe mais — editar uma parcela recalcula a compra inteira " \
@@ -62,17 +62,17 @@ class ExpensesController < ApplicationController
 
   def source_for(expense) = expense.installment? ? expense.installment_purchase : expense
 
-  # Para um gasto avulso, `record.date` já é a data certa: `ExpenseEntry#update`
-  # reatribui e persiste o mesmo objeto, então `record` reflete o valor
-  # recém-salvo. Para uma compra parcelada, `record.date` é a data da COMPRA —
-  # ela só coincide com a competência da parcela editada quando essa parcela é
-  # a de número `first_installment`; nos outros casos redirecionaria para um
-  # mês que pode não conter parcela nenhuma da série (brief task-6, ponto 5).
-  # Em vez disso, relocaliza a parcela original (pelo número, na série já
-  # regenerada) e usa a competência dela de verdade. Se a edição encolheu a
-  # série e essa parcela não existe mais, cai na primeira parcela restante —
-  # o mesmo mês que o comportamento ingênuo já dava quando a parcela editada
-  # era a âncora.
+  # For a standalone expense, `record.date` is already the right date:
+  # `ExpenseEntry#update` reassigns and persists the same object, so `record`
+  # reflects the just-saved value. For an installment purchase, `record.date` is
+  # the PURCHASE's date — it only coincides with the edited installment's
+  # competence when that installment is the one numbered `first_installment`; in
+  # the other cases it would redirect to a month that may contain no installment
+  # of the series at all (brief task-6, point 5). Instead, it relocates the
+  # original installment (by number, in the already-regenerated series) and uses
+  # its real competence. If the edit shrank the series and that installment no
+  # longer exists, it falls back to the first remaining installment — the same
+  # month the naive behavior already gave when the edited installment was the anchor.
   def month_of(record, original_installment_number = nil)
     return record.date&.strftime("%Y-%m") unless record.is_a?(InstallmentPurchase)
     expenses = record.expenses.order(:installment_number).to_a

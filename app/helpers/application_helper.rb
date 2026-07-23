@@ -1,18 +1,18 @@
 module ApplicationHelper
-  # O sinal vem antes do "R$", como em qualquer app bancário brasileiro:
-  # saldo negativo é um número que se lê de relance, e um "-" escondido depois
-  # do prefixo é fácil de não ver. Saldo carregado e saldo inicial podem ser
-  # negativos, então esta é a forma que as telas mostram de verdade.
+  # The sign comes before the "R$", as in any Brazilian banking app: a negative
+  # balance is a number read at a glance, and a "-" hidden after the prefix is
+  # easy to miss. The carried balance and the initial balance can be negative, so
+  # this is how the screens actually show it.
   def brl(cents)
     return "—" if cents.nil?
     return "-R$ #{BrlMoney.format(cents.abs)}" if cents.negative?
     "R$ #{BrlMoney.format(cents)}"
   end
 
-  # Única fonte para os rótulos de método de pagamento — usada pelo form de
-  # gasto (radios) e pela linha de gasto (`expenses/_row`, reaproveitada por
-  # categories#show). Repetir este hash em cada view é como o Task 6 achou o
-  # form original: a mesma tradução transcrita três vezes.
+  # Single source for the payment-method labels — used by the expense form
+  # (radios) and the expense row (`expenses/_row`, reused by categories#show).
+  # Repeating this hash in every view is how Task 6 found the original form: the
+  # same translation transcribed three times.
   PAYMENT_METHOD_LABELS = { "credit" => "crédito", "debit" => "débito", "cash" => "dinheiro" }.freeze
 
   def payment_method_labels = PAYMENT_METHOD_LABELS

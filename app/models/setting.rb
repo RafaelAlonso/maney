@@ -14,9 +14,9 @@ class Setting < ApplicationRecord
     errors.add(:base, "já existe uma configuração") if Setting.exists?
   end
 
-  # Mover first_month para depois de um lançamento já existente faria a
-  # cadeia de saldos (BalanceChain) parar de contar esse lançamento em
-  # silêncio. Mover para uma data anterior é inofensivo e continua livre.
+  # Moving first_month past an existing entry would silently make the balance
+  # chain (BalanceChain) stop counting that entry. Moving it to an earlier date
+  # is harmless and stays unrestricted.
   def first_month_not_after_existing_entries
     return if first_month.nil?
 

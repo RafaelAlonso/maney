@@ -47,17 +47,16 @@ RSpec.describe "Cards", type: :request do
     expect(card.card_schedules.count).to eq 1
   end
 
-  # Azul (helper default) fecha dia 5, vence dia 12, primeira vigência em
-  # 01/03/2026. Em 21/07/2026 a janela aberta é [03/07, 05/08) (ver
-  # spec/models/card_spec.rb). A primeira correção adota o dia de fechamento
-  # 20: sob esse dia, a fatura de julho fecha em 20/07 — ANTES de hoje
-  # (21/07) — então a janela que contém hoje passa a ser [20/07, 20/08).
-  # A segunda correção do mesmo dia cai nessa janela nova e por isso empilha
-  # uma linha em vez de amendar a de 03/07: amendar reabriria uma fatura já
-  # fechada (20/07). O comportamento "amenda a mesma linha" (ver
-  # spec/models/card_spec.rb) continua coberto para edições que não fecham
-  # fatura nenhuma entre si; não duplicamos esse caso aqui.
-  it "editar duas vezes no mesmo dia cria vigência nova quando a primeira já fechou uma fatura" do
+  # Azul (helper default) closes on day 5, is due on day 12, first validity
+  # window on 01/03/2026. On 21/07/2026 the open window is [03/07, 05/08) (see
+  # spec/models/card_spec.rb). The first correction adopts closing day 20: under
+  # that day, July's statement closes on 20/07 — BEFORE today (21/07) — so the
+  # window containing today becomes [20/07, 20/08). The second correction on the
+  # same day lands in that new window and so stacks a row instead of amending the
+  # 03/07 one: amending would reopen an already-closed statement (20/07). The
+  # "amends the same row" behavior (see spec/models/card_spec.rb) stays covered
+  # for edits that close no statement between them; we don't duplicate that case here.
+  it "editing twice on the same day creates a new validity window when the first already closed a statement" do
     travel_to(Time.zone.local(2026, 7, 21, 10, 0, 0)) do
       card = create_card!
       patch card_path(card), params: { card: { name: "Azul", closing_day: 20, due_day: 27 } }
@@ -67,15 +66,15 @@ RSpec.describe "Cards", type: :request do
     end
   end
 
-  # Azul (helper default) fecha dia 5, vence dia 12, primeira vigência em
-  # 01/03/2026. Em 21/07/2026 a janela aberta é [03/07, 05/08). A primeira
-  # correção adota o dia de fechamento 28 — ainda por vir dentro da janela —
-  # então não fecha fatura nenhuma e cria uma linha nova em 03/07 (ver
-  # spec/models/card_spec.rb, "duas correções no mesmo dia amendam a mesma
-  # linha"). A segunda correção cai na MESMA janela e por isso reaproveita
-  # essa linha já persistida — é o cenário que `Card#reschedule` documenta
-  # como "pode vir persistida" e que `all?(&:valid?)` mascara via
-  # short-circuit quando o nome também está inválido.
+  # Azul (helper default) closes on day 5, is due on day 12, first validity
+  # window on 01/03/2026. On 21/07/2026 the open window is [03/07, 05/08). The
+  # first correction adopts closing day 28 — still upcoming within the window —
+  # so it closes no statement and creates a new row on 03/07 (see
+  # spec/models/card_spec.rb, "two corrections on the same day amend the same
+  # row"). The second correction lands in the SAME window and so reuses that
+  # already-persisted row — the scenario `Card#reschedule` documents as "can come
+  # back persisted" and that `all?(&:valid?)` masks via short-circuit when the
+  # name is also invalid.
   it "reports both the name error and the schedule's own error when a persisted schedule row is dirtied together with an invalid name (Fix 2)" do
     travel_to(Time.zone.local(2026, 7, 21, 10, 0, 0)) do
       card = create_card!
@@ -108,13 +107,13 @@ RSpec.describe "Cards", type: :request do
   end
 
   # Fix 1 (task-6 review pass): the app-wide `record_not_found` rescue used to
-  # carry `ExpensesController`'s parcela-specific explanation ("editar uma
+  # carry `ExpensesController`'s installment-specific explanation ("editar uma
   # parcela recalcula a compra inteira...") for every controller, including
   # this one, where it's simply false — a stale card id has nothing to do
   # with installments. Paired with `spec/requests/expenses_spec.rb`'s
-  # "parcela-aware alert" example, which asserts that same text IS present
+  # "installment-aware alert" example, which asserts that same text IS present
   # there.
-  it "redirects with a neutral alert (no parcela-specific wording) when the card id no longer exists (Fix 1)" do
+  it "redirects with a neutral alert (no installment-specific wording) when the card id no longer exists (Fix 1)" do
     stale_id = Card.maximum(:id).to_i + 1_000
     get edit_card_path(stale_id)
     expect(response).to redirect_to(root_path)

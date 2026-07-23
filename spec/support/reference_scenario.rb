@@ -1,5 +1,5 @@
-# Cenário de referência das stories: cartão Azul fecha dia 5, vence dia 12,
-# ano 2026. Categorias reservadas conforme seeds.
+# Reference scenario from the stories: card Azul closes on day 5, is due on day
+# 12, year 2026. Reserved categories per the seeds.
 module ReferenceScenario
   def create_card(name: "Azul", closing_day: 5, due_day: 12, valid_from: Date.new(2026, 1, 1))
     card = Card.create!(name:)

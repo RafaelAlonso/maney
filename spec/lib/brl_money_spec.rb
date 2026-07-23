@@ -10,7 +10,7 @@ RSpec.describe BrlMoney do
     it { expect(BrlMoney.parse("")).to be_nil }
     it { expect(BrlMoney.parse(nil)).to be_nil }
 
-    context "quando o ponto é ambíguo entre decimal e milhar (sem vírgula)" do
+    context "when the dot is ambiguous between decimal and thousands (no comma)" do
       it { expect(BrlMoney.parse("12.34")).to eq 1_234 }
       it { expect(BrlMoney.parse("1234.56")).to eq 123_456 }
       it { expect(BrlMoney.parse("12.3")).to eq 1_230 }

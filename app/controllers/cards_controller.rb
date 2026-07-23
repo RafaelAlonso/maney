@@ -17,11 +17,11 @@ class CardsController < ApplicationController
     if @card.save
       redirect_to cards_path, notice: "Cartão cadastrado."
     else
-      # `@card.save` invalida o schedule filho como efeito colateral do
-      # autosave e só deixa em @card.errors o genérico "Card schedules is
-      # invalid" — a mensagem específica ("Closing day is not included in
-      # the list") fica isolada em `schedule.errors`. Mescla para o usuário
-      # ver a causa e descarta o genérico, que não agrega nada depois disso.
+      # `@card.save` invalidates the child schedule as a side effect of the
+      # autosave and leaves only the generic "Card schedules is invalid" in
+      # @card.errors — the specific message ("Closing day is not included in
+      # the list") stays isolated in `schedule.errors`. Merge so the user sees
+      # the cause and drop the generic one, which adds nothing after that.
       @card.errors.merge!(schedule.errors)
       @card.errors.delete(:card_schedules)
       @days = card_params.slice(:closing_day, :due_day)
@@ -37,14 +37,14 @@ class CardsController < ApplicationController
   def update
     @card.name = card_params[:name]
     schedule = @card.reschedule(closing_day: card_params[:closing_day], due_day: card_params[:due_day])
-    # Não usa `[@card, *schedule].all?(&:valid?)`: `Enumerable#all?`
-    # short-circuita, então se @card já for inválido `schedule.valid?` nunca
-    # roda. Isso passa despercebido quando `schedule` é uma linha nova (o
-    # autosave de `@card.valid?` valida os filhos não salvos como efeito
-    # colateral), mas `reschedule` pode devolver uma linha já persistida e
-    # suja (ver Card#reschedule) — para essa, autosave não valida sem
-    # `autosave: true`. Chama os dois `valid?` sempre, sem depender de
-    # short-circuit nem desse efeito colateral.
+    # Don't use `[@card, *schedule].all?(&:valid?)`: `Enumerable#all?`
+    # short-circuits, so if @card is already invalid `schedule.valid?` never
+    # runs. This goes unnoticed when `schedule` is a new row (the autosave of
+    # `@card.valid?` validates the unsaved children as a side effect), but
+    # `reschedule` can return an already-persisted, dirty row (see
+    # Card#reschedule) — for that one, autosave doesn't validate without
+    # `autosave: true`. Call both `valid?` always, without relying on
+    # short-circuiting or on that side effect.
     card_valid = @card.valid?
     schedule_valid = schedule.nil? || schedule.valid?
     if card_valid && schedule_valid
@@ -52,13 +52,13 @@ class CardsController < ApplicationController
       redirect_to cards_path, notice: "Cartão atualizado."
     else
       @card.errors.merge!(schedule.errors) if schedule
-      # Mesmo motivo do `create`: quando a linha é nova, o autosave de
-      # `@card.valid?` planta o genérico "Card schedules is invalid" ao lado
-      # da mensagem específica. Uma causa por vez.
+      # Same reason as `create`: when the row is new, the autosave of
+      # `@card.valid?` plants the generic "Card schedules is invalid" next to
+      # the specific message. One cause at a time.
       @card.errors.delete(:card_schedules)
-      # `reschedule` pode ter sujado uma linha dentro da associação
-      # `card_schedules` já carregada; recarrega para o form e a lista não
-      # mostrarem dias que não foram de fato salvos.
+      # `reschedule` may have dirtied a row inside the already-loaded
+      # `card_schedules` association; reload so the form and the list don't show
+      # days that weren't actually saved.
       @card.reload
       @card.name = card_params[:name]
       @days = card_params.slice(:closing_day, :due_day)
@@ -72,10 +72,10 @@ class CardsController < ApplicationController
     elsif @card.destroy
       redirect_to cards_path, notice: "Cartão excluído."
     else
-      # Hoje inatingível através do guard acima (que é completo contra o
-      # modelo atual), mas `dependent: :restrict_with_error` faz `destroy`
-      # devolver `false` em vez de levantar — sem este ramo, uma falha real
-      # anunciaria sucesso enquanto o registro continua existindo.
+      # Unreachable today through the guard above (which is complete against the
+      # current model), but `dependent: :restrict_with_error` makes `destroy`
+      # return `false` instead of raising — without this branch, a real failure
+      # would announce success while the record still exists.
       redirect_to cards_path, alert: @card.errors.full_messages.to_sentence
     end
   end

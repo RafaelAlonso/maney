@@ -10,7 +10,7 @@ RSpec.describe "Settings", type: :request do
   end
 
   it "updates first month and initial balance (AC 18)" do
-    patch settings_path, params: { setting: { first_month: "2026-02", initial_balance: "-250,00" } }
+    patch settings_path, params: { setting: { first_month: "2026-02", initial_balance: "-250,00", alert_threshold_percent: "80" } }
     expect(Setting.instance.first_month).to eq Date.new(2026, 2, 1)
     expect(Setting.instance.initial_balance_cents).to eq(-25_000)
   end
@@ -37,7 +37,7 @@ RSpec.describe "Settings", type: :request do
   end
 
   it "accepts a legitimate zero initial balance" do
-    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "0,00" } }
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "0,00", alert_threshold_percent: "80" } }
     expect(response).to redirect_to(edit_settings_path)
     expect(Setting.instance.initial_balance_cents).to eq 0
   end
@@ -47,5 +47,17 @@ RSpec.describe "Settings", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(Setting.instance.first_month).to eq Date.new(2026, 3, 1)
     expect(Setting.instance.initial_balance_cents).to eq 10_000
+  end
+
+  it "persists a valid alert threshold" do
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "100,00", alert_threshold_percent: "90" } }
+    expect(response).to redirect_to(edit_settings_path)
+    expect(Setting.instance.alert_threshold_percent).to eq(90)
+  end
+
+  it "rejects a threshold outside 1..100" do
+    patch settings_path, params: { setting: { first_month: "2026-03", initial_balance: "100,00", alert_threshold_percent: "150" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(Setting.instance.alert_threshold_percent).to eq(80)
   end
 end

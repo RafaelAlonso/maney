@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_07_21_154744) do
+ActiveRecord::Schema[8.1].define(version: 2026_07_23_184516) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -88,6 +88,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_07_21_154744) do
   end
 
   create_table "settings", force: :cascade do |t|
+    t.integer "alert_threshold_percent", default: 80, null: false
     t.datetime "created_at", null: false
     t.date "first_month", null: false
     t.integer "initial_balance_cents", default: 0, null: false

@@ -64,6 +64,12 @@ RSpec.describe "Home month view", type: :request do
     expect(response.body).to include("04/2026")
   end
 
+  it "clamps a month before the first month up to the first month" do
+    get root_path(month: "2025-01")
+    expect(response.body).to include("03/2026")
+    expect(response.body).not_to include("01/2025")
+  end
+
   it "shows the FAB with both actions" do
     get root_path
     expect(response.body).to include(new_expense_path).and include(new_income_path)

@@ -11,4 +11,5 @@ Rails.application.routes.draw do
   resources :categories
   resources :incomes, except: :show
   resources :expenses, except: :show
+  resources :budgets, only: :create
 end

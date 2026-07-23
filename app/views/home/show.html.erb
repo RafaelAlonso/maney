@@ -1,16 +1,8 @@
+<%# app/views/home/show.html.erb %>
 <%= render "shared/month_nav", path_helper: ->(month:) { root_path(month:) } %>
-<div class="bg-white rounded border divide-y">
-  <div class="p-3 flex items-center justify-between bg-gray-50">
-    <span class="font-medium">saldo</span>
-    <span class="text-gray-400">— <span class="text-xs">(em breve)</span></span>
-  </div>
+<%= render "home/balances", summary: @summary %>
+<div class="bg-white rounded border divide-y mt-4">
   <% @categories.each do |category| %>
-    <%= link_to category_path(category, month: current_month.strftime("%Y-%m")),
-          class: "p-3 flex items-center justify-between hover:bg-gray-50" do %>
-      <span><%= category.name %></span>
-      <span class="text-sm text-gray-500">
-        orçado: <%= @budgets[category.id] ? brl(@budgets[category.id].amount_cents) : "—" %>
-      </span>
-    <% end %>
+    <%= render "home/category_row", category:, summary: @summary %>
   <% end %>
 </div>

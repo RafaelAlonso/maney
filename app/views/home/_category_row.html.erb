@@ -1,0 +1,11 @@
+<%# app/views/home/_category_row.html.erb — locals: category, summary %>
+<% spent = summary.spent_cents(category) %>
+<% budgeted = summary.budgeted_cents(category) %>
+<% over = spent > budgeted %>
+<div id="<%= dom_id(category, :row) %>" class="p-3 flex items-center justify-between">
+  <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
+        class: "hover:underline" %>
+  <span class="text-sm <%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
+    gasto <%= brl(spent) %> / orçado <%= brl(budgeted) %>
+  </span>
+</div>

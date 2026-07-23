@@ -1,0 +1,15 @@
+<%# app/views/home/_balances.html.erb — locals: summary %>
+<div id="balances" class="bg-white rounded border divide-y">
+  <div class="p-3 flex items-center justify-between">
+    <span class="font-medium">saldo estimado</span>
+    <span class="<%= "text-red-700" if summary.estimated_balance_cents.negative? %>">
+      <%= brl(summary.estimated_balance_cents) %>
+    </span>
+  </div>
+  <div class="p-3 flex items-center justify-between bg-gray-50">
+    <span class="font-medium">saldo atual</span>
+    <span class="<%= "text-red-700" if summary.current_balance_cents.negative? %>">
+      <%= brl(summary.current_balance_cents) %>
+    </span>
+  </div>
+</div>

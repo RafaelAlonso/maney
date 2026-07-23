@@ -27,11 +27,12 @@ module Budgeting
     end
 
     def budgeted_cents(category)
-      if category.credit_card?
-        credit_card_budgeted_cents
-      else
-        Budget.find_by(category:, month:)&.amount_cents || 0
-      end
+      return credit_card_budgeted_cents if category.credit_card?
+
+      budget = Budget.find_by(category:, month:)
+      return budget.amount_cents if budget
+
+      inherited_budget_cents(category)
     end
 
     def estimated_balance_cents
@@ -75,6 +76,20 @@ module Budgeting
       Expense.where(category:, date: nil).includes(:installment_purchase).sum do |expense|
         Competence.month_of(expense) == month ? expense.amount_cents : 0
       end
+    end
+
+    # Inherited budget: with no explicit Budget for the month, a category's
+    # budget is what it spent the previous month (including zero), held until the
+    # user sets one. The first month has nothing before it, so it inherits zero.
+    # `spent_cents` already counts projected installments, so future months chain
+    # naturally (June inherits May's projected spending) with no recursion —
+    # inheritance reads spending, never another month's budget.
+    def inherited_budget_cents(category)
+      previous = month << 1
+      first = Setting.instance&.first_month
+      return 0 if first.nil? || previous < first
+
+      MonthSummary.new(month: previous, today: @today).spent_cents(category)
     end
   end
 end

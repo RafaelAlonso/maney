@@ -107,4 +107,28 @@ RSpec.describe Budgeting::MonthSummary do
     expect(summary(Date.new(2026, 12, 1)).spent_cents(category("casa"))).to eq(10_000)
     expect(summary(Date.new(2027, 1, 1)).spent_cents(category("casa"))).to eq(0)
   end
+
+  it "inherits the previous month's spending as this month's budget when none is set (AC 8)" do
+    debit(90_000, Date.new(2026, 3, 10), cat: mercado)
+    expect(summary(Date.new(2026, 4, 1)).budgeted_cents(mercado)).to eq(90_000)
+  end
+
+  it "lets an explicit budget prevail over inheritance, including an explicit zero (AC 8)" do
+    debit(90_000, Date.new(2026, 3, 10), cat: mercado)
+    Budget.create!(category: mercado, month: Date.new(2026, 4, 1), amount_cents: 0)
+    expect(summary(Date.new(2026, 4, 1)).budgeted_cents(mercado)).to eq(0)
+  end
+
+  it "inherits zero in the first month (nothing precedes it)" do
+    expect(summary.budgeted_cents(mercado)).to eq(0)
+  end
+
+  it "chains the inherited budget into a future month via projected installments (AC 11)" do
+    InstallmentPurchase.create!(
+      name: "sofá", total_cents: 100_000, installments_count: 10,
+      date: Date.new(2026, 3, 10), card:, category: category("casa")
+    )
+    # casa spends 10.000 every month Mar–Dec; May inherits April's 10.000
+    expect(summary(Date.new(2026, 5, 1)).budgeted_cents(category("casa"))).to eq(10_000)
+  end
 end

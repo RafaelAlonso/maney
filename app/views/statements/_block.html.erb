@@ -1,0 +1,20 @@
+<%# app/views/statements/_block.html.erb — locals: title:, rows:, card:
+    A block with no rows renders nothing at all: a card whose statements are all
+    closed must not show an empty "Em aberto" heading. %>
+<% if rows.any? %>
+  <h2 class="text-sm font-semibold text-gray-500 mt-4 mb-1"><%= title %></h2>
+  <ul class="divide-y bg-white rounded border">
+    <% rows.each do |row| %>
+      <li class="p-3 flex items-center justify-between gap-2">
+        <div>
+          <p class="font-medium">
+            <%= link_to statement_due_label(row.statement), card_statement_path(card, row.statement),
+                  class: "text-blue-600" %>
+          </p>
+          <p class="text-sm text-gray-500">compras de <%= statement_period_label(row) %></p>
+        </div>
+        <p class="font-medium shrink-0"><%= brl(row.total_cents) %></p>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

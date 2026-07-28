@@ -16,7 +16,7 @@ module Budgeting
     end
 
     def for_card(card:, memo: ScheduleMemo.new)
-      card.expenses.where(payment_method: "credit").includes(:installment_purchase)
+      card.expenses.where(payment_method: "credit").includes(:installment_purchase, :category)
           .group_by { |expense| statement_of(expense, memo:) }
     end
 
@@ -32,7 +32,7 @@ module Budgeting
     # implementation, and never process-global state.
     def labels_for(expenses)
       credit = expenses.select { |expense| expense.payment_method == "credit" }
-      wanted = credit.map(&:id)
+      wanted = credit.map(&:id).to_set
       credit.filter_map(&:card).uniq.each_with_object({}) do |card, labels|
         for_card(card:).each do |statement, card_expenses|
           card_expenses.each { |expense| labels[expense.id] = statement if wanted.include?(expense.id) }

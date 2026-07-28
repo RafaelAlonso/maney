@@ -12,6 +12,7 @@
         <p class="text-sm text-gray-500">fecha dia <%= schedule.closing_day %> · vence dia <%= schedule.due_day %></p>
       </div>
       <div class="flex gap-3 text-sm">
+        <%= link_to "faturas", card_statements_path(card), class: "text-blue-600" %>
         <%= link_to "editar", edit_card_path(card), class: "text-blue-600" %>
         <%= button_to "excluir", card_path(card), method: :delete, class: "text-red-600",
               data: { turbo_confirm: "Excluir o cartão #{card.name}?" } %>

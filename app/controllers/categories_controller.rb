@@ -8,6 +8,7 @@ class CategoriesController < ApplicationController
 
   def show
     @expenses = Budgeting::MonthEntries.expenses(month: current_month, category: @category)
+    @statements = Budgeting::StatementSet.labels_for(@expenses)
   end
 
   def new

@@ -1,6 +1,7 @@
 class ExpensesController < ApplicationController
   def index
     @expenses = Budgeting::MonthEntries.expenses(month: current_month)
+    @statements = Budgeting::StatementSet.labels_for(@expenses)
   end
 
   def new

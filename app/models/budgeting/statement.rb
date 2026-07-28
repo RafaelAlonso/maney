@@ -23,15 +23,22 @@ module Budgeting
 
     def effective_due = Calendar.effective_due(nominal_due)
 
+    # URL id: readable, stable across deep links, and part of the natural
+    # identity. Resolved back through Budgeting::CardStatements#find.
+    def to_param = nominal_closing.to_s
+
     def closed?(today:) = effective_closing <= today
     def open?(today:) = !closed?(today:)
 
-    def succ
+    # `memo:` is an optional Budgeting::ScheduleMemo, passed through only for
+    # this call's Schedule.for lookup — Statement never holds onto it.
+    def succ(memo: nil)
       next_cycle = cycle >> 1
       # Window N+1 opens exactly when window N closes, so the validity window in
       # effect for it is the one valid at that closing — not the 1st of the
       # calendar month, which a closing-day overflow can precede.
-      Statement.new(card:, cycle: next_cycle, schedule: Schedule.for(card:, date: effective_closing))
+      Statement.new(card:, cycle: next_cycle,
+                    schedule: Schedule.for(card:, date: effective_closing, memo:))
     end
 
     def ==(other)

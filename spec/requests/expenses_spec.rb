@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Expenses", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   before { create_setting!; create_reserved_categories! }
 
   let(:others) { Category.find_by!(role: "others") }
@@ -296,5 +298,29 @@ RSpec.describe "Expenses", type: :request do
     expect(purchase.expenses.pluck(:payment_method).uniq).to eq ["credit"]
     expect(purchase.category).to eq others
     expect(purchase.card).to eq card
+  end
+
+  it "labels each credit expense with its statement, linked to the statement (AC 3)" do
+    travel_to(Time.zone.local(2026, 3, 20, 10, 0, 0)) do
+      Expense.create!(name: "mercado", amount_cents: 20_000, payment_method: "credit",
+                      category: others, card:, date: Date.new(2026, 3, 6))
+
+      get expenses_path(month: "2026-03")
+
+      expect(response.body).to include("vence 13/04")
+      expect(response.body).to include(card_statement_path(card, "2026-04-05"))
+    end
+  end
+
+  it "shows no statement label on expenses that are not on credit (AC 3)" do
+    travel_to(Time.zone.local(2026, 3, 20, 10, 0, 0)) do
+      Expense.create!(name: "padaria", amount_cents: 5_000, payment_method: "cash",
+                      category: others, date: Date.new(2026, 3, 6))
+
+      get expenses_path(month: "2026-03")
+
+      expect(response.body).to include("padaria")
+      expect(response.body).not_to include("vence")
+    end
   end
 end

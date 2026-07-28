@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   resource :settings, only: %i[edit update]
   resources :cards, except: :show do
     resource :migration, only: %i[new create], controller: "card_migrations"
+    resources :statements, only: %i[index show]
   end
   resources :categories
   resources :incomes, except: :show

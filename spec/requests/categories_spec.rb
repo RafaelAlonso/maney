@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Categories", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   before { create_setting!; create_reserved_categories! }
 
   let(:others) { Category.find_by!(role: "others") }
@@ -112,5 +114,19 @@ RSpec.describe "Categories", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(response.body).to include("cartão de crédito não aceita orçado manual")
     expect(Budget.where(category: cc).count).to eq 0
+  end
+
+  it "labels credit expenses with their statement in the category drill-down (AC 3)" do
+    travel_to(Time.zone.local(2026, 3, 20, 10, 0, 0)) do
+      card = create_card!(name: "Azul", closing_day: 5, due_day: 12)
+      mercado = Category.create!(name: "mercado")
+      Expense.create!(name: "feira", amount_cents: 20_000, payment_method: "credit",
+                      category: mercado, card:, date: Date.new(2026, 3, 6))
+
+      get category_path(mercado, month: "2026-03")
+
+      expect(response.body).to include("vence 13/04")
+      expect(response.body).to include(card_statement_path(card, "2026-04-05"))
+    end
   end
 end

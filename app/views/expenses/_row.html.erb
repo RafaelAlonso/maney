@@ -1,15 +1,21 @@
 <%# app/views/expenses/_row.html.erb — locals: expense:, show_delete: (bool),
-    show_category: (bool, default true)
+    show_category: (bool, default true), show_statement: (bool, default true),
+    statements: (Hash{expense_id => Statement}, default {})
     Reused by categories#show (Task 8) with show_delete: false and
     show_category: false — there it only makes sense to edit, not delete, from
     the category drill-down, and its name is already in the page's <h1>, so
-    repeating it on every row is just noise. %>
+    repeating it on every row is just noise. Statements#show reuses it with
+    show_statement: false for the same reason: the statement is that page's <h1>. %>
 <% show_category = local_assigns.fetch(:show_category, true) %>
+<% show_statement = local_assigns.fetch(:show_statement, true) %>
+<% statements = local_assigns.fetch(:statements, {}) %>
+<% statement = show_statement ? statements[expense.id] : nil %>
 <li class="p-3 flex items-center justify-between gap-2">
   <div>
     <p class="font-medium"><%= expense.name %></p>
     <p class="text-sm text-gray-500">
-      <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if show_category %>
+      <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
+      · <%= link_to statement_due_label(statement), card_statement_path(expense.card, statement), class: "text-blue-600" %><% end %><% if show_category %>
       · <%= expense.category.name %><% end %>
     </p>
   </div>

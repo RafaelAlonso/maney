@@ -4,6 +4,7 @@ class SettingsController < ApplicationController
     @reserved = Category.where.not(role: nil).order(:role)
     @first_month_input = @setting.first_month.strftime("%Y-%m")
     @initial_balance_input = BrlMoney.format(@setting.initial_balance_cents)
+    @alert_threshold_input = @setting.alert_threshold_percent
   end
 
   # initial_balance_cents anchors the whole app's Budgeting::BalanceChain — every
@@ -15,6 +16,7 @@ class SettingsController < ApplicationController
     @setting = Setting.instance
     @first_month_input = params[:setting][:first_month]
     @initial_balance_input = params[:setting][:initial_balance]
+    @alert_threshold_input = params[:setting][:alert_threshold_percent]
 
     balance_cents = BrlMoney.parse(@initial_balance_input)
     if balance_cents.nil?
@@ -24,7 +26,8 @@ class SettingsController < ApplicationController
     end
 
     @setting.assign_attributes(first_month: parse_month(@first_month_input),
-                               initial_balance_cents: balance_cents)
+                               initial_balance_cents: balance_cents,
+                               alert_threshold_percent: @alert_threshold_input)
     if @setting.save
       redirect_to edit_settings_path, notice: "Configurações salvas."
     else

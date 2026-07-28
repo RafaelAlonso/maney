@@ -13,6 +13,12 @@
     <%= f.text_field :initial_balance, value: @initial_balance_input,
           inputmode: "decimal", class: "border rounded p-2 w-full" %>
   </div>
+  <div>
+    <%= f.label :alert_threshold_percent, "Alerta de fatura (% do saldo)", class: "block text-sm mb-1" %>
+    <%= f.number_field :alert_threshold_percent, value: @alert_threshold_input, min: 1, max: 100,
+          class: "border rounded p-2 w-full" %>
+    <p class="text-xs text-gray-500 mt-1">Abaixo desse percentual do saldo atual, as faturas do próximo mês não geram alerta amarelo.</p>
+  </div>
   <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
 <% end %>
 

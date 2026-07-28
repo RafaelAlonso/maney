@@ -1,0 +1,33 @@
+<%# app/views/home/_category_row.html.erb — locals: category, summary; optional: error %>
+<% spent = summary.spent_cents(category) %>
+<% budgeted = summary.budgeted_cents(category) %>
+<% over = spent > budgeted %>
+<% error = local_assigns[:error] %>
+<% open = error.present? %>
+<div id="<%= dom_id(category, :row) %>" class="p-3 flex items-center justify-between"
+     data-controller="budget-edit">
+  <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
+        class: "hover:underline" %>
+  <div class="text-sm text-right">
+    <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
+      gasto <%= brl(spent) %> /
+    </span>
+    <% if category.credit_card? %>
+      <span class="text-gray-500">orçado <%= brl(budgeted) %></span>
+    <% else %>
+      <span data-budget-edit-target="display" data-action="click->budget-edit#edit"
+            class="cursor-pointer <%= over ? "text-red-700 font-medium" : "text-gray-500" %>"
+            <%= "hidden" if open %>>
+        orçado <%= brl(budgeted) %>
+      </span>
+      <%= form_with url: budgets_path, method: :post, class: "inline",
+            data: { budget_edit_target: "form" }, hidden: !open do |f| %>
+        <%= f.hidden_field :category_id, value: category.id %>
+        <%= f.hidden_field :month, value: summary.month.strftime("%Y-%m") %>
+        <%= f.text_field :budget_amount, value: BrlMoney.format(budgeted), inputmode: "decimal",
+              class: "border rounded p-1 w-24 text-sm", data: { budget_edit_target: "input" } %>
+      <% end %>
+      <% if error %><span class="block text-xs text-red-700"><%= error %></span><% end %>
+    <% end %>
+  </div>
+</div>

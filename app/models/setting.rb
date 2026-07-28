@@ -3,6 +3,8 @@ class Setting < ApplicationRecord
 
   validates :first_month, presence: true
   validates :initial_balance_cents, numericality: { only_integer: true }
+  validates :alert_threshold_percent,
+            numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: 100 }
   validate :single_row, on: :create
   validate :first_month_not_after_existing_entries
 

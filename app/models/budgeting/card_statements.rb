@@ -12,10 +12,15 @@ module Budgeting
     def initialize(card:, today: Date.current)
       @card = card
       @today = today
+      # One memo for this whole derivation: the card's validity windows are read
+      # once instead of once per day walked back from each statement's closing.
+      # It dies with this object, so nothing can be served a stale window later.
+      @memo = ScheduleMemo.new
     end
 
     def rows
-      @rows ||= StatementSet.for_card(card: @card).map { |statement, expenses| build_row(statement, expenses) }
+      @rows ||= StatementSet.for_card(card: @card, memo: @memo)
+                            .map { |statement, expenses| build_row(statement, expenses) }
     end
 
     def empty? = rows.empty?
@@ -57,7 +62,7 @@ module Budgeting
         # re-resolves the validity window at each closing, so the chain can move
         # backward and a traversal based on it misses the boundary. See the
         # comment on StatementAttribution.window_start.
-        period_start: StatementAttribution.window_start(card: @card, date: period_end),
+        period_start: StatementAttribution.window_start(card: @card, date: period_end, memo: @memo),
         period_end:
       )
     end

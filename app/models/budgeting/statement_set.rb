@@ -3,19 +3,21 @@ module Budgeting
   module StatementSet
     module_function
 
-    def statement_of(expense)
+    # `memo:` is an optional Budgeting::ScheduleMemo (see Budgeting::Schedule):
+    # supply one to share the card's validity windows across a derivation.
+    def statement_of(expense, memo: nil)
       if expense.installment?
         StatementAttribution.statement_for_installment(
-          purchase: expense.installment_purchase, number: expense.installment_number
+          purchase: expense.installment_purchase, number: expense.installment_number, memo:
         )
       else
-        StatementAttribution.statement_for(card: expense.card, date: expense.date)
+        StatementAttribution.statement_for(card: expense.card, date: expense.date, memo:)
       end
     end
 
-    def for_card(card:)
+    def for_card(card:, memo: ScheduleMemo.new)
       card.expenses.where(payment_method: "credit").includes(:installment_purchase)
-          .group_by { |expense| statement_of(expense) }
+          .group_by { |expense| statement_of(expense, memo:) }
     end
 
     # Statement labels for a list of expenses: {expense_id => Statement}, credit

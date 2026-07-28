@@ -102,6 +102,38 @@ RSpec.describe Budgeting::CardStatements do
     expect(row.period_end).to eq Date.new(2027, 1, 4)
   end
 
+  # Performance guard: attribution derives day by day, and each step used to hit
+  # the database for the card's validity window — so the query count grew with
+  # the number of rows (and with the length of each purchase period). The memo
+  # threaded through the derivation must keep it constant.
+  describe "query count" do
+    def count_queries
+      count = 0
+      counter = lambda do |_name, _start, _finish, _id, payload|
+        count += 1 unless payload[:name].in?(["SCHEMA", "TRANSACTION"]) || payload[:cached]
+      end
+      ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
+      count
+    end
+
+    def statements_for(months)
+      other = create_card(name: "Card #{months}")
+      months.times { |i| credit_expense(1_000, Date.new(2026, 1, 2) >> i, on: other) }
+      described_class.new(card: other, today: Date.new(2026, 3, 20))
+    end
+
+    it "does not grow with the number of statements" do
+      few = statements_for(2)
+      many = statements_for(12)
+
+      few_queries = count_queries { few.rows }
+      many_queries = count_queries { many.rows }
+
+      expect(many_queries).to eq(few_queries)
+      expect(many_queries).to be <= 10
+    end
+  end
+
   it "identifies a statement in a URL by its nominal closing date" do
     statement = Budgeting::StatementAttribution.statement_for(card:, date: Date.new(2026, 3, 6))
 

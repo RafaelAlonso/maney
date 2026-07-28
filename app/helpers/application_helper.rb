@@ -18,4 +18,26 @@ module ApplicationHelper
   def payment_method_labels = PAYMENT_METHOD_LABELS
 
   def payment_method_label(method) = PAYMENT_METHOD_LABELS[method]
+
+  # The statement's EFFECTIVE due date — never the nominal one. The year appears
+  # only when it differs from the current one, so a statement across the rollover
+  # (a 12x bought in December) can't be read as this year's, while the everyday
+  # label stays short.
+  def statement_due_label(statement, today: Date.current)
+    "vence #{statement_date(statement.effective_due, [statement.effective_due], today)}"
+  end
+
+  # The statement's purchase period: from the previous effective closing to the
+  # day before this one. Same year rule as the due label, applied to both ends
+  # together so the two dates always read in the same format.
+  def statement_period_label(row, today: Date.current)
+    dates = [row.period_start, row.period_end]
+    "#{statement_date(row.period_start, dates, today)} – #{statement_date(row.period_end, dates, today)}"
+  end
+
+  private
+
+  def statement_date(date, scope, today)
+    date.strftime(scope.all? { |other| other.year == today.year } ? "%d/%m" : "%d/%m/%Y")
+  end
 end

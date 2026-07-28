@@ -6,7 +6,7 @@
 <%= render "shared/month_nav", path_helper: ->(month:) { category_path(@category, month:) } %>
 <ul class="divide-y bg-white rounded border">
   <% @expenses.each do |expense| %>
-    <%= render "expenses/row", expense:, show_delete: false, show_category: false %>
+    <%= render "expenses/row", expense:, show_delete: false, show_category: false, statements: @statements %>
   <% end %>
   <% if @expenses.empty? %><li class="p-3 text-sm text-gray-500">Nenhum gasto nesta categoria no mês.</li><% end %>
 </ul>

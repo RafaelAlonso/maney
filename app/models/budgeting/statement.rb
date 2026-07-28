@@ -6,14 +6,10 @@ module Budgeting
   class Statement
     attr_reader :card, :cycle, :schedule
 
-    # `memo:` is an optional Budgeting::ScheduleMemo, carried only so that `succ`
-    # can resolve the next window without a query. It is not part of the
-    # identity: two statements are equal regardless of how they were derived.
-    def initialize(card:, cycle:, schedule:, memo: nil)
+    def initialize(card:, cycle:, schedule:)
       @card = card
       @cycle = cycle.beginning_of_month
       @schedule = schedule
-      @memo = memo
     end
 
     def nominal_closing = Calendar.nominal_date(cycle.year, cycle.month, schedule.closing_day)
@@ -34,13 +30,15 @@ module Budgeting
     def closed?(today:) = effective_closing <= today
     def open?(today:) = !closed?(today:)
 
-    def succ
+    # `memo:` is an optional Budgeting::ScheduleMemo, passed through only for
+    # this call's Schedule.for lookup — Statement never holds onto it.
+    def succ(memo: nil)
       next_cycle = cycle >> 1
       # Window N+1 opens exactly when window N closes, so the validity window in
       # effect for it is the one valid at that closing — not the 1st of the
       # calendar month, which a closing-day overflow can precede.
-      Statement.new(card:, cycle: next_cycle, memo: @memo,
-                    schedule: Schedule.for(card:, date: effective_closing, memo: @memo))
+      Statement.new(card:, cycle: next_cycle,
+                    schedule: Schedule.for(card:, date: effective_closing, memo:))
     end
 
     def ==(other)

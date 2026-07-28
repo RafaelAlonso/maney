@@ -3,7 +3,7 @@ module Budgeting
   # row in card_schedules effective from the open window onward; closed
   # statements stay derived from the old validity window.
   #
-  # The query is always redone: nothing here is memoized. A process cache was
+  # The query is redone on every call unless a memo is supplied. A process cache was
   # once written and reverted — it served a stale validity window after any write
   # that skipped the model callbacks (update_all, a data migration, a console
   # fix), i.e. wrong money out of correct-looking code. If the per-query cost

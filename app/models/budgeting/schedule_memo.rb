@@ -15,6 +15,8 @@ module Budgeting
 
     # The card's validity windows, oldest first — loaded once per card.
     def windows_for(card)
+      return card.card_schedules.order(:valid_from).to_a if card.id.nil?
+
       @windows[card.id] ||= card.card_schedules.order(:valid_from).to_a
     end
   end

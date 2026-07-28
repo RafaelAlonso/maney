@@ -12,7 +12,7 @@ module Budgeting
       schedule = Schedule.for(card:, date:, memo:)
       cycle = (date << 1).beginning_of_month
       loop do
-        statement = Statement.new(card:, cycle:, schedule:, memo:)
+        statement = Statement.new(card:, cycle:, schedule:)
         return statement if statement.effective_closing > date
         cycle = cycle >> 1
       end
@@ -40,7 +40,7 @@ module Budgeting
     # created) statements — a per-statement sequence, with no date of its own.
     def statement_for_installment(purchase:, number:, memo: nil)
       statement = statement_for(card: purchase.card, date: purchase.date, memo:)
-      (number - purchase.first_installment).times { statement = statement.succ }
+      (number - purchase.first_installment).times { statement = statement.succ(memo:) }
       statement
     end
   end

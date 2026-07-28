@@ -60,4 +60,37 @@ RSpec.describe "Statements", type: :request do
 
     expect(response.body).to include("faturas").and include(card_statements_path(card))
   end
+
+  it "shows the statement's expenses, whose amounts sum to the displayed total (AC 2)" do
+    credit_expense(20_000, Date.new(2026, 3, 6), name: "mercado")
+    InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 3,
+                                date: Date.new(2026, 3, 6), card:, category: category("casa"))
+
+    # 2026-04-05 is the April statement's NOMINAL closing date — its effective
+    # one is 03/04, because 05/04/2026 is a Sunday.
+    get card_statement_path(card, "2026-04-05")
+
+    expect(response.body).to include("mercado").and include("sofá 1/3")
+    expect(response.body).to include("vence 13/04").and include("compras de 05/03 – 02/04")
+    expect(response.body).to include("R$ 200,00")  # each of the two items
+    expect(response.body).to include("R$ 400,00")  # the total
+  end
+
+  it "does not repeat the statement label on the rows of its own detail" do
+    credit_expense(20_000, Date.new(2026, 3, 6), name: "mercado")
+
+    get card_statement_path(card, "2026-04-05")
+
+    expect(response.body.scan("vence 13/04").size).to eq 1
+  end
+
+  it "redirects with the neutral notice when the id is unknown or malformed" do
+    credit_expense(5_000, Date.new(2026, 3, 6))
+
+    get card_statement_path(card, "2026-09-05")
+    expect(response).to redirect_to(root_path)
+
+    get card_statement_path(card, "banana")
+    expect(response).to redirect_to(root_path)
+  end
 end

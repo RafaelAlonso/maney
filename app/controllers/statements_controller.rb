@@ -9,7 +9,24 @@ class StatementsController < ApplicationController
     @schedule = Budgeting::Schedule.for(card: @card, date: Date.current)
   end
 
+  def show
+    @row = Budgeting::CardStatements.new(card: @card).find(nominal_closing)
+    raise ActiveRecord::RecordNotFound if @row.nil?
+  end
+
   private
 
   def set_card = @card = Card.find(params[:card_id])
+
+  # The id is a statement's nominal closing date. A malformed id and an id that
+  # no longer resolves (the expense was deleted, or a schedule edit moved the
+  # boundary) are the same kind of stale link, so both end in the neutral
+  # redirect inherited from ApplicationController — never a 500. No
+  # controller-specific message here: unlike ExpensesController's installment
+  # case, there is no particular explanation to give.
+  def nominal_closing
+    Date.iso8601(params[:id])
+  rescue Date::Error
+    raise ActiveRecord::RecordNotFound
+  end
 end

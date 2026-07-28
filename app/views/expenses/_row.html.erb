@@ -1,10 +1,12 @@
 <%# app/views/expenses/_row.html.erb — locals: expense:, show_delete: (bool),
-    show_category: (bool, default true)
+    show_category: (bool, default true), show_statement: (bool, default true)
     Reused by categories#show (Task 8) with show_delete: false and
     show_category: false — there it only makes sense to edit, not delete, from
     the category drill-down, and its name is already in the page's <h1>, so
-    repeating it on every row is just noise. %>
+    repeating it on every row is just noise. Statements#show reuses it with
+    show_statement: false for the same reason: the statement is that page's <h1>. %>
 <% show_category = local_assigns.fetch(:show_category, true) %>
+<% show_statement = local_assigns.fetch(:show_statement, true) %>
 <li class="p-3 flex items-center justify-between gap-2">
   <div>
     <p class="font-medium"><%= expense.name %></p>

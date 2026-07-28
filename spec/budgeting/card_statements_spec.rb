@@ -50,4 +50,61 @@ RSpec.describe Budgeting::CardStatements do
     expect(statements).to be_empty
     expect(statements.rows).to eq []
   end
+
+  it "lists the open statement and its successors ascending, and the closed ones descending" do
+    credit_expense(1_000, Date.new(2026, 1, 2))  # January statement, due 12/01
+    credit_expense(2_000, Date.new(2026, 3, 4))  # March statement, due 12/03
+    credit_expense(3_000, Date.new(2026, 3, 6))  # April statement, due 13/04
+    # Installments 1..3 land on the April, May and June statements.
+    InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 3,
+                                date: Date.new(2026, 3, 6), card:, category: category("casa"))
+
+    statements = described_class.new(card:, today: Date.new(2026, 3, 20))
+
+    expect(statements.open.map { |row| row.statement.effective_due })
+      .to eq [Date.new(2026, 4, 13), Date.new(2026, 5, 12), Date.new(2026, 6, 12)]
+    expect(statements.closed.map { |row| row.statement.effective_due })
+      .to eq [Date.new(2026, 3, 12), Date.new(2026, 1, 12)]
+  end
+
+  it "finds a statement by its nominal closing date, not its effective one" do
+    credit_expense(5_000, Date.new(2026, 3, 6))
+    row = described_class.new(card:, today: Date.new(2026, 3, 20)).find(Date.new(2026, 4, 5))
+
+    expect(row.statement.effective_closing).to eq Date.new(2026, 4, 3)
+    expect(row.total_cents).to eq 5_000
+  end
+
+  it "returns nil for a nominal closing with no statement" do
+    credit_expense(5_000, Date.new(2026, 3, 6))
+
+    expect(described_class.new(card:, today: Date.new(2026, 3, 20)).find(Date.new(2026, 9, 5))).to be_nil
+  end
+
+  it "keeps closed statements on the old validity window while later ones follow the new days" do
+    card.card_schedules.create!(closing_day: 20, due_day: 27, valid_from: Date.new(2026, 3, 5))
+    credit_expense(1_000, Date.new(2026, 3, 4))   # old window: closes 05/03, due 12/03
+    credit_expense(2_000, Date.new(2026, 3, 10))  # new window: closes 20/03, due 27/03
+
+    dues = described_class.new(card:, today: Date.new(2026, 4, 1)).rows.map { |row| row.statement.effective_due }
+
+    expect(dues).to contain_exactly(Date.new(2026, 3, 12), Date.new(2026, 3, 27))
+  end
+
+  it "attributes a December purchase to the January statement of the next year" do
+    credit_expense(9_000, Date.new(2026, 12, 10))
+    row = described_class.new(card:, today: Date.new(2026, 12, 20)).rows.first
+
+    expect(row.statement.nominal_closing).to eq Date.new(2027, 1, 5)
+    expect(row.statement.effective_due).to eq Date.new(2027, 1, 12)
+    # 05/12/2026 is a Saturday, so December closed on 04/12.
+    expect(row.period_start).to eq Date.new(2026, 12, 4)
+    expect(row.period_end).to eq Date.new(2027, 1, 4)
+  end
+
+  it "identifies a statement in a URL by its nominal closing date" do
+    statement = Budgeting::StatementAttribution.statement_for(card:, date: Date.new(2026, 3, 6))
+
+    expect(statement.to_param).to eq "2026-04-05"
+  end
 end

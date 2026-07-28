@@ -20,7 +20,32 @@ module Budgeting
 
     def empty? = rows.empty?
 
+    # The open statement and every one after it, in chronological order — the
+    # ones the user still acts on. `Statement#open?` is true for both, so a
+    # single partition gives the block.
+    def open = partition.first
+
+    # History, newest first.
+    def closed = partition.last
+
+    # The URL id is a nominal closing date. Two statements can share one when a
+    # schedule change lands on the same closing day with a different due day
+    # (the due date is part of the natural identity); the earlier due date wins,
+    # which is the older of the two.
+    def find(nominal_closing)
+      rows.select { |row| row.statement.nominal_closing == nominal_closing }
+          .min_by { |row| row.statement.nominal_due }
+    end
+
     private
+
+    def partition
+      @partition ||= begin
+        open_rows, closed_rows = rows.partition { |row| row.statement.open?(today: @today) }
+        [open_rows.sort_by { |row| row.statement.effective_due },
+         closed_rows.sort_by { |row| row.statement.effective_due }.reverse]
+      end
+    end
 
     def build_row(statement, expenses)
       period_end = statement.effective_closing - 1

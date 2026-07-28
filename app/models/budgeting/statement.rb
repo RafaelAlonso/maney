@@ -23,6 +23,10 @@ module Budgeting
 
     def effective_due = Calendar.effective_due(nominal_due)
 
+    # URL id: readable, stable across deep links, and part of the natural
+    # identity. Resolved back through Budgeting::CardStatements#find.
+    def to_param = nominal_closing.to_s
+
     def closed?(today:) = effective_closing <= today
     def open?(today:) = !closed?(today:)
 

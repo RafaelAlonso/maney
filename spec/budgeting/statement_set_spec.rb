@@ -130,4 +130,22 @@ RSpec.describe "Competence and StatementSet" do
     expect(groups[april]).to contain_exactly(before_change)
     expect(groups[may]).to contain_exactly(after_change)
   end
+
+  it "labels a list of expenses with their statements, credit only, keyed by expense id" do
+    roxo = create_card(name: "Roxo", closing_day: 20, due_day: 27)
+    a = credit_expense(20_000, Date.new(2026, 3, 4))
+    b = credit_expense(5_000, Date.new(2026, 3, 6), on: roxo)
+    cash = Expense.create!(name: "feira", amount_cents: 3_000, date: Date.new(2026, 3, 4),
+                           payment_method: "cash", category: mercado)
+    purchase = InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 3,
+                                           date: Date.new(2026, 3, 6), card:, category: category("casa"))
+    third = purchase.expenses.find_by!(installment_number: 3)
+
+    labels = Budgeting::StatementSet.labels_for([a, b, cash, third])
+
+    expect(labels[a.id].effective_due).to eq Date.new(2026, 3, 12)
+    expect(labels[b.id].effective_due).to eq Date.new(2026, 3, 27)
+    expect(labels[third.id].effective_due).to eq Date.new(2026, 6, 12)
+    expect(labels).not_to have_key(cash.id)
+  end
 end

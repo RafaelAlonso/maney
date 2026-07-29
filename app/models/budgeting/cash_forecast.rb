@@ -4,9 +4,11 @@ module Budgeting
   # of BalanceChain, which owns "saldo atual".
   #
   # A credit purchase never reduces this at purchase time — it reduces it in the
-  # month its statement comes due, through the reserved "cartão de crédito"
-  # category. That is the whole point: subtracting it at purchase time AND again
-  # at the due date was the double count this replaced.
+  # month its statement comes due, as the card term — the same total the
+  # reserved "cartão de crédito" row displays, but read from the statements
+  # themselves, never from that (deletable) category row. That is the whole
+  # point: subtracting it at purchase time AND again at the due date was the
+  # double count this replaced.
   #
   # Takes the MonthSummary rather than a month, to reuse its memoization —
   # deriving the month's statements walks every card and every installment.
@@ -32,6 +34,10 @@ module Budgeting
       [[summary.budgeted_cents(category) - credit, 0].max, cash].max
     end
 
+    # A statement due in a PAST month that was never paid contributes nothing here:
+    # payments are ordinary debit expenses in the reserved category, with no link to
+    # a statement, so carrying one forward needs matching the schema doesn't have.
+    # Deliberate — the solvency story owns it.
     def card_committed(summary)
       [summary.statements_due_cents, summary.statement_payments_cents].max
     end

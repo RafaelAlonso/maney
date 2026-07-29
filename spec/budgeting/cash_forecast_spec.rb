@@ -36,6 +36,13 @@ RSpec.describe Budgeting::CashForecast do
     expect(estimate).to eq(300_000)
   end
 
+  it "sums every ordinary category, not just the first" do
+    salary
+    budget(200_000)
+    budget(100_000, cat: category("casa"))
+    expect(estimate).to eq(500_000 - 300_000)
+  end
+
   it "AC 2: stops subtracting the part of the budget that credit purchases have consumed" do
     salary
     budget(200_000)

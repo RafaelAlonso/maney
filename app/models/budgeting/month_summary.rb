@@ -38,7 +38,7 @@ module Budgeting
     # credit half is `spent_cents - cash_spent_cents` — installments carry
     # `date: nil` and are always `payment_method: "credit"`, so they are excluded
     # here by construction, and the two halves always reconcile to the total the
-    # budgeted-vs-spent rows show. Budgeting::CashForecast is the only caller.
+    # budgeted-vs-spent rows show.
     def cash_spent_cents(category)
       Expense.where(category:, payment_method: %w[debit cash], date: month.all_month)
              .sum(:amount_cents)

@@ -77,25 +77,15 @@ module Budgeting
       inherited_budget_cents(category)
     end
 
-    def estimated_balance_cents
-      # `role` is null on most categories — Category.where.not(role: "credit_card")
-      # would exclude those rows via SQL three-valued logic, so we filter in Ruby.
-      other_committed = Category.all.reject(&:credit_card?).sum { |c| [budgeted_cents(c), spent_cents(c)].max }
-      incomes_total_cents - other_committed - credit_card_committed_cents
-    end
+    # The definition lives in Budgeting::CashForecast — see it for what this
+    # number means and what it deliberately does not count.
+    def estimated_balance_cents = CashForecast.estimated_balance_cents(self)
 
     def current_balance_cents
       BalanceChain.current_balance(month:, carried: carried_balance_cents)
     end
 
     private
-
-    # Credit-card term computed without relying on the reserved row existing in
-    # Category — the budgeted amount comes entirely from the derived statements
-    # and the spent amount is filtered by role, not by a reference to the category.
-    def credit_card_committed_cents
-      [statements_due_cents, statement_payments_cents].max
-    end
 
     def installment_spent_cents(category)
       Expense.where(category:, date: nil).includes(:installment_purchase).sum do |expense|

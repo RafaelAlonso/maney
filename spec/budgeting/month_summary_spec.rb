@@ -55,9 +55,9 @@ RSpec.describe Budgeting::MonthSummary do
     Expense.create!(name: "compra", amount_cents: 80_000, date: Date.new(2026, 3, 4),
                     payment_method: "credit", card: card_b, category: category("casa"))
     expect(summary.budgeted_cents(credit_card_category)).to eq(200_000)
-    # estimate = 5.000 − (max per category): mercado 1.200 + casa 800 + card 2.000... the
-    # spent of mercado/casa is by competence and their budget is zero — max = spent.
-    expect(summary.estimated_balance_cents).to eq(500_000 - 120_000 - 80_000 - 200_000)
+    # Both categories were spent purely on credit and have no budget, so they
+    # subtract nothing; the 2.000 leaves the account as the statements are paid.
+    expect(summary.estimated_balance_cents).to eq(500_000 - 200_000)
   end
 
   it "AC 15: credit never touches the current balance; paying a statement is a debit expense in the credit-card category" do
@@ -94,8 +94,8 @@ RSpec.describe Budgeting::MonthSummary do
     credit(120_000, Date.new(2026, 3, 4)) # statement closes 05/03, due 12/03 -> counts in March
 
     expect(Category.where(role: "credit_card")).to be_empty
-    # committed = mercado max(0, 120.000) + card max(120.000, 0) = 240.000
-    expect(summary.estimated_balance_cents).to eq(500_000 - 120_000 - 120_000)
+    # mercado was spent purely on credit and has no budget → 0; the statement → 1.200
+    expect(summary.estimated_balance_cents).to eq(500_000 - 120_000)
   end
 
   it "installments consume their months: a sofá 10x from March consumes 100 in March and 100 in December" do

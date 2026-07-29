@@ -3,6 +3,7 @@ class AnalysesController < ApplicationController
     @years = selectable_years
     @year = resolve_year
     @analysis = Budgeting::YearAnalysis.new(year: @year)
+    @palette = Analysis::Palette.new
   end
 
   private

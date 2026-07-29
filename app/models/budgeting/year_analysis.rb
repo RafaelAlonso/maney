@@ -45,11 +45,45 @@ module Budgeting
       @categories ||= spending_by_category.keys.sort_by { |category| -spending_by_category[category].total_cents }
     end
 
+    # Income rows only. The carried balance is deliberately NOT included: it is
+    # last month's leftover, not income earned this month, and adding it would
+    # compound across the year — every month after a good one would read as
+    # profitable. MonthSummary#incomes_total_cents does include it because the
+    # month screen spends against it; the two answer different questions and are
+    # allowed to disagree.
+    def income
+      @income ||= series(by_month(Income.where(date: year_range).group(:date).sum(:amount_cents)))
+    end
+
+    # What actually left the account. Statement payments live in the reserved
+    # category with a debit/cash method, so they are counted here by
+    # construction — and never filtered by category, unlike spending.
+    def cash_outflow
+      @cash_outflow ||= series(by_month(
+        Expense.where(payment_method: %w[debit cash], date: year_range).group(:date).sum(:amount_cents)
+      ))
+    end
+
+    def profit_vs_spending = @profit_vs_spending ||= income - spending
+
+    def profit_vs_outflow = @profit_vs_outflow ||= income - cash_outflow
+
+    def any_data? = spending.any? || income.any? || cash_outflow.any?
+
     private
 
     def year_range = Date.new(@year, 1, 1)..Date.new(@year, 12, 31)
 
     def series(amounts) = MonthlySeries.new(months:, active_months:, amounts:)
+
+    # Rolls a `{Date => cents}` result up to `{month => cents}`. Grouping by the
+    # raw date and folding in Ruby keeps the query portable and the volume is
+    # trivially small at this scale.
+    def by_month(sums_by_date)
+      sums_by_date.each_with_object(Hash.new(0)) do |(date, cents), totals|
+        totals[date.beginning_of_month] += cents
+      end
+    end
 
     def build_spending
       totals = Hash.new { |hash, key| hash[key] = Hash.new(0) }

@@ -142,4 +142,67 @@ RSpec.describe Budgeting::YearAnalysis do
       expect(analysis.spending.average_cents).to eq 4_000
     end
   end
+
+  describe "income, cash outflow and profit" do
+    it "counts income rows in their own month" do
+      Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 5))
+
+      expect(analysis.income.cents(march)).to eq 500_000
+    end
+
+    # The carried balance is last month's leftover, not income earned this month.
+    # Including it (as MonthSummary#incomes_total_cents does, for a different
+    # question) would compound across the year.
+    it "excludes the carried balance from income" do
+      # Setting#single_row forbids a second row, so update the one the `before`
+      # block already created rather than creating another.
+      Setting.instance.update!(initial_balance_cents: 1_000_000)
+      Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 4, 5))
+
+      expect(analysis.income.cents(Date.new(2026, 4, 1))).to eq 500_000
+    end
+
+    it "counts debit and cash as outflow and never credit" do
+      spend(7_000, on: Date.new(2026, 3, 2), category: mercado, method: "debit")
+      spend(2_000, on: Date.new(2026, 3, 3), category: mercado, method: "cash")
+      spend(90_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: create_card!)
+
+      expect(analysis.cash_outflow.cents(march)).to eq 9_000
+    end
+
+    # A statement payment is an expense in the reserved category paid by debit —
+    # it is real money leaving, so outflow counts it even though spending does not.
+    it "includes an entered statement payment in cash outflow" do
+      spend(40_000, on: Date.new(2026, 3, 12), category: credit_card_category, method: "debit")
+
+      expect(analysis.cash_outflow.cents(march)).to eq 40_000
+      expect(analysis.spending.cents(march)).to eq 0
+    end
+
+    it "reports profit both ways, and negative when income falls short (AC 7)" do
+      Income.create!(name: "salário", amount_cents: 100_000, date: Date.new(2026, 3, 5))
+      spend(30_000, on: Date.new(2026, 3, 6), category: mercado, method: "debit")
+      spend(150_000, on: Date.new(2026, 3, 7), category: mercado, method: "credit", card: create_card!)
+
+      # Spending counts the credit purchase in March; outflow does not.
+      expect(analysis.profit_vs_spending.cents(march)).to eq(-80_000)
+      expect(analysis.profit_vs_outflow.cents(march)).to eq 70_000
+    end
+
+    it "has no data when the year holds nothing (AC 11)" do
+      expect(analysis).not_to be_any_data
+    end
+
+    it "has no data when the year is entirely before the first month" do
+      spend(5_000, on: Date.new(2026, 3, 10), category: mercado)
+
+      expect(analysis(year: 2025)).not_to be_any_data
+    end
+
+    it "has data when only income exists" do
+      Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 5))
+
+      expect(analysis).to be_any_data
+    end
+  end
 end

@@ -1,0 +1,145 @@
+require "rails_helper"
+
+RSpec.describe Budgeting::YearAnalysis do
+  include ActiveSupport::Testing::TimeHelpers
+
+  before { create_setting!(first_month: Date.new(2026, 3, 1)); create_reserved_categories! }
+
+  let(:others) { Category.find_by!(role: "others") }
+  let(:mercado) { Category.create!(name: "mercado") }
+  let(:march) { Date.new(2026, 3, 1) }
+  let(:july) { Date.new(2026, 7, 1) }
+
+  # July 2026: months before March are before the timeline, months after July
+  # have not been reached. Both are inactive.
+  def analysis(year: 2026, today: Date.new(2026, 7, 15))
+    described_class.new(year:, today:)
+  end
+
+  # `card:` is not optional decoration: Expense#card_matches_method rejects a
+  # credit expense with no card, so a credit case must pass one at create time.
+  def spend(cents, on:, category:, method: "debit", card: nil)
+    Expense.create!(name: "gasto", amount_cents: cents, payment_method: method,
+                    category:, date: on, card:)
+  end
+
+  describe "the active month mask" do
+    it "excludes months before the first month and months not yet reached" do
+      expect(analysis.active_months).to eq((3..7).map { |m| Date.new(2026, m, 1) })
+    end
+
+    it "treats a fully past year as entirely active" do
+      # Year 2026 itself can never be "entirely active": its own first two months
+      # precede first_month (March 2026), no matter how far today advances. A
+      # fully-past year has to start after first_month, so this uses 2027 — same
+      # pairing (year 2027, today into 2028) as the installments-by-year test below.
+      expect(analysis(year: 2027, today: Date.new(2028, 1, 1)).active_months.size).to eq 12
+    end
+
+    it "treats a year entirely before the first month as having no active months" do
+      expect(analysis(year: 2025).active_months).to be_empty
+    end
+  end
+
+  describe "spending by competence" do
+    it "counts a dated expense in its own month" do
+      spend(5_000, on: Date.new(2026, 3, 10), category: mercado)
+
+      expect(analysis.spending.cents(march)).to eq 5_000
+      expect(analysis.spending.cents(Date.new(2026, 4, 1))).to eq 0
+    end
+
+    it "counts a credit purchase in its purchase month, not its due month (AC 4)" do
+      # Bought on the 28th, after the card closes on the 5th — the statement it
+      # lands on is due in May, but the money was consumed in March.
+      spend(8_000, on: Date.new(2026, 3, 28), category: mercado, method: "credit", card: create_card!)
+
+      expect(analysis.spending.cents(march)).to eq 8_000
+    end
+
+    it "excludes the reserved credit-card category from spending (AC 4)" do
+      spend(40_000, on: Date.new(2026, 3, 12), category: credit_card_category)
+
+      expect(analysis.spending.cents(march)).to eq 0
+      expect(analysis.categories).not_to include(credit_card_category)
+    end
+
+    # Regression: `where.not(categories: { role: "credit_card" })` silently drops
+    # every NULL-role category under SQL three-valued logic. Most categories are
+    # NULL-role, so that bug empties the chart.
+    it "includes categories whose role is NULL" do
+      expect(mercado.role).to be_nil
+      spend(3_000, on: Date.new(2026, 3, 4), category: mercado)
+
+      expect(analysis.spending_by_category[mercado].cents(march)).to eq 3_000
+    end
+
+    it "spreads an installment purchase across its competence months" do
+      card = create_card!
+      InstallmentPurchase.create!(name: "sofá", total_cents: 90_000, installments_count: 3,
+                                  card:, category: mercado, date: Date.new(2026, 3, 10))
+
+      expect(analysis.spending.cents(march)).to eq 30_000
+      expect(analysis.spending.cents(Date.new(2026, 4, 1))).to eq 30_000
+      expect(analysis.spending.cents(Date.new(2026, 5, 1))).to eq 30_000
+    end
+
+    it "counts only the installments falling inside the year" do
+      card = create_card!
+      InstallmentPurchase.create!(name: "notebook", total_cents: 120_000, installments_count: 12,
+                                  card:, category: mercado, date: Date.new(2026, 11, 5))
+
+      past = described_class.new(year: 2026, today: Date.new(2027, 6, 1))
+      next_year = described_class.new(year: 2027, today: Date.new(2028, 1, 1))
+
+      # Nov and Dec 2026 here; the remaining ten fall in 2027.
+      expect(past.spending.total_cents).to eq 20_000
+      expect(next_year.spending.total_cents).to eq 100_000
+    end
+
+    # A series joined partway through: `first_installment: 3` of 6 creates only
+    # installments 3..6, and Competence anchors installment 3 on the purchase
+    # month. The amount is still split by the full count, so the four rows come
+    # to R$ 800 of a R$ 1.200 purchase — the first two were paid elsewhere and
+    # this app never saw them.
+    it "anchors a series joined partway through on its purchase month" do
+      InstallmentPurchase.create!(name: "curso", total_cents: 120_000, installments_count: 6,
+                                  card: create_card!, category: mercado,
+                                  date: Date.new(2026, 5, 10), first_installment: 3)
+
+      subject = described_class.new(year: 2026, today: Date.new(2026, 12, 31))
+      expect(subject.spending.cents(Date.new(2026, 4, 1))).to eq 0
+      expect(subject.spending.cents(Date.new(2026, 5, 1))).to eq 20_000
+      expect(subject.spending.cents(Date.new(2026, 8, 1))).to eq 20_000
+      expect(subject.spending.total_cents).to eq 80_000
+    end
+
+    it "omits a category from a month with no spending rather than showing zero (AC 5)" do
+      spend(3_000, on: Date.new(2026, 3, 4), category: mercado)
+
+      values = analysis.spending_by_category[mercado].values_for_chart
+      expect(values[2]).to eq 3_000
+      expect(values[3]).to be_nil.or eq(0)
+      expect(analysis.spending_by_category).not_to have_key(others)
+    end
+
+    it "orders categories by year total, descending" do
+      spend(1_000, on: Date.new(2026, 3, 4), category: others)
+      spend(9_000, on: Date.new(2026, 4, 4), category: mercado)
+
+      expect(analysis.categories).to eq [ mercado, others ]
+    end
+
+    it "keeps future months empty even when installments are committed to them (AC 10)" do
+      InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 6,
+                                  card: create_card!, category: mercado, date: Date.new(2026, 6, 10))
+
+      # June and July are active; August onwards is not yet reached.
+      expect(analysis.spending.cents(Date.new(2026, 7, 1))).to eq 10_000
+      expect(analysis.spending.values_for_chart[7]).to be_nil
+      # ...and the four committed future months never touch the average:
+      # R$ 200 over the five active months March..July.
+      expect(analysis.spending.average_cents).to eq 4_000
+    end
+  end
+end

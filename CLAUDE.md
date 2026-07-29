@@ -30,11 +30,23 @@ Never use `docs/` — that directory does not exist in this repo. The skills'
 defaults (e.g. `docs/superpowers/specs`, `docs/superpowers/plans`) are
 overridden by these paths:
 
-- Epics: `project/pm/epics/`
-- Stories/bugs: `project/pm/<decomposition>/` (e.g.
-  `project/pm/closing-the-month-without-a-spreadsheet/`)
-- Design specs (brainstorming): `project/pm/specs/`
-- Implementation plans (writing-plans): `project/pm/plans/`
+**One epic, one folder.** Everything about an epic lives in
+`project/pm/<YYYY-MM-DD>-<epic-slug>/`, dated when the epic is written:
 
-Naming convention: wave prefix + theme, no date — e.g.
-`w2-manual-entry.md`.
+```
+project/pm/2026-07-29-seeing-the-money-without-doing-the-math/
+  EPIC.md                              # the epic (pm-epic)
+  index.md                             # indexes every file here (pm-decomposition)
+  w1-story-cash-forecast-balance.md    # stories, wave-prefixed (pm-stories)
+  specs/w1-cash-forecast-balance.md    # design specs (brainstorming)
+  plans/w1-cash-forecast-balance.md    # implementation plans (writing-plans)
+```
+
+- The epic folder is created by `pm-epic`, when `EPIC.md` is written — not by
+  `pm-decomposition`. Stories are filed into the existing folder.
+- `index.md` covers everything in the folder, `EPIC.md` included, and names each
+  story's spec and plan (or says they are not written yet).
+- Every file keeps its wave prefix, no date — e.g. `w2-manual-entry.md`. Without
+  the per-epic folder, waves from different epics collide (both current epics
+  have a `w1-`).
+- Bugs are not epic-scoped and stay flat in `project/pm/bugs/`.

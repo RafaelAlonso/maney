@@ -108,6 +108,33 @@ RSpec.describe Budgeting::MonthSummary do
     expect(summary(Date.new(2027, 1, 1)).spent_cents(category("casa"))).to eq(0)
   end
 
+  describe "#cash_spent_cents" do
+    it "counts only the month's debit and cash expenses, leaving credit out" do
+      debit(90_000, Date.new(2026, 3, 10), cat: mercado)
+      Expense.create!(name: "feira", amount_cents: 10_000, date: Date.new(2026, 3, 11),
+                      payment_method: "cash", category: mercado)
+      credit(80_000, Date.new(2026, 3, 12))
+
+      expect(summary.cash_spent_cents(mercado)).to eq(100_000)
+      expect(summary.spent_cents(mercado)).to eq(180_000) # unchanged: still counts credit
+    end
+
+    it "leaves installments out — they are always credit and carry no date" do
+      InstallmentPurchase.create!(
+        name: "sofá", total_cents: 100_000, installments_count: 10,
+        date: Date.new(2026, 3, 10), card:, category: category("casa")
+      )
+      expect(summary.cash_spent_cents(category("casa"))).to eq(0)
+      expect(summary.spent_cents(category("casa"))).to eq(10_000)
+    end
+
+    it "ignores expenses dated in another month" do
+      debit(90_000, Date.new(2026, 4, 10), cat: mercado)
+      expect(summary.cash_spent_cents(mercado)).to eq(0)
+      expect(summary(Date.new(2026, 4, 1)).cash_spent_cents(mercado)).to eq(90_000)
+    end
+  end
+
   it "inherits the previous month's spending as this month's budget when none is set (AC 8)" do
     debit(90_000, Date.new(2026, 3, 10), cat: mercado)
     expect(summary(Date.new(2026, 4, 1)).budgeted_cents(mercado)).to eq(90_000)

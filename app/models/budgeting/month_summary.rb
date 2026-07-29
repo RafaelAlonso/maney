@@ -34,6 +34,16 @@ module Budgeting
       end
     end
 
+    # The cash half of a category's month: what actually left the account. The
+    # credit half is `spent_cents - cash_spent_cents` — installments carry
+    # `date: nil` and are always `payment_method: "credit"`, so they are excluded
+    # here by construction, and the two halves always reconcile to the total the
+    # budgeted-vs-spent rows show. Budgeting::CashForecast is the only caller.
+    def cash_spent_cents(category)
+      Expense.where(category:, payment_method: %w[debit cash], date: month.all_month)
+             .sum(:amount_cents)
+    end
+
     def budgeted_cents(category)
       return credit_card_budgeted_cents if category.credit_card?
 

@@ -5,6 +5,7 @@ Rails.application.routes.draw do
   get  "setup", to: "setup#new"
   post "setup", to: "setup#create"
   resource :settings, only: %i[edit update]
+  resource :analysis, only: :show
   resources :cards, except: :show do
     resource :migration, only: %i[new create], controller: "card_migrations"
     resources :statements, only: %i[index show]

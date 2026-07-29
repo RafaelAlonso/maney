@@ -1,0 +1,10 @@
+<% content_for :title, "Análise" %>
+<%= render "analyses/year_picker", year: @year, years: @years %>
+
+<% if @analysis.any_data? %>
+  <%# Charts are added by Tasks 5-8. %>
+<% else %>
+  <p class="bg-white rounded border p-6 text-center text-sm text-gray-500">
+    Nenhum lançamento em <%= @year %>.
+  </p>
+<% end %>

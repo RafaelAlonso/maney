@@ -17,8 +17,23 @@ RSpec.describe "Home month view", type: :request do
     get root_path(month: "2026-03")
     expect(response.body).to include("saldo estimado").and include("saldo atual")
     expect(response.body).to include("cartão de crédito")
-    # estimate = 5000 − max(4000, spent) − 1200 = −200 ; current = 5000 − 1000 debit = 4000
-    expect(response.body).to include("-R$ 200,00").and include("R$ 4.000,00")
+    # mercado: max(4.000 budget − 1.200 credit, 1.000 cash) = 2.800; statement due 1.200
+    # estimate = 5.000 − 2.800 − 1.200 = 1.000 ; current = 5.000 − 1.000 debit = 4.000
+    expect(response.body).to include("R$ 1.000,00").and include("R$ 4.000,00")
+  end
+
+  # The example above used to be the only one rendering a negative estimate, and
+  # it stopped being negative when the estimate became a cash forecast. The red
+  # emphasis in home/_balances is unchanged behavior, so it keeps a test.
+  it "keeps the red emphasis on a negative estimate" do
+    mercado = Category.create!(name: "mercado")
+    Income.create!(name: "salário", amount_cents: 100_000, date: march)
+    Budget.create!(category: mercado, month: march, amount_cents: 120_000)
+
+    get root_path(month: "2026-03")
+
+    expect(response.body).to include("-R$ 200,00")
+    expect(response.body).to include("text-red-700")
   end
 
   it "reflects a statement payment in the current balance, not the estimate (AC 2)" do

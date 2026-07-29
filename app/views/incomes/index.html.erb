@@ -19,10 +19,17 @@
       </div>
       <div class="flex gap-3 text-sm">
         <%= link_to "editar", edit_income_path(income), class: "text-blue-600" %>
-        <%= button_to "excluir", income_path(income), method: :delete, class: "text-red-600",
+        <%= button_to "excluir", income_path(income, month: month_param), method: :delete, class: "text-red-600",
               data: { turbo_confirm: "Excluir o ganho #{income.name}?" } %>
       </div>
     </li>
   <% end %>
   <% if @incomes.empty? %><li class="p-3 text-sm text-gray-500">Nenhum ganho lançado neste mês.</li><% end %>
+  <%# Includes the carried balance, like the first row above and like the month
+      view's income block — this total is what "saldo estimado" spends against,
+      so it has to be the same number on both screens. %>
+  <li class="p-3 flex items-center justify-between bg-gray-50">
+    <span class="font-medium">total</span>
+    <span class="<%= "text-red-700" if @total_cents.negative? %>"><%= brl(@total_cents) %></span>
+  </li>
 </ul>

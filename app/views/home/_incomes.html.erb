@@ -1,0 +1,29 @@
+<%# app/views/home/_incomes.html.erb — locals: summary
+    The month's income with its total (w3 AC1). The carried balance leads the
+    list, marked "derivado", exactly as on the Ganhos screen — it has no row of
+    its own to edit, but it is part of the total the estimate spends against, and
+    leaving it out would make the total fail to add up against "saldo estimado". %>
+<% first_month = summary.month == Setting.instance.first_month %>
+<div class="bg-white rounded border divide-y mt-4">
+  <div class="p-3 flex items-center justify-between">
+    <span class="font-medium">ganhos</span>
+    <%= link_to "ver todos", incomes_path(month: summary.month.strftime("%Y-%m")),
+          class: "text-blue-600 text-sm" %>
+  </div>
+  <div class="p-3 flex items-center justify-between text-sm">
+    <span class="text-gray-500"><%= first_month ? "saldo inicial" : "saldo do mês anterior" %></span>
+    <span class="text-gray-500"><%= brl(summary.carried_balance_cents) %></span>
+  </div>
+  <% summary.incomes.each do |income| %>
+    <div class="p-3 flex items-center justify-between text-sm">
+      <span><%= income.name %></span>
+      <span><%= brl(income.amount_cents) %></span>
+    </div>
+  <% end %>
+  <div class="p-3 flex items-center justify-between bg-gray-50">
+    <span class="font-medium">total</span>
+    <span class="<%= "text-red-700" if summary.incomes_total_cents.negative? %>">
+      <%= brl(summary.incomes_total_cents) %>
+    </span>
+  </div>
+</div>

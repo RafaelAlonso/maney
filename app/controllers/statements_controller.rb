@@ -9,9 +9,17 @@ class StatementsController < ApplicationController
     @schedule = Budgeting::Schedule.for(card: @card, date: Date.current)
   end
 
+  # A statement exists only where its expenses do, so the last expense leaving it
+  # (an edited date moving it to the next statement, a deletion) makes the URL
+  # stop resolving. Bouncing the user to the home screen of a different month for
+  # a link that was valid a moment ago is the wrong answer — the same courtesy
+  # w3 AC4 gives a card with no statements is given here: an empty state that
+  # says what happened and links back to the card. Only a malformed id is still
+  # a stale link (see `nominal_closing`).
   def show
-    @row = Budgeting::CardStatements.new(card: @card).find(nominal_closing)
-    raise ActiveRecord::RecordNotFound if @row.nil?
+    @nominal_closing = nominal_closing
+    @row = Budgeting::CardStatements.new(card: @card).find(@nominal_closing)
+    render :empty if @row.nil?
   end
 
   private

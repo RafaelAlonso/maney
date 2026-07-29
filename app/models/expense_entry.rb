@@ -27,6 +27,18 @@ class ExpenseEntry
 
   def installment? = installment.to_s == "1"
 
+  # Which option the form's Categoria <select> must pre-select. `#category`
+  # already falls back to "outros" on a blank `category_id`, but that fallback is
+  # unreachable from the form: a <select> with no blank option never *sends*
+  # blank — the browser pre-selects the first option in DOM order, and the list
+  # is ordered by name, so "cartão de crédito" (the reserved statement-payment
+  # category) wins. Saving without touching the field then filed the expense as a
+  # statement payment, silently. Pre-selecting the same category the server would
+  # have chosen keeps the two ends in agreement.
+  def selected_category_id
+    category_id.presence || Category.find_by(role: "others")&.id
+  end
+
   def save
     return false unless valid?
     @record = installment? ? build_purchase : Expense.new(expense_attributes)

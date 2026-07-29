@@ -55,7 +55,7 @@ RSpec.describe "Categories", type: :request do
   it "refuses to delete reserved categories (AC 15)" do
     delete category_path(others)
     expect(Category.exists?(others.id)).to be true
-    expect(response).to redirect_to(categories_path)
+    expect(response).to redirect_to(categories_path(month: Date.current.strftime("%Y-%m")))
   end
 
   it "does not render a delete button for reserved categories (AC 15)" do

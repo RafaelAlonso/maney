@@ -323,4 +323,73 @@ RSpec.describe "Expenses", type: :request do
       expect(response.body).not_to include("vence")
     end
   end
+
+  # The <select> has no blank option, so the browser pre-selects the first option
+  # in DOM order — and the list is ordered by name, which put "cartão de crédito"
+  # (the reserved statement-payment category) first. Saving without touching the
+  # field filed the expense as a statement payment, silently. AC 12 says an
+  # expense saved without choosing a category lands in "outros"; the form must
+  # pre-select the same category the server falls back to.
+  describe "the Categoria field's default (AC 12)" do
+    def selected_category_id
+      Nokogiri::HTML(response.body)
+        .at("select[name='expense_entry[category_id]'] option[selected]")
+        &.attr("value")
+    end
+
+    it "pre-selects outros on a new expense, not the reserved credit-card category" do
+      get new_expense_path
+
+      expect(selected_category_id).to eq(others.id.to_s)
+      expect(selected_category_id).not_to eq(credit_card_cat.id.to_s)
+    end
+
+    it "keeps the chosen category pre-selected when editing" do
+      mercado = Category.create!(name: "mercado")
+      expense = Expense.create!(name: "feira", amount_cents: 5_000, payment_method: "cash",
+                                category: mercado, date: Date.new(2026, 3, 10))
+
+      get edit_expense_path(expense)
+
+      expect(selected_category_id).to eq(mercado.id.to_s)
+    end
+  end
+
+  describe "the month in context" do
+    # Working in a month that is not the current one is the whole point of
+    # "closing the month" — the app must not keep throwing the user back to today.
+    it "starts a new expense on the 1st of the month being viewed" do
+      travel_to(Time.zone.local(2026, 7, 28, 10, 0, 0)) do
+        get new_expense_path(month: "2026-03")
+
+        expect(response.body).to include('value="2026-03-01"')
+      end
+    end
+
+    it "starts a new expense on today when the month being viewed is the current one" do
+      travel_to(Time.zone.local(2026, 7, 28, 10, 0, 0)) do
+        get new_expense_path(month: "2026-07")
+
+        expect(response.body).to include('value="2026-07-28"')
+      end
+    end
+
+    it "returns to the month the list was showing after a delete" do
+      expense = Expense.create!(name: "padaria", amount_cents: 5_000, payment_method: "cash",
+                                category: others, date: Date.new(2026, 3, 10))
+
+      delete expense_path(expense, month: "2026-03")
+
+      expect(response).to redirect_to(expenses_path(month: "2026-03"))
+    end
+
+    it "returns to the month the list was showing after deleting an installment series" do
+      purchase = InstallmentPurchase.create!(name: "sofá", total_cents: 100_000, installments_count: 10,
+                                             card:, category: others, date: Date.new(2026, 3, 10))
+
+      delete expense_path(purchase.expenses.order(:installment_number).last, month: "2026-12")
+
+      expect(response).to redirect_to(expenses_path(month: "2026-12"))
+    end
+  end
 end

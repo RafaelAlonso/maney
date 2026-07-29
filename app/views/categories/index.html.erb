@@ -1,6 +1,6 @@
 <div class="flex items-center justify-between mb-2">
   <h1 class="text-lg font-semibold">Categorias</h1>
-  <%= link_to "nova categoria", new_category_path, class: "text-blue-600 text-sm" %>
+  <%= link_to "nova categoria", new_category_path(month: month_param), class: "text-blue-600 text-sm" %>
 </div>
 <%= render "shared/month_nav", path_helper: ->(month:) { categories_path(month:) } %>
 <ul class="divide-y bg-white rounded border">
@@ -19,7 +19,7 @@
         <%= link_to "editar", edit_category_path(category, month: current_month.strftime("%Y-%m")), class: "text-blue-600" %>
         <% unless category.reserved? %>
           <% count = category.expenses.count %>
-          <%= button_to "excluir", category_path(category), method: :delete, class: "text-red-600",
+          <%= button_to "excluir", category_path(category, month: month_param), method: :delete, class: "text-red-600",
                 data: { turbo_confirm: "Excluir #{category.name}? #{count} gasto(s) serão movidos para a categoria padrão." } %>
         <% end %>
       </div>

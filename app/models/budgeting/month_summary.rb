@@ -13,8 +13,16 @@ module Budgeting
       @carried_balance_cents ||= BalanceChain.carried_into(month:)
     end
 
+    # The month's own incomes, in the order the screens list them. The carried
+    # balance is NOT one of them — it's derived, has no row, and is presented
+    # separately (see `carried_balance_cents`) — but it does count towards the
+    # total, which is what the estimate spends against.
+    def incomes
+      @incomes ||= Income.where(date: month.all_month).order(:date, :name).to_a
+    end
+
     def incomes_total_cents
-      carried_balance_cents + Income.where(date: month.all_month).sum(:amount_cents)
+      carried_balance_cents + incomes.sum(&:amount_cents)
     end
 
     def spent_cents(category)

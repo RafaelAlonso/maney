@@ -1,8 +1,11 @@
 <div data-controller="fab" class="fixed bottom-6 right-6 z-10 flex flex-col items-end gap-2">
   <div data-fab-target="menu" hidden class="flex flex-col items-end gap-2">
-    <%= link_to "ganho", new_income_path,
+    <%# The month on screen travels into the form: opening an entry while
+        closing March must not start it on today's date (see
+        ApplicationController#default_entry_date). %>
+    <%= link_to "ganho", new_income_path(month: month_param),
         class: "bg-emerald-600 text-white rounded-full px-4 py-2 shadow text-sm" %>
-    <%= link_to "gasto", new_expense_path,
+    <%= link_to "gasto", new_expense_path(month: month_param),
         class: "bg-rose-600 text-white rounded-full px-4 py-2 shadow text-sm" %>
   </div>
   <button type="button" data-action="fab#toggle" aria-label="Lançar"

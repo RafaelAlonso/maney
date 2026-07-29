@@ -38,5 +38,12 @@ module Maney
 
     # Don't generate system test files.
     config.generators.system_tests = nil
+
+    # Single-locale app: everything a user reads is pt-BR (see the language
+    # policy in CLAUDE.md). `available_locales` is pinned so a stray
+    # `I18n.locale = :en` can't silently reintroduce English validation
+    # messages — the whole point of config/locales/pt-BR.yml.
+    config.i18n.default_locale = :"pt-BR"
+    config.i18n.available_locales = [:"pt-BR"]
   end
 end

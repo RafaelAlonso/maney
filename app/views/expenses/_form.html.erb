@@ -34,7 +34,7 @@
     <%= f.label :category_id, "Categoria", class: "block text-sm mb-1" %>
     <%= f.select :category_id,
           Category.order(:name).map { |c| [c.name, c.id, { data: { role: c.role, expense_form_target: "categoryOption" } }] },
-          {}, class: "border rounded p-2 w-full" %>
+          { selected: entry.selected_category_id }, class: "border rounded p-2 w-full" %>
   </div>
   <fieldset>
     <legend class="text-sm mb-1">Método</legend>

@@ -9,7 +9,7 @@
     <li class="p-3 flex items-center justify-between">
       <div>
         <p class="font-medium"><%= card.name %></p>
-        <p class="text-sm text-gray-500">fecha dia <%= schedule.closing_day %> · vence dia <%= schedule.due_day %></p>
+        <p class="text-sm text-gray-500"><%= card_days_label(schedule) %></p>
       </div>
       <div class="flex gap-3 text-sm">
         <%= link_to "faturas", card_statements_path(card), class: "text-blue-600" %>

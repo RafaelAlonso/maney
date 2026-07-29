@@ -43,7 +43,7 @@ class CategoriesController < ApplicationController
   # the notice with the count lives in the list's turbo_confirm.
   def destroy
     if @category.reserved?
-      redirect_to categories_path, alert: "Categoria reservada não pode ser excluída."
+      redirect_to categories_path(month: month_param), alert: "Categoria reservada não pode ser excluída."
       return
     end
     default = Category.find_by!(role: "others")
@@ -52,14 +52,12 @@ class CategoriesController < ApplicationController
       InstallmentPurchase.where(category: @category).update_all(category_id: default.id)
       @category.reload.destroy!
     end
-    redirect_to categories_path, notice: "Categoria excluída; gastos movidos para #{default.name}."
+    redirect_to categories_path(month: month_param), notice: "Categoria excluída; gastos movidos para #{default.name}."
   end
 
   private
 
   def set_category = @category = Category.find(params[:id])
-
-  def month_param = current_month.strftime("%Y-%m")
 
   def category_params = params.require(:category).permit(:name, :budget_amount)
 

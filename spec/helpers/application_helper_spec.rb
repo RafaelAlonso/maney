@@ -45,4 +45,46 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(label).to eq "04/12/2026 – 04/01/2027"
     end
   end
+
+  # Rails' `pluralize` inflects only the last word — right for English, wrong for
+  # Portuguese, where the plural agrees across the noun phrase. It produced
+  # "3 gasto avulsos" in the card-deletion flow, three times over.
+  describe "#pt_pluralize" do
+    it "uses the singular for exactly one" do
+      expect(helper.pt_pluralize(1, "gasto avulso", "gastos avulsos")).to eq "1 gasto avulso"
+    end
+
+    it "inflects every word of the phrase in the plural" do
+      expect(helper.pt_pluralize(3, "gasto avulso", "gastos avulsos")).to eq "3 gastos avulsos"
+      expect(helper.pt_pluralize(2, "compra parcelada", "compras parceladas")).to eq "2 compras parceladas"
+    end
+
+    it "uses the plural for zero, as Portuguese does" do
+      expect(helper.pt_pluralize(0, "gasto avulso", "gastos avulsos")).to eq "0 gastos avulsos"
+    end
+  end
+
+  # A due day that doesn't come after the closing day is valid — the engine rolls
+  # the due date into the following month — but on screen it reads as a typo, and
+  # nothing distinguished it from one.
+  describe "#card_days_label" do
+    def schedule(closing_day:, due_day:)
+      Budgeting::Schedule.new(closing_day:, due_day:, valid_from: Date.new(2026, 3, 1))
+    end
+
+    it "states the days plainly when the statement is due in the closing month" do
+      expect(helper.card_days_label(schedule(closing_day: 5, due_day: 12)))
+        .to eq "fecha dia 5 · vence dia 12"
+    end
+
+    it "says the statement is due the following month when the due day comes first" do
+      expect(helper.card_days_label(schedule(closing_day: 20, due_day: 12)))
+        .to eq "fecha dia 20 · vence dia 12 (vence no mês seguinte)"
+    end
+
+    it "treats equal days as due the following month" do
+      expect(helper.card_days_label(schedule(closing_day: 10, due_day: 10)))
+        .to include("(vence no mês seguinte)")
+    end
+  end
 end

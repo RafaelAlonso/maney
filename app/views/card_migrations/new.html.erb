@@ -1,8 +1,13 @@
 <%# app/views/card_migrations/new.html.erb %>
+<%# Both counts are named once and reused across the page copy and the two
+    confirm dialogs — the user meets them three times in the flow that decides
+    whether to destroy their history, and they must read identically. %>
+<% expenses = pt_pluralize(@expense_count, "gasto avulso", "gastos avulsos") %>
+<% purchases = pt_pluralize(@purchase_count, "compra parcelada", "compras parceladas") %>
 <h1 class="text-lg font-semibold mb-4">Excluir <%= @card.name %></h1>
 <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
-  Este cartão tem <strong><%= pluralize(@expense_count, "gasto avulso") %></strong> e
-  <strong><%= pluralize(@purchase_count, "compra parcelada") %></strong>.
+  Este cartão tem <strong><%= expenses %></strong> e
+  <strong><%= purchases %></strong>.
   Escolha o destino deles para concluir a exclusão.
 </p>
 
@@ -17,12 +22,12 @@
       cartão de destino — as faturas podem cair em outro mês.
     </p>
     <%= submit_tag "Migrar e excluir cartão", class: "bg-blue-600 text-white rounded px-4 py-2",
-          data: { turbo_confirm: "Migrar #{pluralize(@expense_count, "gasto avulso")} e #{pluralize(@purchase_count, "compra parcelada")} para o cartão escolhido e excluir #{@card.name}? As faturas seguirão os dias do cartão de destino e podem cair em outro mês." } %>
+          data: { turbo_confirm: "Migrar #{expenses} e #{purchases} para o cartão escolhido e excluir #{@card.name}? As faturas seguirão os dias do cartão de destino e podem cair em outro mês." } %>
   <% end %>
 <% end %>
 
 <%= form_with url: card_migration_path(@card), method: :post do %>
   <%= hidden_field_tag :action_kind, "delete" %>
   <%= submit_tag "Excluir todos os gastos e o cartão", class: "bg-red-600 text-white rounded px-4 py-2",
-        data: { turbo_confirm: "Excluir #{pluralize(@expense_count, "gasto avulso")}, #{pluralize(@purchase_count, "compra parcelada")} e o cartão #{@card.name}? Isso não pode ser desfeito." } %>
+        data: { turbo_confirm: "Excluir #{expenses}, #{purchases} e o cartão #{@card.name}? Isso não pode ser desfeito." } %>
 <% end %>

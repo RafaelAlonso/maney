@@ -1,0 +1,50 @@
+<%# app/views/cards/confirm_days.html.erb
+    One confirmation before a days change that moves due dates the user already
+    has ahead of them. Nothing has been saved at this point — leaving the page
+    is a full cancel. %>
+<h1 class="text-lg font-semibold mb-4">Confirmar os novos dias de <%= @new_name %></h1>
+
+<p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+  Fechar dia <strong><%= @days[:closing_day] %></strong> e vencer dia
+  <strong><%= @days[:due_day] %></strong> muda o vencimento das faturas que ainda
+  estão por vir.
+  <% if @preview.unbilled_installments.positive? %>
+    <%= pt_pluralize(@preview.unbilled_installments, "parcela ainda não faturada acompanha",
+                     "parcelas ainda não faturadas acompanham") %>
+    essa mudança — uma parcela por fatura, como sempre.
+  <% end %>
+</p>
+
+<div class="bg-white rounded border divide-y mb-4">
+  <div class="p-3 flex items-center justify-between text-sm font-medium">
+    <span>fatura</span>
+    <span>vencimento</span>
+  </div>
+  <% @preview.rows.each do |row| %>
+    <div class="p-3 flex items-center justify-between text-sm">
+      <span><%= row.cycle.strftime("%m/%Y") %></span>
+      <span>
+        <span class="text-gray-500 line-through"><%= row.before_due.strftime("%d/%m/%Y") %></span>
+        <span class="<%= "text-red-700 font-medium" if row.shifts? %>">
+          <%= row.after_due.strftime("%d/%m/%Y") %>
+        </span>
+      </span>
+    </div>
+  <% end %>
+</div>
+
+<p class="text-xs text-gray-600 mb-4">
+  As faturas já fechadas não mudam. Nenhum valor é perdido: a quantidade e o
+  valor das parcelas continuam os mesmos.
+</p>
+
+<div class="flex items-center gap-4">
+  <%= form_with url: card_path(@card), method: :patch do %>
+    <%= hidden_field_tag "card[name]", @new_name %>
+    <%= hidden_field_tag "card[closing_day]", @days[:closing_day] %>
+    <%= hidden_field_tag "card[due_day]", @days[:due_day] %>
+    <%= hidden_field_tag :confirm_days, "1" %>
+    <%= submit_tag "Confirmar mudança", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+  <% end %>
+  <%= link_to "Cancelar", cards_path, class: "text-blue-600 text-sm" %>
+</div>

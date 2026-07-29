@@ -6,7 +6,8 @@ class ApplicationController < ActionController::Base
   stale_when_importmap_changes
 
   before_action :require_setup
-  helper_method :current_month
+  before_action :canonicalize_month
+  helper_method :current_month, :month_param, :default_entry_date
 
   # Any `find` (Expense, Card, ...) can receive a stale id — a link left open in
   # another tab, or reached via the back button, pointing at a record that no
@@ -37,5 +38,31 @@ class ApplicationController < ActionController::Base
       first = Setting.instance&.first_month
       first && month < first ? first : month
     end
+  end
+
+  # The month in context, in the form every `?month=` and redirect uses.
+  def month_param = current_month.strftime("%Y-%m")
+
+  # The date a new entry's form starts on. Handing the user *today* while they
+  # are working in another month (closing March in July) is how an entry lands
+  # in the wrong month behind a form that looked right — so outside the current
+  # month the form starts on the 1st of the month on screen, which the user then
+  # corrects to the real day.
+  def default_entry_date
+    today = Date.current
+    current_month == today.beginning_of_month ? today : current_month
+  end
+
+  # `current_month` silently repairs a `?month=` that is unparseable or before
+  # the first month, so the page is right but the address bar keeps claiming a
+  # month the screen doesn't show — a bookmarked or shared link then names a
+  # month it doesn't open. Send the browser to the month actually rendered.
+  # Deterministic, so it can't loop: the redirect target already satisfies the
+  # guard.
+  def canonicalize_month
+    return unless request.get? && params[:month].present?
+    return if params[:month] == month_param
+
+    redirect_to "#{request.path}?#{request.query_parameters.merge('month' => month_param).to_query}"
   end
 end

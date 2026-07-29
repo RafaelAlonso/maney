@@ -9,6 +9,27 @@ module ApplicationHelper
     "R$ #{BrlMoney.format(cents)}"
   end
 
+  # A card's days as the lists show them. A due day that is not after the closing
+  # day is perfectly valid — the engine rolls the due date into the following
+  # month, which is how many real cards work — but on screen "fecha dia 20 ·
+  # vence dia 12" reads as a typo, and nothing distinguished a deliberate
+  # next-month due date from a slip of the keyboard. The tail says which one the
+  # user is looking at.
+  def card_days_label(schedule)
+    days = "fecha dia #{schedule.closing_day} · vence dia #{schedule.due_day}"
+    schedule.due_day > schedule.closing_day ? days : "#{days} (vence no mês seguinte)"
+  end
+
+  # Rails' `pluralize` inflects only the last word of the phrase, which is right
+  # for English ("3 loose expenses") and wrong for Portuguese, where the plural
+  # agrees across the whole noun phrase: `pluralize(3, "gasto avulso")` gives
+  # "3 gasto avulsos", not "3 gastos avulsos". Both forms are spelled out here
+  # instead of derived — the app only needs a handful, and any rule we invented
+  # would be wrong on the next irregular one.
+  def pt_pluralize(count, singular, plural)
+    "#{count} #{count == 1 ? singular : plural}"
+  end
+
   # Single source for the payment-method labels — used by the expense form
   # (radios) and the expense row (`expenses/_row`, reused by categories#show).
   # Repeating this hash in every view is how Task 6 found the original form: the

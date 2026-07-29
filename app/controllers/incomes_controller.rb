@@ -5,10 +5,11 @@ class IncomesController < ApplicationController
     @incomes = Income.where(date: current_month.all_month).order(:date, :name)
     @carried_cents = Budgeting::BalanceChain.carried_into(month: current_month)
     @first_month = current_month == Setting.instance.first_month
+    @total_cents = @carried_cents + @incomes.sum(:amount_cents)
   end
 
   def new
-    @income = Income.new(date: Date.current)
+    @income = Income.new(date: default_entry_date)
   end
 
   def create
@@ -32,7 +33,9 @@ class IncomesController < ApplicationController
 
   def destroy
     @income.destroy
-    redirect_to incomes_path, notice: "Ganho excluído."
+    # The month being viewed, not the current one — same reason as
+    # `ExpensesController#destroy`.
+    redirect_to incomes_path(month: month_param), notice: "Ganho excluído."
   end
 
   private

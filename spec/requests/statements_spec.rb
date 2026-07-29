@@ -84,11 +84,22 @@ RSpec.describe "Statements", type: :request do
     expect(response.body.scan("vence 13/04").size).to eq 1
   end
 
-  it "redirects with the neutral notice when the id is unknown or malformed" do
+  # A statement with no expenses is not a broken link — it's a statement whose
+  # last expense left it (an edited date, a deletion), and the URL was valid a
+  # moment ago. It explains itself instead of bouncing the user to the home
+  # screen of a different month. A malformed id is still a stale link.
+  it "shows an empty state for a statement that has no expenses" do
     credit_expense(5_000, Date.new(2026, 3, 6))
 
     get card_statement_path(card, "2026-09-05")
-    expect(response).to redirect_to(root_path)
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Esta fatura não tem mais gastos")
+    expect(response.body).to include(card_statements_path(card))
+  end
+
+  it "redirects with the neutral notice when the id is malformed" do
+    credit_expense(5_000, Date.new(2026, 3, 6))
 
     get card_statement_path(card, "banana")
     expect(response).to redirect_to(root_path)

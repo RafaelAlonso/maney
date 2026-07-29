@@ -1,7 +1,7 @@
 <%# app/views/statements/index.html.erb %>
 <div class="mb-4">
   <h1 class="text-lg font-semibold"><%= @card.name %> · faturas</h1>
-  <p class="text-sm text-gray-500">fecha dia <%= @schedule.closing_day %> · vence dia <%= @schedule.due_day %></p>
+  <p class="text-sm text-gray-500"><%= card_days_label(@schedule) %></p>
 </div>
 <% if @card_statements.empty? %>
   <p class="p-3 text-sm text-gray-500 bg-white rounded border">

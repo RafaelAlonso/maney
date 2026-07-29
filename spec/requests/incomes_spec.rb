@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Incomes", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   before { create_setting!(initial_balance_cents: 10_000); create_reserved_categories! }
 
   it "creates an income (AC 3)" do
@@ -96,5 +98,34 @@ RSpec.describe "Incomes", type: :request do
     expect(income.reload.amount_cents).to eq 480_000
     delete income_path(income)
     expect(Income.exists?(income.id)).to be false
+  end
+
+  # The list showed the entries but no total, so the month's income was displayed
+  # nowhere in the app. The carried balance counts, exactly as it does in the
+  # month view's block — the two screens must show the same number.
+  it "totals the month's income including the carried balance" do
+    Setting.instance.update!(initial_balance_cents: 200_000)
+    Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 1))
+
+    get incomes_path(month: "2026-03")
+
+    expect(response.body).to include("total")
+    expect(response.body).to include("R$ 7.000,00")
+  end
+
+  it "returns to the month the list was showing after a delete" do
+    income = Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 1))
+
+    delete income_path(income, month: "2026-03")
+
+    expect(response).to redirect_to(incomes_path(month: "2026-03"))
+  end
+
+  it "starts a new income on the 1st of the month being viewed" do
+    travel_to(Time.zone.local(2026, 7, 28, 10, 0, 0)) do
+      get new_income_path(month: "2026-03")
+
+      expect(response.body).to include('value="2026-03-01"')
+    end
   end
 end

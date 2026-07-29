@@ -64,10 +64,20 @@ RSpec.describe "Home month view", type: :request do
     expect(response.body).to include("04/2026")
   end
 
-  it "clamps a month before the first month up to the first month" do
+  # The clamp used to be invisible in the address bar: the page showed 03/2026
+  # while the URL still said 2025-01, so a bookmarked or shared link named a
+  # month it doesn't open. The URL is now rewritten to the month rendered.
+  it "clamps a month before the first month up to the first month, and says so in the URL" do
     get root_path(month: "2025-01")
+    expect(response).to redirect_to(root_path(month: "2026-03"))
+    follow_redirect!
     expect(response.body).to include("03/2026")
     expect(response.body).not_to include("01/2025")
+  end
+
+  it "falls back to the current month on an unparseable month, and says so in the URL" do
+    get root_path(month: "banana")
+    expect(response).to redirect_to(root_path(month: Date.current.strftime("%Y-%m")))
   end
 
   it "shows the FAB with both actions" do
@@ -122,5 +132,44 @@ RSpec.describe "Home month view", type: :request do
     expect(response.body).to include("06/2026")
     # casa spends 10.000 in June and inherits May's 10.000 as June's budget
     expect(response.body).to include("gasto R$ 100,00").and include("orçado R$ 100,00")
+  end
+
+  # AC 1 asks the month view for "income with a total". It rendered neither, and
+  # /incomes had no total either, so the month's income was displayed nowhere —
+  # leaving "saldo estimado" impossible to sanity-check without adding it up by hand.
+  describe "the income block (AC 1)" do
+    it "lists the month's income with a total that includes the carried balance" do
+      Setting.instance.update!(initial_balance_cents: 200_000)
+      Income.create!(name: "salário", amount_cents: 500_000, date: march)
+      Income.create!(name: "freela", amount_cents: 50_000, date: Date.new(2026, 3, 20))
+
+      get root_path(month: "2026-03")
+
+      expect(response.body).to include("ganhos").and include("salário").and include("freela")
+      expect(response.body).to include("saldo inicial")
+      # 2.000 carried + 5.000 + 500
+      expect(response.body).to include("R$ 7.500,00")
+    end
+
+    it "names the carried balance as the previous month's outside the first month" do
+      get root_path(month: "2026-04")
+
+      expect(response.body).to include("saldo do mês anterior")
+    end
+  end
+
+  # `spent > budgeted` painted every unbudgeted category red, so in the first
+  # month — and in any month with a new category — the real overrun carried
+  # exactly the same styling as four categories the user simply hadn't budgeted yet.
+  it "does not paint a category without a budget as an overrun (AC 3)" do
+    mercado = Category.create!(name: "mercado")
+    Expense.create!(name: "feira", amount_cents: 150_000, date: Date.new(2026, 3, 5),
+                    payment_method: "debit", category: mercado)
+
+    get root_path(month: "2026-03")
+
+    row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+    expect(row.to_html).to include("orçado R$ 0,00")
+    expect(row.to_html).not_to include("text-red-700")
   end
 end

@@ -24,6 +24,24 @@ RSpec.describe "CardMigrations", type: :request do
     expect(response.body).to include("Verde")
   end
 
+  # `pluralize` inflected only the last word ("3 gasto avulsos"), and the same
+  # broken strings were interpolated into both confirm dialogs — so the user met
+  # them three times in the flow that decides whether to destroy their history.
+  it "inflects the counts as Portuguese does, in the copy and in both confirmations" do
+    Expense.create!(name: "farmácia", amount_cents: 3_000, payment_method: "credit",
+                    card:, category: others, date: Date.new(2026, 3, 4))
+    InstallmentPurchase.create!(name: "trio", total_cents: 30_000, installments_count: 3,
+                                card:, category: others, date: Date.new(2026, 3, 11))
+
+    get new_card_migration_path(card)
+
+    expect(response.body).to include("2 gastos avulsos").and include("2 compras parceladas")
+    expect(response.body).not_to include("gasto avulsos")
+    expect(response.body).not_to include("compra parceladas")
+    # page copy + the migrate confirmation + the delete confirmation
+    expect(response.body.scan("2 gastos avulsos").size).to eq 3
+  end
+
   it "discloses that migrating re-files bills onto the destination card's statements (Fix 1)" do
     get new_card_migration_path(card)
     expect(response.body).to include("cartão de destino")

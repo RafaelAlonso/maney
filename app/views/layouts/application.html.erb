@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
   <head>
     <title><%= content_for(:title) || "Maney" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -27,13 +27,20 @@
 
   <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">
     <% unless Setting.instance.nil? %>
-      <nav class="flex gap-4 px-4 py-3 border-b bg-white text-sm overflow-x-auto">
-        <%= link_to "Início", root_path %>
-        <%= link_to "Gastos", expenses_path %>
-        <%= link_to "Ganhos", incomes_path %>
-        <%= link_to "Cartões", cards_path %>
-        <%= link_to "Categorias", categories_path %>
-        <%= link_to "Config", edit_settings_path %>
+      <%# `shrink-0` + `whitespace-nowrap` are what make `overflow-x-auto` work.
+          Flex items shrink below their content by default, so on a 360 px phone
+          the nav silently squeezed the last items instead of overflowing —
+          "Categorias" clipped, "Config" rendered as "Co", and with
+          scrollWidth === clientWidth there was no gesture left to reach it.
+          Configurações is the only route to the alert threshold, the initial
+          balance and the first month, so that made them unreachable. %>
+      <nav class="flex gap-4 px-4 py-3 border-b bg-white text-sm overflow-x-auto whitespace-nowrap">
+        <%= link_to "Início", root_path, class: "shrink-0" %>
+        <%= link_to "Gastos", expenses_path, class: "shrink-0" %>
+        <%= link_to "Ganhos", incomes_path, class: "shrink-0" %>
+        <%= link_to "Cartões", cards_path, class: "shrink-0" %>
+        <%= link_to "Categorias", categories_path, class: "shrink-0" %>
+        <%= link_to "Config", edit_settings_path, class: "shrink-0" %>
       </nav>
     <% end %>
     <% if notice %><p class="bg-emerald-50 text-emerald-800 px-4 py-2 text-sm"><%= notice %></p><% end %>

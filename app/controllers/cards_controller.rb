@@ -48,6 +48,8 @@ class CardsController < ApplicationController
     card_valid = @card.valid?
     schedule_valid = schedule.nil? || schedule.valid?
     if card_valid && schedule_valid
+      return if confirm_days_change(schedule)
+
       ActiveRecord::Base.transaction { @card.save!; schedule&.save! }
       redirect_to cards_path, notice: "Cartão atualizado."
     else
@@ -85,4 +87,36 @@ class CardsController < ApplicationController
   def set_card = @card = Card.find(params[:id])
 
   def card_params = params.require(:card).permit(:name, :closing_day, :due_day)
+
+  # Days changes are saved straight away unless they move the due dates the user
+  # already has ahead of them — then they go through one confirmation showing
+  # exactly which dates move and how many unbilled installments travel with
+  # them. Closing and due days are independent, so a correction can flip
+  # `due_day < closing_day` and postpone the whole open chain by a month
+  # (Budgeting::ScheduleChangePreview); until now nothing on screen said so.
+  #
+  # Returns true when it has rendered and the caller must stop.
+  def confirm_days_change(schedule)
+    return false if schedule.nil? || params[:confirm_days] == "1"
+
+    preview = Budgeting::ScheduleChangePreview.new(
+      card: @card, proposed: Budgeting::Schedule.new(closing_day: schedule.closing_day,
+                                                     due_day: schedule.due_day,
+                                                     valid_from: schedule.valid_from)
+    )
+    return false unless preview.shifts?
+
+    @preview = preview
+    @days = card_params.slice(:closing_day, :due_day)
+    # Same reason as the invalid branch: `reschedule` may have dirtied a row
+    # inside the already-loaded association, and nothing is being saved here.
+    # The submitted name is carried by the confirmation form, not by this object.
+    @new_name = card_params[:name]
+    @card.reload
+    # 422, not 200: Turbo requires a non-2xx to render a form submission's
+    # response in place instead of demanding a redirect. The submission *is*
+    # being turned down until it's confirmed, so the status also reads true.
+    render :confirm_days, status: :unprocessable_entity
+    true
+  end
 end

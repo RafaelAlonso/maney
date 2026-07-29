@@ -1,0 +1,14 @@
+<%# app/views/statements/empty.html.erb
+    A statement whose expenses have all left it (moved to another statement or
+    deleted). It is derived, so it simply stops existing — but the URL was valid
+    a moment ago, so it explains itself instead of redirecting the user away. %>
+<div class="mb-4">
+  <h1 class="text-lg font-semibold">
+    <%= @card.name %> · fatura que fecharia em <%= @nominal_closing.strftime("%d/%m/%Y") %>
+  </h1>
+</div>
+<p class="p-3 text-sm text-gray-500 bg-white rounded border">
+  Esta fatura não tem mais gastos. As faturas são derivadas dos gastos, então ela
+  deixou de existir quando o último gasto saiu dela.
+</p>
+<p class="mt-3 text-sm"><%= link_to "todas as faturas", card_statements_path(@card), class: "text-blue-600" %></p>

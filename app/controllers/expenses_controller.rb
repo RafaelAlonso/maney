@@ -5,7 +5,7 @@ class ExpensesController < ApplicationController
   end
 
   def new
-    @entry = ExpenseEntry.new(date: Date.current, payment_method: "debit")
+    @entry = ExpenseEntry.new(date: default_entry_date, payment_method: "debit")
   end
 
   def create
@@ -38,12 +38,15 @@ class ExpensesController < ApplicationController
 
   def destroy
     expense = Expense.find(params[:id])
+    # Back to the month the list was showing, not to the current one: deleting
+    # while closing March must not throw the user into July (`month_param`
+    # reads the `?month=` the delete button carries over from the list).
     if expense.installment?
       expense.installment_purchase.destroy
-      redirect_to expenses_path, notice: "Compra parcelada excluída por inteiro."
+      redirect_to expenses_path(month: month_param), notice: "Compra parcelada excluída por inteiro."
     else
       expense.destroy
-      redirect_to expenses_path, notice: "Gasto excluído."
+      redirect_to expenses_path(month: month_param), notice: "Gasto excluído."
     end
   end
 

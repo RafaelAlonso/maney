@@ -22,7 +22,9 @@
   <div class="flex gap-3 text-sm shrink-0">
     <%= link_to "editar", edit_expense_path(expense), class: "text-blue-600" %>
     <% if show_delete %>
-      <%= button_to "excluir", expense_path(expense), method: :delete, class: "text-red-600",
+<%# The month travels with the delete so the redirect comes back to the list the
+          user was on, not to the current month (see ExpensesController#destroy). %>
+      <%= button_to "excluir", expense_path(expense, month: month_param), method: :delete, class: "text-red-600",
             data: { turbo_confirm: expense.installment? ?
               "Excluir remove a compra parcelada inteira (#{expense.installment_purchase.installments_count} parcelas). Confirmar?" :
               "Excluir o gasto #{expense.name}?" } %>

@@ -40,18 +40,33 @@ RSpec.describe Budgeting::MonthEntries do
     expect(described_class.expenses(month: march).map(&:name)).to eq %w[a b]
   end
 
-  # An installment has no date of its own: it sorts as if it were the 1st of the
-  # month, so it comes before any dated expense, even with an alphabetically
-  # larger name. This is the contract the expense list consumes — no other
-  # example mixes a dated row with an installment.
-  it "sorts installments as the first of the month, ahead of dated expenses" do
+  # An installment has no date of its own, and falling back to the 1st of the
+  # month collapsed every installment to the top of the list, above expenses
+  # actually made earlier. It now sorts under the purchase's day-of-month — the
+  # date the user recognises as "when this was bought". This is the contract the
+  # expense list consumes — no other example mixes a dated row with an installment.
+  it "sorts installments under the purchase's day of the month, among the dated expenses" do
     card = create_card!
     Expense.create!(name: "aaa", amount_cents: 100, payment_method: "cash",
                     category: others, date: Date.new(2026, 3, 2))
+    Expense.create!(name: "bbb", amount_cents: 100, payment_method: "cash",
+                    category: others, date: Date.new(2026, 3, 20))
     InstallmentPurchase.create!(name: "zzz", total_cents: 100_000, installments_count: 10,
                                 card:, category: others, date: Date.new(2026, 3, 10))
 
-    expect(described_class.expenses(month: march).map(&:name)).to eq ["zzz 1/10", "aaa"]
+    expect(described_class.expenses(month: march).map(&:name)).to eq ["aaa", "zzz 1/10", "bbb"]
+  end
+
+  # The purchase's day has no counterpart in a shorter month — the sort key is
+  # clamped to the month's last day rather than blowing up on Date#change.
+  it "clamps the purchase's day to a month that is shorter than it" do
+    card = create_card!
+    InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 6,
+                                card:, category: others, date: Date.new(2026, 3, 31))
+    Expense.create!(name: "aaa", amount_cents: 100, payment_method: "cash",
+                    category: others, date: Date.new(2026, 4, 5))
+
+    expect(described_class.expenses(month: Date.new(2026, 4, 1)).map(&:name)).to eq ["aaa", "sofá 2/6"]
   end
 
   it "includes an installment whose competence lands months after the purchase" do

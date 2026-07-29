@@ -52,6 +52,7 @@ module Analysis
         borderDash: [ 6, 4 ],
         borderWidth: 2,
         pointRadius: 0,
+        pointStyle: "line",
         fill: false
       }
     end
@@ -65,14 +66,21 @@ module Analysis
           legend: {
             display: true,
             position: "bottom",
-            labels: { boxWidth: 12, boxHeight: 12, color: Palette::MUTED_INK }
+            # `usePointStyle` makes each key mirror its mark — a rect for the
+            # bars, a stroke for the average line — instead of drawing the
+            # average's dashed border around a box, which read as a torn swatch.
+            labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: Palette::MUTED_INK }
           }
         },
         scales: {
           x: {
             grid: { display: false },
             border: { color: Palette::AXIS },
-            ticks: { color: Palette::MUTED_INK }
+            # Twelve three-letter months on a 414 px phone sit close enough that
+            # Chart.js tilts them to 45° by default. Held flat they stay far
+            # easier to scan; `autoSkip: false` keeps all twelve, because a
+            # month axis with holes in it misreads as missing data.
+            ticks: { color: Palette::MUTED_INK, maxRotation: 0, autoSkip: false }
           },
           y: {
             beginAtZero: true,

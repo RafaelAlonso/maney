@@ -17,7 +17,8 @@ module Analysis
               data: values(series),
               backgroundColor: Palette::PRIMARY,
               maxBarThickness: MAX_BAR_THICKNESS,
-              borderRadius: BAR_END_RADIUS
+              borderRadius: BAR_END_RADIUS,
+              pointStyle: "rect"
             },
             average_dataset(series)
           ]

@@ -37,7 +37,8 @@ export default class extends Controller {
   static values = { config: Object }
 
   connect() {
-    this.chart = new Chart(this.element, this.withCurrencyFormatting(this.configValue))
+    const canvas = this.element.tagName === "CANVAS" ? this.element : this.element.querySelector("canvas")
+    this.chart = new Chart(canvas, this.withCurrencyFormatting(this.configValue))
   }
 
   disconnect() {

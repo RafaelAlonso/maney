@@ -23,10 +23,13 @@ const axisTick = (value) => (Number.isInteger(value) ? BRL_ROUND : BRL).format(v
 // only thing added here is money formatting, because a Chart.js callback is a
 // function and cannot survive the trip through JSON.
 //
-// In the tooltip the value leads and the series name follows: the reader
-// already knows which month and which series they are pointing at, and what
-// they came for is the number. A month outside the timeline has no value at
-// all, so it shows the series name alone rather than a fabricated R$ 0,00.
+// The tooltip label reads "series: value" — Chart.js skips a dataset entirely
+// at a hovered index when its own parsed value is null, so a series with no
+// data at that month never reaches this callback in the first place.
+//
+// `itemSort` is a second case of the same JSON boundary: the Ruby presenter
+// can only emit the sentinel string "desc", not the comparator function
+// Chart.js actually wants, so `tooltipOptions` translates it here.
 export default class extends Controller {
   static values = { config: Object }
 
@@ -52,17 +55,21 @@ export default class extends Controller {
         plugins: {
           ...(options.plugins || {}),
           tooltip: {
-            ...((options.plugins || {}).tooltip || {}),
-            usePointStyle: true,
-            callbacks: {
-              label: (item) => {
-                const value = item.parsed.y
-                return value == null ? item.dataset.label : `${BRL.format(value)} · ${item.dataset.label}`
-              }
-            }
+            ...this.tooltipOptions(options),
+            callbacks: { label: (item) => `${item.dataset.label}: ${BRL.format(item.parsed.y)}` }
           }
         }
       }
     }
+  }
+
+  // `itemSort: "desc"` is a sentinel from the Ruby presenter: Chart.js wants a
+  // comparator here, and a function cannot survive JSON.
+  tooltipOptions(options) {
+    const tooltip = { ...((options.plugins || {}).tooltip || {}) }
+    if (tooltip.itemSort === "desc") {
+      tooltip.itemSort = (a, b) => b.parsed.y - a.parsed.y
+    }
+    return tooltip
   }
 }

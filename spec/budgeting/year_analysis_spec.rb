@@ -205,4 +205,43 @@ RSpec.describe Budgeting::YearAnalysis do
       expect(analysis).to be_any_data
     end
   end
+
+  describe "the story's edge cases" do
+    # Deleting a category reassigns its expenses to the default one
+    # (CategoriesController#destroy), so the charts show current categorisation
+    # for the whole year. This is behaviour to confirm, not to build.
+    it "shows a deleted category's history under the default category" do
+      spend(5_000, on: Date.new(2026, 3, 4), category: mercado)
+      mercado.expenses.update_all(category_id: others.id)
+      mercado.reload.destroy!
+
+      expect(analysis.spending_by_category[others].cents(march)).to eq 5_000
+      expect(analysis.categories.map(&:name)).to eq [ "outros" ]
+    end
+
+    it "gives a category created mid-year no months before its first expense" do
+      lazer = Category.create!(name: "lazer")
+      spend(5_000, on: Date.new(2026, 6, 4), category: lazer)
+
+      series = analysis.spending_by_category[lazer]
+      expect(series.cents(march)).to eq 0
+      expect(series.cents(Date.new(2026, 6, 1))).to eq 5_000
+    end
+
+    it "averages over three months when only three months have data" do
+      spend(3_000, on: Date.new(2026, 3, 4), category: mercado)
+      spend(6_000, on: Date.new(2026, 4, 4), category: mercado)
+
+      subject = described_class.new(year: 2026, today: Date.new(2026, 5, 20))
+      # March, April and May are active; May is a real zero.
+      expect(subject.spending.average_cents).to eq 3_000
+    end
+
+    it "reads a year with spending and no income as a full loss, not as no data" do
+      spend(5_000, on: Date.new(2026, 3, 4), category: mercado)
+
+      expect(analysis).to be_any_data
+      expect(analysis.profit_vs_spending.cents(march)).to eq(-5_000)
+    end
+  end
 end

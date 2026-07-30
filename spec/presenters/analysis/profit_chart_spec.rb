@@ -14,6 +14,10 @@ RSpec.describe Analysis::ProfitChart do
                     category: mercado, date: Date.new(2026, 3, 6))
     Expense.create!(name: "tv", amount_cents: 150_000, payment_method: "credit",
                     category: mercado, card:, date: Date.new(2026, 3, 7))
+    # An income-only month (no expenses at all): a genuine positive profit,
+    # distinct from April's break-even zero, so the colour test below cannot
+    # be satisfied by a design that only distinguishes negative from zero.
+    Income.create!(name: "bônus", amount_cents: 50_000, date: Date.new(2026, 5, 10))
   end
 
   it "offers the three modes (AC 6)" do
@@ -35,12 +39,17 @@ RSpec.describe Analysis::ProfitChart do
   end
 
   # AC 7: a negative month must be distinguishable at a glance, so the colour is
-  # decided per bar in Ruby rather than by a Chart.js callback.
-  it "colours a negative month differently from a positive one" do
+  # decided per bar in Ruby rather than by a Chart.js callback. Three cases are
+  # checked, not two: a genuinely negative month (March), a genuinely positive
+  # month (May, income-only), and a break-even month (April, exactly zero) —
+  # without May, a design that colours only strictly-positive months green and
+  # leaves break-even neutral would still pass.
+  it "colours a negative month differently from a positive or break-even one" do
     colors = chart.modes["spending"].first[:backgroundColor]
 
     expect(colors[2]).to eq Analysis::Palette::NEGATIVE
     expect(colors[3]).to eq Analysis::Palette::POSITIVE
+    expect(colors[4]).to eq Analysis::Palette::POSITIVE
   end
 
   it "leaves months outside the timeline as gaps (AC 9, AC 10)" do

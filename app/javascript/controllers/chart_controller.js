@@ -23,9 +23,12 @@ const axisTick = (value) => (Number.isInteger(value) ? BRL_ROUND : BRL).format(v
 // only thing added here is money formatting, because a Chart.js callback is a
 // function and cannot survive the trip through JSON.
 //
-// The tooltip label reads "series: value" — Chart.js skips a dataset entirely
-// at a hovered index when its own parsed value is null, so a series with no
-// data at that month never reaches this callback in the first place.
+// The tooltip label reads "series: value". Today Chart.js's own
+// `interaction: { mode: "index" }` skips a dataset at a hovered index when
+// its parsed value is null, so the label callback rarely sees one in
+// practice — but that is Chart.js internals, not a contract this file can
+// lean on (a future chart may switch interaction modes), so the callback
+// still guards for it explicitly.
 //
 // `itemSort` is a second case of the same JSON boundary: the Ruby presenter
 // can only emit the sentinel string "desc", not the comparator function
@@ -56,7 +59,16 @@ export default class extends Controller {
           ...(options.plugins || {}),
           tooltip: {
             ...this.tooltipOptions(options),
-            callbacks: { label: (item) => `${item.dataset.label}: ${BRL.format(item.parsed.y)}` }
+            // `Intl.NumberFormat` coerces `null` to `0` without throwing, so an
+            // unguarded call would print "R$ 0,00" for a month with no data —
+            // exactly the fabricated zero this app forbids everywhere else. A
+            // gap month shows the series name alone instead.
+            callbacks: {
+              label: (item) =>
+                item.parsed.y == null
+                  ? item.dataset.label
+                  : `${item.dataset.label}: ${BRL.format(item.parsed.y)}`
+            }
           }
         }
       }

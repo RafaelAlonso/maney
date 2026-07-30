@@ -56,6 +56,12 @@ RSpec.describe Analysis::CategoryStackChart do
 
     colors_2026 = config[:data][:datasets].to_h { |d| [ d[:label], d[:backgroundColor] ] }
 
+    # "loja" sorts right after "lazer" (and before "mercado") in
+    # Category.order(:name), so its arrival shifts mercado's palette slot
+    # without touching lazer's — proving the palette recomputes live from the
+    # category table on every read rather than freezing a slot map, which a
+    # fixture that never changes the category table between reads cannot show.
+    Category.create!(name: "loja")
     spend(50_000, on: Date.new(2027, 2, 4), category: lazer)
     later = described_class.new(Budgeting::YearAnalysis.new(year: 2027, today: Date.new(2027, 6, 1))).to_config
     colors_2027 = later[:data][:datasets].to_h { |d| [ d[:label], d[:backgroundColor] ] }

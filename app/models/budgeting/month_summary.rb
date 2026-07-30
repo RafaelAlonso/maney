@@ -27,15 +27,49 @@ module Budgeting
 
     def spent_cents(category)
       if category.credit_card?
-        credit_card_spent_cents
+        statement_payments_cents
       else
         dated = Expense.where(category:, date: month.all_month).sum(:amount_cents)
         dated + installment_spent_cents(category)
       end
     end
 
+    # The cash half of a category's month: what actually left the account. The
+    # credit half is `spent_cents - cash_spent_cents` — installments carry
+    # `date: nil` and are always `payment_method: "credit"`, so they are excluded
+    # here by construction, and the two halves always reconcile to the total the
+    # budgeted-vs-spent rows show.
+    def cash_spent_cents(category)
+      Expense.where(category:, payment_method: %w[debit cash], date: month.all_month)
+             .sum(:amount_cents)
+    end
+
+    # Public because Budgeting::CashForecast must reach these without going
+    # through the reserved category — that row is deletable, and reaching them via
+    # `budgeted_cents(credit_card_category)` made the estimate discard a whole
+    # statement when it was missing.
+    #
+    # Memoized because deriving the month's statements walks every card and every
+    # installment — expensive, and asked for more than once per summary (the
+    # reserved category's budgeted amount and the forecast use the same number).
+    # Safe for the same reason as carried_balance_cents: the instance is
+    # disposable, for a single month. Nothing here may become process state (see
+    # Budgeting::Schedule).
+    def statements_due_cents
+      @statements_due_cents ||= StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
+    end
+
+    # Payments entered against statements: filtered by role, not by a reference to
+    # the reserved category record, for the same reason.
+    def statement_payments_cents
+      @statement_payments_cents ||=
+        Expense.joins(:category)
+               .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
+               .sum(:amount_cents)
+    end
+
     def budgeted_cents(category)
-      return credit_card_budgeted_cents if category.credit_card?
+      return statements_due_cents if category.credit_card?
 
       budget = Budget.find_by(category:, month:)
       return budget.amount_cents if budget
@@ -43,42 +77,15 @@ module Budgeting
       inherited_budget_cents(category)
     end
 
-    def estimated_balance_cents
-      # `role` is null on most categories — Category.where.not(role: "credit_card")
-      # would exclude those rows via SQL three-valued logic, so we filter in Ruby.
-      other_committed = Category.all.reject(&:credit_card?).sum { |c| [budgeted_cents(c), spent_cents(c)].max }
-      incomes_total_cents - other_committed - credit_card_committed_cents
-    end
+    # The definition lives in Budgeting::CashForecast — see it for what this
+    # number means and what it deliberately does not count.
+    def estimated_balance_cents = CashForecast.estimated_balance_cents(self)
 
     def current_balance_cents
       BalanceChain.current_balance(month:, carried: carried_balance_cents)
     end
 
     private
-
-    # Credit-card term computed without relying on the reserved row existing in
-    # Category — the budgeted amount comes entirely from the derived statements
-    # and the spent amount is filtered by role, not by a reference to the category.
-    def credit_card_committed_cents
-      [credit_card_budgeted_cents, credit_card_spent_cents].max
-    end
-
-    # Memoized because deriving the month's statements walks every card and every
-    # installment — expensive, and asked for more than once per summary (the
-    # reserved category's budgeted amount and the estimate use the same number).
-    # Safe for the same reason as carried_balance_cents: the instance is
-    # disposable, for a single month. Nothing here may become process state (see
-    # Budgeting::Schedule).
-    def credit_card_budgeted_cents
-      @credit_card_budgeted_cents ||= StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
-    end
-
-    def credit_card_spent_cents
-      @credit_card_spent_cents ||=
-        Expense.joins(:category)
-               .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
-               .sum(:amount_cents)
-    end
 
     def installment_spent_cents(category)
       Expense.where(category:, date: nil).includes(:installment_purchase).sum do |expense|

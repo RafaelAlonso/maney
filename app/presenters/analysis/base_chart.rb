@@ -34,6 +34,16 @@ module Analysis
 
     def month_labels = MONTH_LABELS
 
+    # The house bar spec, shared by every bar dataset in every chart:
+    # `maxBarThickness` caps the mark instead of letting it fill the band, and
+    # `pointStyle: "rect"` makes the legend swatch mirror the mark shape.
+    # `BAR_END_RADIUS` is deliberately not included here — it must not reach
+    # the stacked chart's inner segments, only the non-stacked charts merge it
+    # in separately.
+    def bar_defaults
+      { maxBarThickness: MAX_BAR_THICKNESS, pointStyle: "rect" }
+    end
+
     def reais(cents) = cents.nil? ? nil : (cents / 100.0).round(2)
 
     def values(series) = series.values_for_chart.map { |cents| reais(cents) }

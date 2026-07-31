@@ -16,9 +16,8 @@ module Analysis
               label: "Gastos",
               data: values(series),
               backgroundColor: Palette::PRIMARY,
-              maxBarThickness: MAX_BAR_THICKNESS,
               borderRadius: BAR_END_RADIUS,
-              pointStyle: "rect"
+              **bar_defaults
             },
             average_dataset(series)
           ]

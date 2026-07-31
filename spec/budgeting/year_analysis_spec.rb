@@ -1,8 +1,6 @@
 require "rails_helper"
 
 RSpec.describe Budgeting::YearAnalysis do
-  include ActiveSupport::Testing::TimeHelpers
-
   before { create_setting!(first_month: Date.new(2026, 3, 1)); create_reserved_categories! }
 
   let(:others) { Category.find_by!(role: "others") }
@@ -114,12 +112,12 @@ RSpec.describe Budgeting::YearAnalysis do
       expect(subject.spending.total_cents).to eq 80_000
     end
 
-    it "omits a category from a month with no spending rather than showing zero (AC 5)" do
+    it "omits a category from a month with no spending" do
       spend(3_000, on: Date.new(2026, 3, 4), category: mercado)
 
       values = analysis.spending_by_category[mercado].values_for_chart
       expect(values[2]).to eq 3_000
-      expect(values[3]).to be_nil.or eq(0)
+      expect(values[3]).to eq 0
       expect(analysis.spending_by_category).not_to have_key(others)
     end
 
@@ -219,7 +217,7 @@ RSpec.describe Budgeting::YearAnalysis do
       expect(analysis.categories.map(&:name)).to eq [ "outros" ]
     end
 
-    it "gives a category created mid-year no months before its first expense" do
+    it "reports zero for a category's months before its first expense" do
       lazer = Category.create!(name: "lazer")
       spend(5_000, on: Date.new(2026, 6, 4), category: lazer)
 

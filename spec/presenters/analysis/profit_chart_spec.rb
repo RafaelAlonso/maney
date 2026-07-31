@@ -38,6 +38,18 @@ RSpec.describe Analysis::ProfitChart do
     expect(chart.modes["both"].map { |d| d[:label] }).to eq [ "Ganhos − gastos", "Ganhos − saídas" ]
   end
 
+  # Both series share the same sign palette, so colour alone cannot tell them
+  # apart — "Ganhos − gastos" stays filled and "Ganhos − saídas" renders as a
+  # transparent-fill outline instead, so a rendered attribute must differ.
+  it "renders the two series in the both mode as fill vs outline, not just by colour" do
+    spending_series, outflow_series = chart.modes["both"]
+
+    expect(spending_series[:backgroundColor]).to be_an(Array)
+    expect(outflow_series[:backgroundColor]).to eq "transparent"
+    expect(outflow_series[:borderColor]).to be_an(Array)
+    expect(outflow_series[:borderWidth]).to eq 2
+  end
+
   # AC 7: a negative month must be distinguishable at a glance, so the colour is
   # decided per bar in Ruby rather than by a Chart.js callback. Three cases are
   # checked, not two: a genuinely negative month (March), a genuinely positive

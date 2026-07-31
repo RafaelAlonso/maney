@@ -12,8 +12,10 @@ module Analysis
         data: {
           labels: month_labels,
           datasets: [
-            { type: "bar", label: "Gastos", data: values(analysis.spending), backgroundColor: Palette::PRIMARY },
-            { type: "bar", label: "Saídas", data: values(analysis.cash_outflow), backgroundColor: Palette::OUTFLOW }
+            { type: "bar", label: "Gastos", data: values(analysis.spending), backgroundColor: Palette::PRIMARY,
+              borderRadius: BAR_END_RADIUS, **bar_defaults },
+            { type: "bar", label: "Saídas", data: values(analysis.cash_outflow), backgroundColor: Palette::OUTFLOW,
+              borderRadius: BAR_END_RADIUS, **bar_defaults }
           ]
         },
         options: base_options

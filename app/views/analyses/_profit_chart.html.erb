@@ -1,18 +1,19 @@
 <%# locals: chart (an Analysis::ProfitChart) %>
+<% heading_id = "#{chart.class.name.demodulize.underscore}-title" %>
 <section class="bg-white rounded border p-4 mb-4"
          data-controller="profit-chart"
          data-profit-chart-config-value="<%= chart.to_config.to_json %>"
          data-profit-chart-modes-value="<%= chart.modes.to_json %>">
-  <h2 class="font-medium text-sm mb-3"><%= chart.title %></h2>
+  <h2 id="<%= heading_id %>" class="font-medium text-sm mb-3"><%= chart.title %></h2>
   <div class="flex gap-2 mb-3 overflow-x-auto whitespace-nowrap">
-    <% chart.mode_labels.each_with_index do |(key, label), index| %>
+    <% chart.mode_labels.each do |key, label| %>
       <button type="button"
               class="shrink-0 border rounded px-3 py-1 text-xs aria-pressed:bg-gray-900 aria-pressed:text-white"
-              aria-pressed="<%= index.zero? %>"
+              aria-pressed="<%= key == Analysis::ProfitChart::DEFAULT_MODE %>"
               data-profit-chart-target="mode"
               data-action="profit-chart#select"
               data-profit-chart-mode-param="<%= key %>"><%= label %></button>
     <% end %>
   </div>
-  <div class="h-64"><canvas></canvas></div>
+  <div class="h-64"><canvas aria-labelledby="<%= heading_id %>"></canvas></div>
 </section>

@@ -3,5 +3,5 @@
   <%= form.select :year, years, { selected: year },
         class: "border rounded px-3 py-2 text-base bg-white",
         data: { controller: "year-picker", action: "change->year-picker#submit" } %>
-  <%= form.submit "Ver", class: "hidden", data: { year_picker_target: "submit" } %>
+  <%= form.submit "Ver", class: "hidden" %>
 <% end %>

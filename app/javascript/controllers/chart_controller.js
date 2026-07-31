@@ -10,6 +10,11 @@ import { Controller } from "@hotwired/stimulus"
 // `import { Chart } from "chart.js"` — that import cannot resolve.
 import "chart.js"
 
+// Bound explicitly so a pin regression (the global not being defined) throws
+// a clear ReferenceError right here, next to the comment explaining the
+// vendoring, instead of failing deep inside `connect()`.
+const { Chart } = window
+
 const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
 const BRL_ROUND = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 })
 

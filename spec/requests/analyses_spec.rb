@@ -7,6 +7,10 @@ RSpec.describe "Analysis", type: :request do
 
   let(:mercado) { Category.create!(name: "mercado") }
 
+  def selected_year
+    Nokogiri::HTML(response.body).at_css("option[selected]")&.[]("value")
+  end
+
   it "opens on the current year and offers every year since the first month (AC 1)" do
     travel_to(Date.new(2027, 5, 10)) do
       get analysis_path
@@ -26,7 +30,7 @@ RSpec.describe "Analysis", type: :request do
     travel_to(Date.new(2026, 7, 1)) do
       get analysis_path(year: 1999)
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("1999")
+      expect(selected_year).to eq "2026"
     end
   end
 
@@ -34,7 +38,7 @@ RSpec.describe "Analysis", type: :request do
     travel_to(Date.new(2026, 7, 1)) do
       get analysis_path(year: 2099)
       expect(response).to have_http_status(:ok)
-      expect(response.body).not_to include("2099")
+      expect(selected_year).to eq "2026"
     end
   end
 

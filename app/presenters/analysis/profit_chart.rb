@@ -11,6 +11,8 @@ module Analysis
       "both" => "Os dois"
     }.freeze
 
+    DEFAULT_MODE = "spending"
+
     def title = "Lucro por mês"
 
     def mode_labels = MODE_LABELS.to_a
@@ -19,12 +21,17 @@ module Analysis
       @modes ||= {
         "spending" => [ vs_spending ],
         "outflow" => [ vs_outflow ],
-        "both" => [ vs_spending, vs_outflow ]
+        # Both series stay sign-readable (AC 7), but they must also be
+        # distinguishable from each other: "Ganhos − gastos" stays filled,
+        # "Ganhos − saídas" renders as an outline (transparent fill, sign-
+        # coloured border) so fill-vs-outline separates the two on top of
+        # colour alone.
+        "both" => [ vs_spending, profit_dataset(analysis.profit_vs_outflow, MODE_LABELS.fetch("outflow"), outline: true) ]
       }
     end
 
     def to_config
-      { type: "bar", data: { labels: month_labels, datasets: modes.fetch("spending") }, options: base_options }
+      { type: "bar", data: { labels: month_labels, datasets: modes.fetch(DEFAULT_MODE) }, options: base_options }
     end
 
     private
@@ -35,15 +42,25 @@ module Analysis
 
     # The colour is resolved per bar here rather than in a Chart.js callback:
     # callbacks cannot cross JSON, and a per-bar array is exactly what Chart.js
-    # accepts for backgroundColor.
-    def profit_dataset(series, label)
+    # accepts for backgroundColor/borderColor.
+    #
+    # `outline:` is used only in the "both" mode, where two series share the
+    # same sign palette and would otherwise be indistinguishable — both stayed
+    # filled and identically green in every inactive month (backgroundColor[0]
+    # is the legend swatch source, and January is `nil` for both series).
+    # "Ganhos − saídas" renders instead as a transparent-fill, sign-coloured
+    # outline, so fill-vs-outline separates the two on top of colour alone.
+    def profit_dataset(series, label, outline: false)
       data = values(series)
-      {
-        type: "bar",
-        label:,
-        data:,
-        backgroundColor: data.map { |value| value.nil? || value >= 0 ? Palette::POSITIVE : Palette::NEGATIVE }
-      }
+      colors = data.map { |value| value.nil? || value >= 0 ? Palette::POSITIVE : Palette::NEGATIVE }
+
+      dataset = { type: "bar", label:, data:, borderRadius: BAR_END_RADIUS, **bar_defaults }
+      if outline
+        dataset.merge!(backgroundColor: "transparent", borderColor: colors, borderWidth: 2)
+      else
+        dataset[:backgroundColor] = colors
+      end
+      dataset
     end
   end
 end

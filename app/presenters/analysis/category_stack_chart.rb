@@ -25,7 +25,8 @@ module Analysis
         type: "bar",
         label: category.name,
         backgroundColor: palette.color_for(category),
-        data: series.months.map { |month| series.active?(month) && series.cents(month) != 0 ? reais(series.cents(month)) : nil }
+        data: series.months.map { |month| series.active?(month) && series.cents(month) != 0 ? reais(series.cents(month)) : nil },
+        **bar_defaults
       }
     end
 

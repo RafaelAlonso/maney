@@ -1,0 +1,11 @@
+<%# locals: chart (an Analysis::BaseChart), controller (Stimulus identifier, optional) %>
+<% identifier = local_assigns.fetch(:controller, "chart") %>
+<% heading_id = "#{chart.class.name.demodulize.underscore}-title" %>
+<section class="bg-white rounded border p-4 mb-4">
+  <h2 id="<%= heading_id %>" class="font-medium text-sm mb-3"><%= chart.title %></h2>
+  <div class="h-64">
+    <canvas data-controller="<%= identifier %>"
+            data-<%= identifier %>-config-value="<%= chart.to_config.to_json %>"
+            aria-labelledby="<%= heading_id %>"></canvas>
+  </div>
+</section>

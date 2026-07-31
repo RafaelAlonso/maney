@@ -1,0 +1,13 @@
+<% content_for :title, "Análise" %>
+<%= render "analyses/year_picker", year: @year, years: @years %>
+
+<% if @analysis.any_data? %>
+  <%= render "analyses/chart", chart: Analysis::SpendingChart.new(@analysis, palette: @palette) %>
+  <%= render "analyses/chart", chart: Analysis::CategoryStackChart.new(@analysis, palette: @palette) %>
+  <%= render "analyses/profit_chart", chart: Analysis::ProfitChart.new(@analysis, palette: @palette) %>
+  <%= render "analyses/chart", chart: Analysis::SpendingVsOutflowChart.new(@analysis, palette: @palette) %>
+<% else %>
+  <p class="bg-white rounded border p-6 text-center text-sm text-gray-500">
+    Nenhum lançamento em <%= @year %>.
+  </p>
+<% end %>

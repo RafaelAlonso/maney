@@ -11,25 +11,17 @@ module Budgeting
   class YearAnalysis
     def initialize(year:, today: Date.current)
       @year = year
-      @today = today
+      @calendar = YearCalendar.new(year:, today:)
     end
 
-    def months
-      @months ||= (1..12).map { |month| Date.new(@year, month, 1) }
-    end
+    def months = @calendar.months
 
-    # The months that actually happened: on or after the first month, and not in
-    # the future. This single predicate is the whole of AC 9, AC 10 and the
-    # average rule — no chart re-derives it.
-    def active_months
-      @active_months ||= begin
-        first = Setting.instance&.first_month
-        last = @today.beginning_of_month
-        first.nil? ? [] : months.select { |month| month >= first && month <= last }
-      end
-    end
+    # The months that actually happened. Delegated to YearCalendar, which the
+    # category drill-down shares — this predicate is still the whole of AC 9,
+    # AC 10 and the average rule, and no chart re-derives it.
+    def active_months = @calendar.active_months
 
-    def active?(month) = active_months.include?(month)
+    def active?(month) = @calendar.active?(month)
 
     def spending
       @spending ||= series(spending_by_category.values.each_with_object(Hash.new(0)) do |category_series, totals|

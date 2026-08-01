@@ -130,4 +130,49 @@ RSpec.describe Budgeting::Solvency do
       expect(result.rows).to be_empty
     end
   end
+
+  describe "the comparison against the money on hand" do
+    it "is the current balance: incomes minus debit and cash, carried forward" do
+      Income.create!(name: "salário", amount_cents: 300_000, date: Date.new(2026, 8, 1))
+      Expense.create!(name: "feira", amount_cents: 40_000, payment_method: "debit",
+                      category: mercado, date: Date.new(2026, 8, 3))
+
+      expect(solvency.money_on_hand_cents).to eq 760_000 # 500_000 + 300_000 - 40_000
+    end
+
+    it "names the month the debt passes the balance, and how much short (AC 3)" do
+      # Placing a known amount on a known statement: day 4 of each month falls on
+      # that month's statement for card Azul. September is the exception: its
+      # nominal closing (day 5) is a Saturday, so the effective closing shifts
+      # back to day 4 — a day-4 purchase then lands exactly on it and rolls into
+      # October's statement instead, so day 3 is used there.
+      credit(120_000, on: Date.new(2026, 8, 4))
+      credit(120_000, on: Date.new(2026, 9, 3))
+      credit(164_000, on: Date.new(2026, 10, 4))
+      credit(220_000, on: Date.new(2026, 11, 4))
+
+      result = solvency
+      expect(result.money_on_hand_cents).to eq 500_000
+      expect(result.rows.map(&:cumulative_cents)).to eq [ 120_000, 240_000, 404_000, 624_000 ]
+      expect(result.shortfall_row.month).to eq Date.new(2026, 11, 1)
+      expect(result.shortfall_cents).to eq 124_000
+      expect(result).not_to be_covered
+    end
+
+    it "reports the debt as covered when the balance carries all of it (AC 4)" do
+      credit(120_000, on: Date.new(2026, 8, 4))
+
+      expect(solvency).to be_covered
+      expect(solvency.shortfall_row).to be_nil
+      expect(solvency.shortfall_cents).to be_nil
+    end
+
+    it "reports the shortfall on the first listed month when the balance is already negative" do
+      Setting.instance.update!(initial_balance_cents: -50_000)
+      credit(120_000, on: Date.new(2026, 8, 4))
+
+      expect(solvency.shortfall_row.month).to eq august
+      expect(solvency.shortfall_cents).to eq 170_000
+    end
+  end
 end

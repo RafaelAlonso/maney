@@ -47,6 +47,26 @@ module Budgeting
         [ past_months.sum { |month| due_cents(month) - paid_cents(month) }, 0 ].max
     end
 
+    # "Saldo atual" for the current month — income received minus debit and cash
+    # spending, carried forward from previous months. One figure, compared
+    # against the whole cumulative series; it is never recomputed per month,
+    # because the block deliberately projects no income into the months ahead.
+    def money_on_hand_cents
+      @money_on_hand_cents ||= BalanceChain.current_balance(
+        month: current_month, carried: BalanceChain.carried_into(month: current_month)
+      )
+    end
+
+    # The first month whose cumulative debt passes the balance. A non-positive
+    # balance therefore lands on the first row, which is the right answer: the
+    # money is already gone.
+    def shortfall_row = rows.find { |row| row.cumulative_cents > money_on_hand_cents }
+
+    def covered? = shortfall_row.nil?
+
+    # The difference AT that month — not the debt of the whole horizon.
+    def shortfall_cents = shortfall_row && shortfall_row.cumulative_cents - money_on_hand_cents
+
     private
 
     def horizon

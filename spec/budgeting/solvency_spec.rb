@@ -14,7 +14,11 @@ RSpec.describe Budgeting::Solvency do
 
   # Card Azul closes on day 5 and is due on day 12, so a purchase dated day 4 of
   # a month falls on the statement due in that same month, and one dated day 6
-  # falls on the next month's.
+  # falls on the next month's. That holds only when day 5 itself is a business
+  # day: when the nominal closing lands on a weekend, Calendar#effective_closing
+  # walks it back, and a day-4 purchase can land exactly on the shifted closing
+  # (or before it) and roll into the following cycle instead. 2026-07-05 and
+  # 2026-09-05 are both weekends — pick day 2 or 3 there, not day 4.
   def credit(cents, on:, card: azul)
     Expense.create!(name: "compra", amount_cents: cents, payment_method: "credit",
                     category: mercado, card:, date: on)
@@ -106,7 +110,7 @@ RSpec.describe Budgeting::Solvency do
 
   describe "debt from before the current month" do
     it "folds an unpaid past statement into the current month" do
-      credit(100_000, on: Date.new(2026, 7, 4)) # falls due before September, never paid
+      credit(100_000, on: Date.new(2026, 7, 2)) # due 2026-07-13, never paid
 
       result = solvency(today: Date.new(2026, 9, 10))
       expect(result.arrears_cents).to eq 100_000
@@ -118,7 +122,7 @@ RSpec.describe Budgeting::Solvency do
       # July's statement, settled in August. Flooring each past month on its own
       # would leave July's debt behind forever, because August's payment has
       # nothing of its own to cancel.
-      credit(100_000, on: Date.new(2026, 7, 4))
+      credit(100_000, on: Date.new(2026, 7, 2))
       pay(100_000, on: Date.new(2026, 8, 20))
 
       result = solvency(today: Date.new(2026, 10, 10))

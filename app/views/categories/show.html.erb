@@ -1,9 +1,22 @@
-<%# app/views/categories/show.html.erb — reuses expenses/_row (Task 6),
-    show_delete: false: the category drill-down only offers editing.
-    show_category: false: every row is already of this category — the <h1> above
-    already says which — repeating the name on each row would be just noise. %>
+<%# app/views/categories/show.html.erb — the two charts sit above the expense
+    list, which is the detail behind them and stays exactly as it was.
+    It reuses expenses/_row with show_delete: false (the drill-down only offers
+    editing) and show_category: false (every row is of this category — the <h1>
+    already says which). %>
 <h1 class="text-lg font-semibold mb-2"><%= @category.name %></h1>
 <%= render "shared/month_nav", path_helper: ->(month:) { category_path(@category, month:) } %>
+
+<% if @category_year.any_data? %>
+  <%= render "shared/chart", chart: @year_chart %>
+<% else %>
+  <section class="bg-white rounded border p-4 mb-4">
+    <h2 class="font-medium text-sm mb-3"><%= @year_chart.title %></h2>
+    <p class="text-sm text-gray-500">Nenhum gasto nesta categoria em <%= @category_year.year %>.</p>
+  </section>
+<% end %>
+
+<%= render "categories/breakdown", chart: @breakdown %>
+
 <ul class="divide-y bg-white rounded border">
   <% @expenses.each do |expense| %>
     <%= render "expenses/row", expense:, show_delete: false, show_category: false, statements: @statements %>

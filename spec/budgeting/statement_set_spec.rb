@@ -148,4 +148,23 @@ RSpec.describe "Competence and StatementSet" do
     expect(labels[third.id].effective_due).to eq Date.new(2026, 6, 12)
     expect(labels).not_to have_key(cash.id)
   end
+
+  it "by_due_month buckets every card's statements by the month they fall due" do
+    credit_expense(120_000, Date.new(2026, 3, 4)) # due 2026-03-12
+    credit_expense(80_000, Date.new(2026, 3, 6))  # due 2026-04-13
+
+    buckets = Budgeting::StatementSet.by_due_month
+    totals = buckets.transform_values { |statements| statements.values.flatten.sum(&:amount_cents) }
+
+    expect(totals[Date.new(2026, 3, 1)]).to eq 120_000
+    expect(totals[Date.new(2026, 4, 1)]).to eq 80_000
+  end
+
+  it "due_in returns the same statements by_due_month buckets, and an empty hash for a quiet month" do
+    credit_expense(120_000, Date.new(2026, 3, 4))
+
+    expect(Budgeting::StatementSet.due_in(month: Date.new(2026, 3, 1)))
+      .to eq Budgeting::StatementSet.by_due_month[Date.new(2026, 3, 1)]
+    expect(Budgeting::StatementSet.due_in(month: Date.new(2026, 1, 1))).to eq({})
+  end
 end

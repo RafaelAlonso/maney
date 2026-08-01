@@ -40,11 +40,19 @@ module Budgeting
       end
     end
 
-    def due_in(month:)
-      target = month.beginning_of_month
-      Card.includes(:card_schedules).flat_map do |card|
-        for_card(card:).select { |statement, _| statement.effective_due.beginning_of_month == target }.to_a
-      end.to_h
+    # Every card's statements bucketed by the month their payment falls due:
+    # {month => {Statement => expenses}}. Deriving a card's history is the
+    # expensive part, so it happens once here rather than once per month asked
+    # about — Budgeting::Solvency lists a horizon that can run to 24 months.
+    def by_due_month
+      Card.includes(:card_schedules).each_with_object({}) do |card, buckets|
+        for_card(card:).each do |statement, expenses|
+          month = statement.effective_due.beginning_of_month
+          (buckets[month] ||= {})[statement] = expenses
+        end
+      end
     end
+
+    def due_in(month:) = by_due_month.fetch(month.beginning_of_month, {})
   end
 end

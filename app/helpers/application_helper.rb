@@ -40,6 +40,11 @@ module ApplicationHelper
 
   def payment_method_label(method) = PAYMENT_METHOD_LABELS[method]
 
+  # A month as the Análise section writes it: "ago" this year, "jan/2028" beyond
+  # it. The solvency horizon can run two years out, where a bare "jan" would read
+  # as this coming January.
+  def month_label(month, today: Date.current) = Analysis::MonthLabels.for(month, today:)
+
   # The statement's EFFECTIVE due date — never the nominal one. The year appears
   # only when it differs from the current one, so a statement across the rollover
   # (a 12x bought in December) can't be read as this year's, while the everyday

@@ -12,7 +12,7 @@ module Analysis
   # text in ink tokens rather than in the series colour, and one shared tooltip
   # listing every series at the hovered month.
   class BaseChart
-    MONTH_LABELS = %w[jan fev mar abr mai jun jul ago set out nov dez].freeze
+    MONTH_LABELS = MonthLabels::SHORT
 
     # The skill's bar spec: cap the mark instead of letting it fill the band, and
     # round the data-end while the baseline stays square.

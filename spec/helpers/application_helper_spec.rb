@@ -87,4 +87,14 @@ RSpec.describe ApplicationHelper, type: :helper do
         .to include("(vence no mês seguinte)")
     end
   end
+
+  describe "#month_label" do
+    it "gives the month alone inside the current year" do
+      expect(helper.month_label(Date.new(2026, 8, 1), today: Date.new(2026, 8, 10))).to eq "ago"
+    end
+
+    it "adds the year once the month leaves the current one" do
+      expect(helper.month_label(Date.new(2028, 1, 1), today: Date.new(2026, 8, 10))).to eq "jan/2028"
+    end
+  end
 end

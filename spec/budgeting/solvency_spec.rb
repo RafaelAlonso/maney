@@ -142,18 +142,27 @@ RSpec.describe Budgeting::Solvency do
 
     it "names the month the debt passes the balance, and how much short (AC 3)" do
       # Placing a known amount on a known statement: day 4 of each month falls on
-      # that month's statement for card Azul. September is the exception: its
-      # nominal closing (day 5) is a Saturday, so the effective closing shifts
-      # back to day 4 — a day-4 purchase then lands exactly on it and rolls into
-      # October's statement instead, so day 3 is used there.
+      # that month's statement for card Azul. September and December are the
+      # exceptions: their nominal closing (day 5) is a Saturday, so the effective
+      # closing shifts back to day 4 — a day-4 purchase then lands exactly on it
+      # and rolls into the following month's statement instead, so day 3 is used
+      # in both.
+      #
+      # The horizon deliberately extends one month past the crossing month
+      # (November) with a December row, so a wrong implementation that measures
+      # the shortfall against the horizon's LAST row instead of the row where the
+      # balance is actually first passed cannot coincidentally pass: November and
+      # "last" would otherwise be the same row and this constraint would go
+      # unchecked.
       credit(120_000, on: Date.new(2026, 8, 4))
       credit(120_000, on: Date.new(2026, 9, 3))
       credit(164_000, on: Date.new(2026, 10, 4))
       credit(220_000, on: Date.new(2026, 11, 4))
+      credit(50_000, on: Date.new(2026, 12, 3))
 
       result = solvency
       expect(result.money_on_hand_cents).to eq 500_000
-      expect(result.rows.map(&:cumulative_cents)).to eq [ 120_000, 240_000, 404_000, 624_000 ]
+      expect(result.rows.map(&:cumulative_cents)).to eq [ 120_000, 240_000, 404_000, 624_000, 674_000 ]
       expect(result.shortfall_row.month).to eq Date.new(2026, 11, 1)
       expect(result.shortfall_cents).to eq 124_000
       expect(result).not_to be_covered

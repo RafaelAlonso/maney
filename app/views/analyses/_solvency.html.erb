@@ -1,0 +1,46 @@
+<%# locals: solvency (a Budgeting::Solvency) %>
+<section class="bg-white rounded border p-4 mb-4">
+  <h2 class="font-medium text-sm mb-3">Dívida já comprometida</h2>
+
+  <% if solvency.any? %>
+    <% if solvency.covered? %>
+      <p class="font-medium text-green-700">O saldo cobre a dívida já comprometida.</p>
+    <% else %>
+      <p class="font-medium text-red-700">
+        Em <%= month_label(solvency.shortfall_row.month) %> a dívida passa o saldo.
+      </p>
+      <p class="text-sm text-red-700">Faltam <%= brl(solvency.shortfall_cents) %>.</p>
+    <% end %>
+    <p class="text-sm text-gray-500 mb-3">Saldo hoje <%= brl(solvency.money_on_hand_cents) %></p>
+
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-gray-500">
+          <th class="font-normal py-1">Mês</th>
+          <th class="font-normal py-1 text-right">Comprometido</th>
+          <th class="font-normal py-1 text-right">Acumulado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% solvency.rows.each do |row| %>
+          <tr class="border-t <%= "text-red-700 font-medium" if row == solvency.shortfall_row %>">
+            <td class="py-1">
+              <%= month_label(row.month) %>
+              <% if row.month == solvency.current_month && solvency.arrears_cents.positive? %>
+                <span class="text-gray-500">· inclui <%= brl(solvency.arrears_cents) %> em atraso</span>
+              <% end %>
+            </td>
+            <td class="py-1 text-right"><%= brl(row.committed_cents) %></td>
+            <td class="py-1 text-right"><%= brl(row.cumulative_cents) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% else %>
+    <p class="text-sm text-gray-500">Não há dívida comprometida no cartão.</p>
+  <% end %>
+
+  <p class="mt-3 text-xs text-gray-500">
+    Não inclui receitas futuras nem gastos comuns futuros.
+  </p>
+</section>

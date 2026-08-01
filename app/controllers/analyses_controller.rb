@@ -3,6 +3,9 @@ class AnalysesController < ApplicationController
     @years = selectable_years
     @year = resolve_year
     @analysis = Budgeting::YearAnalysis.new(year: @year)
+    # Independent of @year on purpose: the block looks forward from today, so the
+    # picker does not govern it.
+    @solvency = Budgeting::Solvency.new
     @palette = Analysis::Palette.new
   end
 

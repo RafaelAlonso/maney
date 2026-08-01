@@ -1,4 +1,5 @@
 <% content_for :title, "Análise" %>
+<%= render "analyses/solvency", solvency: @solvency %>
 <%= render "analyses/year_picker", year: @year, years: @years %>
 
 <% if @analysis.any_data? %>

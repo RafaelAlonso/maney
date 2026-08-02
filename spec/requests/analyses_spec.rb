@@ -104,7 +104,7 @@ RSpec.describe "Analysis", type: :request do
 
       travel_to(Date.new(2026, 8, 10)) { get analysis_path }
 
-      expect(response.body).to include("ago").and include("R$ 1.240,00")
+      expect(response.body).to include("Em ago a dívida passa o saldo").and include("R$ 1.240,00")
     end
 
     it "says the debt is covered when the balance carries it (AC 4)" do

@@ -14,11 +14,14 @@ RSpec.describe Budgeting::Solvency do
 
   # Card Azul closes on day 5 and is due on day 12, so a purchase dated day 4 of
   # a month falls on the statement due in that same month, and one dated day 6
-  # falls on the next month's. That holds only when day 5 itself is a business
-  # day: when the nominal closing lands on a weekend, Calendar#effective_closing
-  # walks it back, and a day-4 purchase can land exactly on the shifted closing
-  # (or before it) and roll into the following cycle instead. 2026-07-05 and
-  # 2026-09-05 are both weekends — pick day 2 or 3 there, not day 4.
+  # falls on the next month's. A purchase attaches to the cycle whose effective
+  # closing falls strictly AFTER its date (StatementAttribution uses a strict
+  # `>`); Calendar#effective_closing walks a weekend or holiday closing
+  # *backwards* to the prior business day, so a purchase dated on or after that
+  # shifted closing rolls into the following cycle instead. 2026's weekend
+  # closings this file relies on: July (shifts to Fri 07-03 — use day 2),
+  # September (shifts to Fri 09-04 — use day 3), December (shifts to Fri
+  # 12-04 — use day 3).
   def credit(cents, on:, card: azul)
     Expense.create!(name: "compra", amount_cents: cents, payment_method: "credit",
                     category: mercado, card:, date: on)

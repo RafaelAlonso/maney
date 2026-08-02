@@ -7,7 +7,7 @@
       <p class="font-medium text-green-700">O saldo cobre a dívida já comprometida.</p>
     <% else %>
       <p class="font-medium text-red-700">
-        Em <%= month_label(solvency.shortfall_row.month) %> a dívida passa o saldo.
+        Em <%= month_label(solvency.shortfall_row.month, today: solvency.today) %> a dívida passa o saldo.
       </p>
       <p class="text-sm text-red-700">Faltam <%= brl(solvency.shortfall_cents) %>.</p>
     <% end %>
@@ -25,7 +25,7 @@
         <% solvency.rows.each do |row| %>
           <tr class="border-t <%= "text-red-700 font-medium" if row == solvency.shortfall_row %>">
             <td class="py-1">
-              <%= month_label(row.month) %>
+              <%= month_label(row.month, today: solvency.today) %>
               <% if row.month == solvency.current_month && solvency.arrears_cents.positive? %>
                 <span class="text-gray-500">· inclui <%= brl(solvency.arrears_cents) %> em atraso</span>
               <% end %>

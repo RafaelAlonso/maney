@@ -15,7 +15,7 @@ module Budgeting
   class Solvency
     Row = Data.define(:month, :committed_cents, :cumulative_cents)
 
-    attr_reader :current_month
+    attr_reader :today, :current_month
 
     def initialize(today: Date.current)
       @today = today
@@ -60,7 +60,13 @@ module Budgeting
     # The first month whose cumulative debt passes the balance. A non-positive
     # balance therefore lands on the first row, which is the right answer: the
     # money is already gone.
-    def shortfall_row = rows.find { |row| row.cumulative_cents > money_on_hand_cents }
+    #
+    # Memoized with a defined-check, not `||=`: a covered debt legitimately
+    # returns nil, which `||=` would recompute on every call — the common case.
+    def shortfall_row
+      return @shortfall_row if defined?(@shortfall_row)
+      @shortfall_row = rows.find { |row| row.cumulative_cents > money_on_hand_cents }
+    end
 
     def covered? = shortfall_row.nil?
 

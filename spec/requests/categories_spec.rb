@@ -129,4 +129,63 @@ RSpec.describe "Categories", type: :request do
       expect(response.body).to include(card_statement_path(card, "2026-04-05"))
     end
   end
+
+  describe "the drill-down charts" do
+    let(:mercado) { Category.create!(name: "mercado") }
+
+    def spend(cents, name: "feira", on: Date.new(2026, 3, 10), category: mercado)
+      Expense.create!(name:, amount_cents: cents, payment_method: "debit", category:, date: on)
+    end
+
+    it "charts the category's year and the month's breakdown (AC 1, AC 3)" do
+      spend(48_000, name: "mercado extra")
+      spend(22_000, name: "padaria")
+
+      travel_to(Date.new(2026, 3, 20)) { get category_path(mercado, month: "2026-03") }
+
+      expect(response.body).to include("Gastos por mês em 2026")
+      expect(response.body).to include("Composição de 03/2026")
+      # The legend carries the amount and the share as text, not just as angles.
+      expect(response.body).to include("480,00").and include("69%")
+      expect(response.body).to include("220,00").and include("31%")
+    end
+
+    it "follows the month nav into another year (AC 2)" do
+      spend(5_000, on: Date.new(2027, 2, 10))
+
+      travel_to(Date.new(2027, 6, 1)) { get category_path(mercado, month: "2027-02") }
+
+      expect(response.body).to include("Gastos por mês em 2027")
+      expect(response.body).to include("Composição de 02/2027")
+    end
+
+    it "keeps the year chart and empties only the breakdown for a month with no expenses (AC 4)" do
+      spend(5_000, on: Date.new(2026, 3, 10))
+
+      travel_to(Date.new(2026, 5, 20)) { get category_path(mercado, month: "2026-05") }
+
+      expect(response.body).to include("Gastos por mês em 2026")
+      expect(response.body).to include("Nenhum gasto neste mês.")
+      expect(response.body).not_to include("Nenhum gasto nesta categoria em 2026.")
+    end
+
+    it "shows a plain message on both charts for a category with no spending at all" do
+      travel_to(Date.new(2026, 3, 20)) { get category_path(mercado, month: "2026-03") }
+
+      expect(response.body).to include("Nenhum gasto nesta categoria em 2026.")
+      expect(response.body).to include("Nenhum gasto neste mês.")
+    end
+
+    # Decision 1: on its own screen the reserved category charts the statement
+    # payments the list below it already shows.
+    it "charts the reserved category's statement payments" do
+      spend(40_000, name: "pagamento fatura", category: credit_card_category)
+
+      travel_to(Date.new(2026, 3, 20)) { get category_path(credit_card_category, month: "2026-03") }
+
+      expect(response.body).to include("Gastos por mês em 2026")
+      expect(response.body).not_to include("Nenhum gasto nesta categoria em 2026.")
+      expect(response.body).to include("pagamento fatura")
+    end
+  end
 end

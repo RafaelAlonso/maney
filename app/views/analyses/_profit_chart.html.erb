@@ -1,10 +1,13 @@
-<%# locals: chart (an Analysis::ProfitChart) %>
+<%# locals: chart (an Analysis::ProfitChart)
+    Unlike the other cards, this one mounts its Stimulus controller on the card
+    element itself — the mode buttons and the canvas are both inside its scope —
+    so it passes the data attributes through to shared/card. %>
 <% heading_id = "#{chart.class.name.demodulize.underscore}-title" %>
-<section class="bg-white rounded border p-4 mb-4"
-         data-controller="profit-chart"
-         data-profit-chart-config-value="<%= chart.to_config.to_json %>"
-         data-profit-chart-modes-value="<%= chart.modes.to_json %>">
-  <h2 id="<%= heading_id %>" class="font-medium text-sm mb-3"><%= chart.title %></h2>
+<%= render layout: "shared/card",
+           locals: { title: chart.title, heading_id:,
+                     attributes: { data: { controller: "profit-chart",
+                                           profit_chart_config_value: chart.to_config.to_json,
+                                           profit_chart_modes_value: chart.modes.to_json } } } do %>
   <div class="flex gap-2 mb-3 overflow-x-auto whitespace-nowrap">
     <% chart.mode_labels.each do |key, label| %>
       <button type="button"
@@ -16,4 +19,4 @@
     <% end %>
   </div>
   <div class="h-64"><canvas aria-labelledby="<%= heading_id %>"></canvas></div>
-</section>
+<% end %>

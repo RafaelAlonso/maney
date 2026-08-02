@@ -1,0 +1,13 @@
+<%# locals: title (String), heading_id (String, optional — set it when something
+    inside the card points at the heading with aria-labelledby), attributes (Hash
+    of extra section attributes, optional — the profit chart mounts its Stimulus
+    controller on the card itself).
+
+    The card chrome — white panel, hairline border, small heading — shared by
+    every panel on the analysis and category screens. It was written out four
+    times before this partial existed, which is how a card style starts to drift.
+    Rendered as a layout, so each caller supplies its own body. %>
+<section class="bg-white rounded border p-4 mb-4"<%= tag.attributes(local_assigns.fetch(:attributes, {})) %>>
+  <%= tag.h2 title, id: local_assigns[:heading_id], class: "font-medium text-sm mb-3" %>
+  <%= yield %>
+</section>

@@ -6,9 +6,18 @@ class CategoriesController < ApplicationController
     @budgets = Budget.where(month: current_month).index_by(&:category_id)
   end
 
+  # The charts read the year of the month in context — the month nav above them
+  # is the only year control this screen has, by design (there is no year
+  # picker). The breakdown is handed the very collection the list renders, so
+  # the pie and the list can never disagree about what the month contains.
   def show
     @expenses = Budgeting::MonthEntries.expenses(month: current_month, category: @category)
     @statements = Budgeting::StatementSet.labels_for(@expenses)
+    @category_year = Budgeting::CategoryYear.new(category: @category, year: current_month.year)
+    palette = Analysis::Palette.new
+    @year_chart = Analysis::CategorySpendingChart.new(@category_year, palette:)
+    @breakdown = Analysis::CategoryBreakdownChart.new(expenses: @expenses, category: @category,
+                                                      month: current_month, palette:)
   end
 
   def new

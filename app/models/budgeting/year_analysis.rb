@@ -11,25 +11,17 @@ module Budgeting
   class YearAnalysis
     def initialize(year:, today: Date.current)
       @year = year
-      @today = today
+      @calendar = YearCalendar.new(year:, today:)
     end
 
-    def months
-      @months ||= (1..12).map { |month| Date.new(@year, month, 1) }
-    end
+    def months = @calendar.months
 
-    # The months that actually happened: on or after the first month, and not in
-    # the future. This single predicate is the whole of AC 9, AC 10 and the
-    # average rule — no chart re-derives it.
-    def active_months
-      @active_months ||= begin
-        first = Setting.instance&.first_month
-        last = @today.beginning_of_month
-        first.nil? ? [] : months.select { |month| month >= first && month <= last }
-      end
-    end
+    # The months that actually happened. Delegated to YearCalendar, which the
+    # category drill-down shares — this predicate is still the whole of AC 9,
+    # AC 10 and the average rule, and no chart re-derives it.
+    def active_months = @calendar.active_months
 
-    def active?(month) = active_months.include?(month)
+    def active?(month) = @calendar.active?(month)
 
     def spending
       @spending ||= series(spending_by_category.values.each_with_object(Hash.new(0)) do |category_series, totals|
@@ -87,10 +79,7 @@ module Budgeting
 
     def build_spending
       totals = Hash.new { |hash, key| hash[key] = Hash.new(0) }
-      dated_spending.each do |expense|
-        totals[expense.category][expense.date.beginning_of_month] += expense.amount_cents
-      end
-      installment_spending.each do |expense, month|
+      CompetenceSpending.entries(scope: spendable, year: @year).each do |expense, month|
         totals[expense.category][month] += expense.amount_cents
       end
       totals.transform_values { |by_month| series(by_month) }
@@ -101,25 +90,11 @@ module Budgeting
     # logic the latter also drops every NULL-role category — which is nearly all
     # of them — and would silently empty the chart. Same trap
     # MonthSummary#estimated_balance_cents documents.
-    def dated_spending
-      Expense.includes(:category)
-             .where(date: year_range)
-             .where.not(category: Category.where(role: "credit_card"))
-    end
-
-    # Installments carry `date: nil` — their month comes from Competence, not
-    # from a stored date, so they cannot be range-queried and are filtered in
-    # Ruby (as MonthEntries.expenses already does). A date window on the
-    # purchase buys little either: installments_count runs to 120, so the window
-    # would have to reach ten years back to stay correct.
-    def installment_spending
-      Expense.where(date: nil)
-             .includes(:installment_purchase, :category)
-             .filter_map do |expense|
-               next if expense.category.credit_card?
-               month = Competence.month_of(expense)
-               [ expense, month ] if month.year == @year
-             end
+    #
+    # Carrying the exclusion in the scope applies it once, to the dated and the
+    # undated rows alike; it used to be written twice, in SQL and again in Ruby.
+    def spendable
+      Expense.includes(:category).where.not(category: Category.where(role: "credit_card"))
     end
   end
 end

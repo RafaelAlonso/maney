@@ -24,6 +24,13 @@ const BRL_ROUND = new Intl.NumberFormat("pt-BR", { style: "currency", currency: 
 // rounding to a value the reader cannot find in the data.
 const axisTick = (value) => (Number.isInteger(value) ? BRL_ROUND : BRL).format(value)
 
+// A bar dataset names itself (`dataset.label`) and parses to `{x, y}`; a pie
+// slice names itself per point (`item.label`) and parses to a bare number.
+// Reading both here keeps the tooltip generic, so the presenters stay the only
+// place that knows what kind of chart is being drawn.
+const seriesLabel = (item) => item.dataset.label ?? item.label
+const seriesValue = (item) => (typeof item.parsed === "number" ? item.parsed : item.parsed?.y)
+
 // Renders a Chart.js config built server-side (app/presenters/analysis). The
 // only thing added here is money formatting, because a Chart.js callback is a
 // function and cannot survive the trip through JSON.
@@ -53,32 +60,39 @@ export default class extends Controller {
 
   withCurrencyFormatting(config) {
     const options = config.options || {}
-    const scales = options.scales || {}
-    const y = scales.y || {}
 
-    return {
-      ...config,
-      options: {
-        ...options,
-        scales: { ...scales, y: { ...y, ticks: { ...(y.ticks || {}), callback: axisTick } } },
-        plugins: {
-          ...(options.plugins || {}),
-          tooltip: {
-            ...this.tooltipOptions(options),
-            // `Intl.NumberFormat` coerces `null` to `0` without throwing, so an
-            // unguarded call would print "R$ 0,00" for a month with no data —
-            // exactly the fabricated zero this app forbids everywhere else. A
-            // gap month shows the series name alone instead.
-            callbacks: {
-              label: (item) =>
-                item.parsed.y == null
-                  ? item.dataset.label
-                  : `${item.dataset.label}: ${BRL.format(item.parsed.y)}`
+    const nextOptions = {
+      ...options,
+      plugins: {
+        ...(options.plugins || {}),
+        tooltip: {
+          ...this.tooltipOptions(options),
+          // `Intl.NumberFormat` coerces `null` to `0` without throwing, so an
+          // unguarded call would print "R$ 0,00" for a month with no data —
+          // exactly the fabricated zero this app forbids everywhere else. A
+          // gap month shows the series name alone instead.
+          callbacks: {
+            label: (item) => {
+              const value = seriesValue(item)
+              return value == null ? seriesLabel(item) : `${seriesLabel(item)}: ${BRL.format(value)}`
             }
           }
         }
       }
     }
+
+    // Only a chart that declares a value axis gets one. Adding `scales.y`
+    // unconditionally would hand a pie an axis it has no use for and would draw
+    // one on it.
+    if (options.scales) {
+      const y = options.scales.y || {}
+      nextOptions.scales = {
+        ...options.scales,
+        y: { ...y, ticks: { ...(y.ticks || {}), callback: axisTick } }
+      }
+    }
+
+    return { ...config, options: nextOptions }
   }
 
   // `itemSort: "desc"` is a sentinel from the Ruby presenter: Chart.js wants a

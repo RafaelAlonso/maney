@@ -1,0 +1,29 @@
+<%# locals: chart (an Analysis::CategoryBreakdownChart)
+    The legend below the canvas is the point, not decoration: AC 3 asks for each
+    expense's amount and share to be shown, and the palette's own notes require
+    values in text wherever colour carries meaning. It is also what keeps a
+    twenty-expense month readable on a 360 px phone. %>
+<%= render layout: "shared/card",
+           locals: { title: chart.title, heading_id: "category-breakdown-title" } do %>
+  <% if chart.any? %>
+    <div class="h-56">
+      <canvas data-controller="chart"
+              data-chart-config-value="<%= chart.to_config.to_json %>"
+              aria-labelledby="category-breakdown-title"></canvas>
+    </div>
+    <ul class="mt-3 text-sm divide-y">
+      <% chart.slices.each do |slice| %>
+        <li class="py-1.5 flex items-center gap-2">
+          <%# Tailwind cannot generate a class per category, so the one colour
+              that is genuinely dynamic is set inline. %>
+          <span class="w-3 h-3 rounded-sm shrink-0" style="background-color: <%= slice.color %>"></span>
+          <span class="flex-1 truncate"><%= slice.name %></span>
+          <span class="tabular-nums shrink-0"><%= brl(slice.amount_cents) %></span>
+          <span class="tabular-nums shrink-0 w-10 text-right text-gray-500"><%= slice.share_percent %>%</span>
+        </li>
+      <% end %>
+    </ul>
+  <% else %>
+    <p class="text-sm text-gray-500">Nenhum gasto neste mês.</p>
+  <% end %>
+<% end %>

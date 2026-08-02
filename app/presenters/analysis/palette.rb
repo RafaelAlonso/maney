@@ -35,6 +35,11 @@ module Analysis
       #2a78d6 #eb6834 #1baf7a #eda100 #e87ba4 #008300 #4a3aa7 #e34948
     ].freeze
 
+    # How far the lightest slice may be mixed toward the card's white. Capped
+    # well short of 1.0 so the last slice of a twenty-expense month still
+    # carries enough of the category's hue to be seen against #ffffff.
+    WHITE_MIX_CAP = 0.6
+
     def initialize
       @order = Category.order(:name).pluck(:id)
     end
@@ -42,6 +47,24 @@ module Analysis
     def color_for(category)
       index = @order.index(category.id) || 0
       CATEGORY_COLORS[index % CATEGORY_COLORS.size]
+    end
+
+    # A sequential ramp of one category's colour, darkest first — the drill-down
+    # pie's slices are expenses, not categories, so they cannot take categorical
+    # hues without a hue meaning two different things in two screens. Ordered
+    # largest-first by the caller, so shade encodes rank and explains itself.
+    def shades_for(category, count:)
+      return [] if count <= 0
+      base = color_for(category)
+      return [ base ] if count == 1
+      (0...count).map { |index| mix_with_white(base, WHITE_MIX_CAP * index / (count - 1)) }
+    end
+
+    private
+
+    def mix_with_white(hex, fraction)
+      channels = hex.delete_prefix("#").scan(/../).map { |pair| pair.to_i(16) }
+      format("#%02x%02x%02x", *channels.map { |channel| (channel + (255 - channel) * fraction).round })
     end
   end
 end

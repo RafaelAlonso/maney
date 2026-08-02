@@ -3,8 +3,8 @@
     expense's amount and share to be shown, and the palette's own notes require
     values in text wherever colour carries meaning. It is also what keeps a
     twenty-expense month readable on a 360 px phone. %>
-<section class="bg-white rounded border p-4 mb-4">
-  <h2 id="category-breakdown-title" class="font-medium text-sm mb-3"><%= chart.title %></h2>
+<%= render layout: "shared/card",
+           locals: { title: chart.title, heading_id: "category-breakdown-title" } do %>
   <% if chart.any? %>
     <div class="h-56">
       <canvas data-controller="chart"
@@ -26,4 +26,4 @@
   <% else %>
     <p class="text-sm text-gray-500">Nenhum gasto neste mês.</p>
   <% end %>
-</section>
+<% end %>

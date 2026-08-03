@@ -11,8 +11,7 @@ RSpec.describe Budgeting::YearAnalysis do
   # July 2026: months before March are before the timeline, months after July
   # have not been reached. Both are inactive.
   def analysis(year: 2026, today: Date.new(2026, 7, 15))
-    @analysis_cache ||= {}
-    @analysis_cache[[year, today]] ||= described_class.new(year:, today:)
+    described_class.new(year:, today:)
   end
 
   # `card:` is not optional decoration: Expense#card_matches_method rejects a
@@ -350,7 +349,8 @@ RSpec.describe Budgeting::YearAnalysis do
       end
 
       it "is the analysis itself when no card is selected" do
-        expect(analysis.consolidated).to be analysis
+        subject = analysis
+        expect(subject.consolidated).to be subject
       end
     end
   end

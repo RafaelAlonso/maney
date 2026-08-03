@@ -15,6 +15,8 @@ module Analysis
 
     def title = "Lucro por mês"
 
+    def note = analysis.filtered? ? "Cobre todos os cartões" : nil
+
     def mode_labels = MODE_LABELS.to_a
 
     def modes
@@ -26,7 +28,7 @@ module Analysis
         # "Ganhos − saídas" renders as an outline (transparent fill, sign-
         # coloured border) so fill-vs-outline separates the two on top of
         # colour alone.
-        "both" => [ vs_spending, profit_dataset(analysis.profit_vs_outflow, MODE_LABELS.fetch("outflow"), outline: true) ]
+        "both" => [ vs_spending, profit_dataset(consolidated.profit_vs_outflow, MODE_LABELS.fetch("outflow"), outline: true) ]
       }
     end
 
@@ -36,9 +38,15 @@ module Analysis
 
     private
 
-    def vs_spending = profit_dataset(analysis.profit_vs_spending, MODE_LABELS.fetch("spending"))
+    # Everything this chart plots comes from the unfiltered twin: `spending` is
+    # narrowed on a filtered analysis, and this chart is labelled rather than
+    # narrowed. Reading `analysis` directly here is the regression this exists
+    # to prevent.
+    def consolidated = analysis.consolidated
 
-    def vs_outflow = profit_dataset(analysis.profit_vs_outflow, MODE_LABELS.fetch("outflow"))
+    def vs_spending = profit_dataset(consolidated.profit_vs_spending, MODE_LABELS.fetch("spending"))
+
+    def vs_outflow = profit_dataset(consolidated.profit_vs_outflow, MODE_LABELS.fetch("outflow"))
 
     # The colour is resolved per bar here rather than in a Chart.js callback:
     # callbacks cannot cross JSON, and a per-bar array is exactly what Chart.js

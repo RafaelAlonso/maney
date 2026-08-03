@@ -10,5 +10,11 @@ module Analysis
   # comes from the month the user navigated to, so it has to be stated somewhere.
   class CategorySpendingChart < SpendingChart
     def title = "Gastos por mês em #{analysis.year}"
+
+    # This subclass is fed a Budgeting::CategoryYear, which has no card
+    # dimension and answers no `filtered?`. It never needs the inherited
+    # predicate either: categories/show.html.erb renders its own empty state
+    # before shared/_chart is reached.
+    def empty? = false
   end
 end

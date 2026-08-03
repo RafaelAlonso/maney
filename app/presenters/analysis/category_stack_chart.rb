@@ -7,6 +7,11 @@ module Analysis
   class CategoryStackChart < BaseChart
     def title = "Gastos por categoria"
 
+    # The same predicate as SpendingChart on purpose: `spending` is the total of
+    # `spending_by_category`, so the two charts go empty together and the screen
+    # never shows one filled beside one blank.
+    def empty? = !analysis.spending.any?
+
     def to_config
       {
         type: "bar",

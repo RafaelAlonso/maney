@@ -47,4 +47,35 @@ RSpec.describe Analysis::SpendingChart do
     expect(average[:data][0]).to be_nil
     expect(average[:data][7]).to be_nil
   end
+
+  describe "the empty state" do
+    let(:azul) { create_card!(name: "Azul") }
+
+    def filtered_chart(card)
+      described_class.new(Budgeting::YearAnalysis.new(year: 2026, card:, today: Date.new(2026, 7, 15)))
+    end
+
+    it "reports empty and names the card when that card has no spending (AC 8)" do
+      spend(5_000, on: Date.new(2026, 3, 4))
+
+      chart = filtered_chart(azul)
+      expect(chart).to be_empty
+      expect(chart.empty_message).to eq "Nenhum gasto em Azul em 2026."
+    end
+
+    it "reports empty without a card when the year itself has no spending" do
+      chart = described_class.new(analysis)
+      expect(chart).to be_empty
+      expect(chart.empty_message).to eq "Nenhum gasto em 2026."
+    end
+
+    it "is not empty once there is spending" do
+      spend(5_000, on: Date.new(2026, 3, 4))
+      expect(described_class.new(analysis)).not_to be_empty
+    end
+
+    it "carries no all-cards note — it is the chart the filter acts on" do
+      expect(described_class.new(analysis).note).to be_nil
+    end
+  end
 end

@@ -28,6 +28,21 @@ module Analysis
 
     def to_config = raise NotImplementedError
 
+    # A caveat rendered under the chart's title. Only the charts with no card
+    # dimension answer this: they are labelled rather than filtered or hidden,
+    # so a card-scoped year still reads as a whole.
+    def note = nil
+
+    # Whether to render `empty_message` in place of the canvas. An empty stacked
+    # bar chart is a blank white box, which reads as broken rather than as "no
+    # spending" — for a filtered card and for an unfiltered year alike.
+    def empty? = false
+
+    def empty_message
+      return "Nenhum gasto em #{analysis.card.name} em #{analysis.year}." if analysis.filtered?
+      "Nenhum gasto em #{analysis.year}."
+    end
+
     private
 
     attr_reader :analysis, :palette

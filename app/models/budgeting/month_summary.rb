@@ -55,9 +55,11 @@ module Budgeting
     # Safe for the same reason as carried_balance_cents: the instance is
     # disposable, for a single month. Nothing here may become process state (see
     # Budgeting::Schedule).
-    def statements_due_cents
-      @statements_due_cents ||= StatementSet.due_in(month:).values.flatten.sum(&:amount_cents)
+    def statements_due
+      @statements_due ||= StatementsDue.new(month:)
     end
+
+    def statements_due_cents = statements_due.total_cents
 
     # Payments entered against statements: filtered by role, not by a reference to
     # the reserved category record, for the same reason.

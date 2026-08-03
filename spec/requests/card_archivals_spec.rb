@@ -39,4 +39,41 @@ RSpec.describe "Card archivals", type: :request do
     expect(card.reload).to be_archived
     expect(response).to redirect_to(cards_path)
   end
+
+  describe "the Cartões list" do
+    it "keeps an archived card listed, marked, offering reactivation (AC 1)" do
+      card = create_card!(name: "Azul")
+      card.archive!
+
+      get cards_path
+
+      expect(response.body).to include("Azul").and include("arquivado")
+      expect(response.body).to include("reativar")
+      expect(response.body).to include(card_statements_path(card))
+      # Renaming and rescheduling only make sense for a card being spent on;
+      # reactivate first. Reactivating is lossless, so nothing is stranded.
+      expect(response.body).not_to include(edit_card_path(card))
+    end
+
+    it "offers archiving, editing and deleting on an active card" do
+      card = create_card!(name: "Azul")
+
+      get cards_path
+
+      expect(response.body).to include("arquivar")
+      expect(response.body).to include(edit_card_path(card))
+      expect(response.body).not_to include("reativar")
+    end
+
+    it "restores the active actions after reactivation (AC 3)" do
+      card = create_card!(name: "Azul")
+      card.archive!
+
+      delete card_archival_path(card)
+      follow_redirect!
+
+      expect(response.body).to include("arquivar").and include(edit_card_path(card))
+      expect(response.body).not_to include("arquivado")
+    end
+  end
 end

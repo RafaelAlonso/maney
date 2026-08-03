@@ -9,9 +9,27 @@ module Budgeting
   # balance (see #income), and statement attribution is irrelevant to a
   # competence-based chart.
   class YearAnalysis
-    def initialize(year:, today: Date.current)
+    def initialize(year:, card: nil, today: Date.current)
       @year = year
+      @card = card
+      @today = today
       @calendar = YearCalendar.new(year:, today:)
+    end
+
+    attr_reader :year, :card
+
+    # Whether this reading is narrowed to one card. The charts that have no card
+    # dimension read it to label themselves, not to change what they plot.
+    def filtered? = @card.present?
+
+    # The same year with no card filter. ProfitChart and SpendingVsOutflowChart
+    # plot this instead of `self`: both read `spending`, which is narrowed here,
+    # and a profit built from one card's spending is precisely the card-scoped
+    # profit this story rejects. Returns self when nothing is filtered, so the
+    # common path allocates nothing.
+    def consolidated
+      return self unless filtered?
+      @consolidated ||= self.class.new(year: @year, today: @today)
     end
 
     def months = @calendar.months
@@ -93,8 +111,16 @@ module Budgeting
     #
     # Carrying the exclusion in the scope applies it once, to the dated and the
     # undated rows alike; it used to be written twice, in SQL and again in Ruby.
+    #
+    # The card filter enters here and nowhere else: CompetenceSpending receives a
+    # narrower scope, never a different date rule, so filtering can never move a
+    # purchase in time. `card_id` is non-null only on credit expenses
+    # (Expense#card_matches_method), which is why debit and cash need no clause
+    # of their own — and why income and cash_outflow, which never call this, are
+    # unfilterable by construction.
     def spendable
-      Expense.includes(:category).where.not(category: Category.where(role: "credit_card"))
+      scope = Expense.includes(:category).where.not(category: Category.where(role: "credit_card"))
+      @card ? scope.where(card: @card) : scope
     end
   end
 end

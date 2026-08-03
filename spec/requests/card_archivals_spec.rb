@@ -76,4 +76,42 @@ RSpec.describe "Card archivals", type: :request do
       expect(response.body).not_to include("arquivado")
     end
   end
+
+  describe "deletion, unchanged by archiving (AC 9)" do
+    it "still routes an archived card with expenses through the migration flow" do
+      card = create_card!(name: "Azul")
+      Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 4),
+                      payment_method: "credit", card:, category: category("mercado"))
+      card.archive!
+
+      delete card_path(card)
+
+      expect(response).to redirect_to(new_card_migration_path(card))
+      expect(Card.exists?(card.id)).to be true
+    end
+
+    it "still deletes an archived card that has no expenses" do
+      card = create_card!(name: "Azul")
+      card.archive!
+
+      delete card_path(card)
+
+      expect(response).to redirect_to(cards_path)
+      expect(Card.exists?(card.id)).to be false
+    end
+
+    # Migrating expenses onto an archived card moves HISTORY, not spending, so
+    # an archived card stays a legitimate migration target.
+    it "still offers an archived card as a migration target" do
+      source = create_card!(name: "Azul")
+      target = create_card!(name: "Preto")
+      target.archive!
+      Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 4),
+                      payment_method: "credit", card: source, category: category("mercado"))
+
+      get new_card_migration_path(source)
+
+      expect(response.body).to include("Preto")
+    end
+  end
 end

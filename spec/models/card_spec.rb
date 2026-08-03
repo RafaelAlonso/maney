@@ -179,4 +179,39 @@ RSpec.describe Card do
       expect_every_schedule_on_a_real_boundary
     end
   end
+
+  describe "archiving" do
+    # No `create_setting!` here: `create_card!` already falls back to
+    # 01/03/2026 without one, and Setting is a singleton (`single_row`), so an
+    # extra row would fight any sibling example that creates its own.
+    it "keeps archived cards out of .active and brings them back on reactivate" do
+      kept = create_card!(name: "Azul")
+      retired = create_card!(name: "Preto")
+
+      retired.archive!
+
+      expect(Card.active).to contain_exactly(kept)
+      expect(retired).to be_archived
+
+      retired.reactivate!
+
+      expect(Card.active).to contain_exactly(kept, retired)
+      expect(retired).not_to be_archived
+    end
+
+    # The story's "archiving and reactivating in quick succession" edge case: the
+    # round trip is a no-op on everything except the flag. The schedules matter
+    # most — they are what every past statement is still derived from.
+    it "changes nothing but the flag on an archive/reactivate round trip" do
+      card = create_card!(name: "Azul", closing_day: 5, due_day: 12)
+      before = [card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from)]
+
+      card.archive!
+      card.reactivate!
+      card.reload
+
+      expect([card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from)]).to eq before
+      expect(card.archived_at).to be_nil
+    end
+  end
 end

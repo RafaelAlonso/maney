@@ -7,8 +7,11 @@ RSpec.describe "Analysis", type: :request do
 
   let(:mercado) { Category.create!(name: "mercado") }
 
+  # Scoped to the year select: once the card selector ships alongside it, a
+  # filtered card's own selected option would otherwise be the first
+  # "option[selected]" in document order and shadow the year's.
   def selected_year
-    Nokogiri::HTML(response.body).at_css("option[selected]")&.[]("value")
+    Nokogiri::HTML(response.body).at_css("select[name='year'] option[selected]")&.[]("value")
   end
 
   it "opens on the current year and offers every year since the first month (AC 1)" do
@@ -120,6 +123,124 @@ RSpec.describe "Analysis", type: :request do
       travel_to(Date.new(2026, 8, 10)) { get analysis_path }
 
       expect(response.body).to include("Não inclui receitas futuras nem gastos comuns futuros")
+    end
+  end
+
+  describe "the card selector" do
+    let(:azul) { create_card!(name: "Azul") }
+    let(:preto) { create_card!(name: "Preto") }
+
+    def credit(cents, on:, card:)
+      Expense.create!(name: "compra", amount_cents: cents, payment_method: "credit",
+                      category: mercado, card:, date: on)
+    end
+
+    def debit(cents, on:)
+      Expense.create!(name: "feira", amount_cents: cents, payment_method: "debit",
+                      category: mercado, date: on)
+    end
+
+    # Every chart ships its Chart.js config as a JSON data attribute, so the
+    # numbers actually plotted are assertable straight off the response.
+    def spending_bars
+      node = Nokogiri::HTML(response.body).at_css("[data-chart-config-value]")
+      JSON.parse(node["data-chart-config-value"]).dig("data", "datasets", 0, "data")
+    end
+
+    def selected_card
+      Nokogiri::HTML(response.body).at_css("select[name='card_id'] option[selected]")&.[]("value")
+    end
+
+    it "defaults to every card and totals the consolidated year (AC 1)" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      credit(4_000, on: Date.new(2026, 3, 5), card: preto)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path }
+
+      expect(selected_card).to be_nil
+      expect(response.body).to include("Todos os cartões")
+      expect(spending_bars[2]).to eq 140.0
+    end
+
+    it "narrows the spending charts to the selected card (AC 2)" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      credit(4_000, on: Date.new(2026, 3, 5), card: preto)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+
+      expect(selected_card).to eq azul.id.to_s
+      expect(spending_bars[2]).to eq 100.0
+    end
+
+    it "counts a purchase in its purchase month, not its statement month (AC 3)" do
+      # Azul closes on day 5: this March purchase falls due in April.
+      credit(15_000, on: Date.new(2026, 3, 20), card: azul)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+
+      expect(spending_bars[2]).to eq 150.0
+      expect(spending_bars[3]).to eq 0.0
+    end
+
+    it "leaves debit and cash spending out of a filtered chart (AC 4)" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      debit(9_900, on: Date.new(2026, 3, 6))
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+
+      expect(spending_bars[2]).to eq 100.0
+    end
+
+    it "returns to the consolidated reading when the card is cleared (AC 6)" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      credit(4_000, on: Date.new(2026, 3, 5), card: preto)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: "") }
+
+      expect(selected_card).to be_nil
+      expect(spending_bars[2]).to eq 140.0
+    end
+
+    it "keeps the card when the year changes, and the year when the card does (AC 7)" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      credit(7_000, on: Date.new(2027, 2, 4), card: azul)
+
+      travel_to(Date.new(2027, 5, 10)) { get analysis_path(card_id: azul.id, year: 2027) }
+
+      expect(selected_card).to eq azul.id.to_s
+      expect(selected_year).to eq "2027"
+      expect(spending_bars[1]).to eq 70.0
+    end
+
+    # One form carries both controls, which is what makes the two independent:
+    # a GET submit sends every field it holds, so neither can drop the other.
+    it "puts both selects in a single form" do
+      azul
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path }
+
+      forms = Nokogiri::HTML(response.body).css("form").select do |form|
+        form.css("select[name='card_id']").any? && form.css("select[name='year']").any?
+      end
+      expect(forms.size).to eq 1
+    end
+
+    it "offers every card, archived ones included (AC 9)" do
+      azul
+      preto
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path }
+
+      options = Nokogiri::HTML(response.body).css("select[name='card_id'] option").map(&:text)
+      expect(options).to contain_exactly("Todos os cartões", "Azul", "Preto")
+    end
+
+    it "falls back to every card on an unknown card_id rather than raising" do
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: 999_999) }
+
+      expect(response).to have_http_status(:ok)
+      expect(selected_card).to be_nil
+      expect(spending_bars[2]).to eq 100.0
     end
   end
 end

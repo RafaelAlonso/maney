@@ -2,9 +2,11 @@ class AnalysesController < ApplicationController
   def show
     @years = selectable_years
     @year = resolve_year
-    @analysis = Budgeting::YearAnalysis.new(year: @year)
+    @cards = Card.order(:name)
+    @card = resolve_card
+    @analysis = Budgeting::YearAnalysis.new(year: @year, card: @card)
     # Independent of @year on purpose: the block looks forward from today, so the
-    # picker does not govern it.
+    # picker does not govern it — and it is not card-scoped either.
     @solvency = Budgeting::Solvency.new
     @palette = Analysis::Palette.new
   end
@@ -28,4 +30,13 @@ class AnalysesController < ApplicationController
     return @years.first if requested.zero?
     requested.clamp(@years.last, @years.first)
   end
+
+  # `find_by` rather than `find`: a blank, stale or hand-edited card_id lands on
+  # "todos os cartões" instead of raising, the same forgiving policy resolve_year
+  # documents above.
+  #
+  # Card.order(:name) and never Card.active — an archived card's history is real
+  # spending and stays selectable (the sibling archiving story adds that scope;
+  # it must not reach this screen).
+  def resolve_card = Card.find_by(id: params[:card_id])
 end

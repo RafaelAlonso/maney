@@ -1,0 +1,18 @@
+<%# locals: card (Card or nil), cards (Array<Card>, by name), year (Integer),
+    years (Array<Integer>, descending)
+
+    One form, two selects, on purpose: a GET submit sends every field the form
+    holds, so changing the card keeps the year and changing the year keeps the
+    card. Two forms mirroring each other's value in a hidden field would make the
+    same guarantee something to remember. The card comes first — it is the
+    coarser cut, and "todos os cartões" is the default reading. %>
+<%= form_with url: analysis_path, method: :get, class: "flex items-center justify-center gap-2 mb-4" do |form| %>
+  <%= form.select :card_id, cards.map { |c| [ c.name, c.id ] },
+        { include_blank: "Todos os cartões", selected: card&.id },
+        class: "border rounded px-3 py-2 text-base bg-white",
+        data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
+  <%= form.select :year, years, { selected: year },
+        class: "border rounded px-3 py-2 text-base bg-white",
+        data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
+  <%= form.submit "Ver", class: "hidden" %>
+<% end %>

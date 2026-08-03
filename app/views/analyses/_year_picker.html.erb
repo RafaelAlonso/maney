@@ -1,7 +1,0 @@
-<%# locals: year (Integer), years (Array<Integer>, descending) %>
-<%= form_with url: analysis_path, method: :get, class: "flex items-center justify-center mb-4" do |form| %>
-  <%= form.select :year, years, { selected: year },
-        class: "border rounded px-3 py-2 text-base bg-white",
-        data: { controller: "year-picker", action: "change->year-picker#submit" } %>
-  <%= form.submit "Ver", class: "hidden" %>
-<% end %>

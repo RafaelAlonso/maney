@@ -1,24 +1,34 @@
-<%# app/views/home/_category_row.html.erb — locals: category, summary; optional: error %>
-<% spent = summary.spent_cents(category) %>
-<% budgeted = summary.budgeted_cents(category) %>
-<%# An unbudgeted category (budgeted 0) is not an overrun — it's a category the
-    user hasn't got to yet. Painting it red drowns out the real overruns
-    precisely in the months where they matter most: the first one, and any month
-    with a new category (w3 AC3 asks the line to highlight THE overrun). %>
-<% over = budgeted.positive? && spent > budgeted %>
-<% error = local_assigns[:error] %>
-<% open = error.present? %>
-<div id="<%= dom_id(category, :row) %>" class="p-3 flex items-center justify-between"
-     data-controller="budget-edit">
-  <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
-        class: "hover:underline" %>
-  <div class="text-sm text-right">
-    <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
-      gasto <%= brl(spent) %> /
-    </span>
-    <% if category.credit_card? %>
-      <span class="text-gray-500">orçado <%= brl(budgeted) %></span>
-    <% else %>
+<%# app/views/home/_category_row.html.erb — locals: category, summary; optional: error
+    A two-branch delegator. The wrapper element lives INSIDE each branch,
+    because the two rows are now different elements: the card row is a
+    <details>, an ordinary row a <div data-controller="budget-edit">.
+
+    This partial stays the single entry point — home/show must not choose
+    between the two. budgets/create.turbo_stream.erb re-renders THIS partial for
+    whatever category was posted, and posting a budget against the credit-card
+    category is reachable (Budget#not_on_credit_card_category rejects it and the
+    row comes back with an error), so bypassing this branch would render a
+    budget form for a category that cannot have one. %>
+<% if category.credit_card? %>
+  <%= render "home/credit_card_row", category:, summary: %>
+<% else %>
+  <% spent = summary.spent_cents(category) %>
+  <% budgeted = summary.budgeted_cents(category) %>
+  <%# An unbudgeted category (budgeted 0) is not an overrun — it's a category the
+      user hasn't got to yet. Painting it red drowns out the real overruns
+      precisely in the months where they matter most: the first one, and any month
+      with a new category (w3 AC3 asks the line to highlight THE overrun). %>
+  <% over = budgeted.positive? && spent > budgeted %>
+  <% error = local_assigns[:error] %>
+  <% open = error.present? %>
+  <div id="<%= dom_id(category, :row) %>" class="p-3 flex items-center justify-between"
+       data-controller="budget-edit">
+    <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
+          class: "hover:underline" %>
+    <div class="text-sm text-right">
+      <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
+        gasto <%= brl(spent) %> /
+      </span>
 <%# Visibility is carried by Tailwind's `hidden` class, not the `hidden`
           attribute, for two independent reasons — both were breaking this row:
           `form_with` only forwards a known set of keys (:id, :class, :data,
@@ -39,6 +49,6 @@
               class: "border rounded p-1 w-24 text-sm", data: { budget_edit_target: "input" } %>
       <% end %>
       <% if error %><span class="block text-xs text-red-700"><%= error %></span><% end %>
-    <% end %>
+    </div>
   </div>
-</div>
+<% end %>

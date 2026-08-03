@@ -1,0 +1,38 @@
+<%# app/views/home/_credit_card_row.html.erb — locals: category, summary
+    The reserved card row, expanding into one line per statement due this month.
+    Native <details>: the browser owns the toggle, the keyboard handling and the
+    screen-reader semantics, so there is no JavaScript here. Collapsed state
+    resets on navigation — each month opens collapsed, which is accepted.
+
+    With nothing due there is no <details> at all, only the summary's content in
+    a plain <div>: a zero row must offer no disclosure affordance. Both branches
+    keep dom_id(category, :row) so budgets/create.turbo_stream.erb's replace
+    still finds the row.
+
+    KNOWN WART: the category-name link sits inside the <summary>, so some
+    browsers toggle the details on the way out of the click. Invisible, because
+    the page navigates. If it reads badly, move the toggle to its own element. %>
+<% due = summary.statements_due %>
+<% row_id = dom_id(category, :row) %>
+<% if due.any? %>
+  <details id="<%= row_id %>" class="p-3">
+    <summary class="flex items-center justify-between cursor-pointer">
+      <%= render "home/credit_card_summary", category:, summary: %>
+    </summary>
+    <ul class="mt-2 pl-4 text-sm divide-y">
+      <% due.rows.each do |row| %>
+        <li class="py-1 flex items-center justify-between gap-2">
+          <%= link_to row.statement.card.name,
+                card_statement_path(row.statement.card, row.statement),
+                class: "text-blue-600 hover:underline" %>
+          <span class="text-gray-500"><%= statement_due_label(row.statement) %></span>
+          <span class="shrink-0"><%= brl(row.amount_cents) %></span>
+        </li>
+      <% end %>
+    </ul>
+  </details>
+<% else %>
+  <div id="<%= row_id %>" class="p-3 flex items-center justify-between">
+    <%= render "home/credit_card_summary", category:, summary: %>
+  </div>
+<% end %>

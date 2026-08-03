@@ -1,0 +1,10 @@
+<%# app/views/home/_credit_card_summary.html.erb — locals: category, summary
+    The collapsed card row, unchanged in meaning: `gasto` is the statement
+    payments entered this month, `orçado` is what falls due this month across
+    every card — and the sum of the breakdown lines. %>
+<%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
+      class: "hover:underline" %>
+<div class="text-sm text-right">
+  <span class="text-gray-500">gasto <%= brl(summary.spent_cents(category)) %> /</span>
+  <span class="text-gray-500">orçado <%= brl(summary.budgeted_cents(category)) %></span>
+</div>

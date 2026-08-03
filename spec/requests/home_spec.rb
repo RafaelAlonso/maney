@@ -187,4 +187,110 @@ RSpec.describe "Home month view", type: :request do
     expect(row.to_html).to include("orçado R$ 0,00")
     expect(row.to_html).not_to include("text-red-700")
   end
+
+  # The month's card row expands into one line per statement due that month.
+  # Three cards on three closing days, all due in March 2026:
+  #   Azul  closes  3 / due 10 — purchase 02/03 -> statement due 10/03
+  #   Roxo  closes  8 / due 15 — purchase 05/03 -> closing moves back to Fri 06/03,
+  #                              so the purchase still lands here; due 15/03 is a
+  #                              Sunday, so it moves forward to 16/03
+  #   Verde closes 15 / due 25 — purchase 05/03 -> statement due 25/03
+  # 2.100 + 1.450 + 760 = 4.310.
+  describe "the credit-card breakdown" do
+    def credit_expense(amount, date, on:)
+      Expense.create!(name: "compra", amount_cents: amount, date:, payment_method: "credit",
+                      card: on, category: Category.find_or_create_by!(name: "mercado"))
+    end
+
+    def three_cards
+      azul = create_card!(name: "Azul", closing_day: 3, due_day: 10)
+      roxo = create_card!(name: "Roxo", closing_day: 8, due_day: 15)
+      verde = create_card!(name: "Verde", closing_day: 15, due_day: 25)
+      credit_expense(210_000, Date.new(2026, 3, 2), on: azul)
+      credit_expense(145_000, Date.new(2026, 3, 5), on: roxo)
+      credit_expense(76_000, Date.new(2026, 3, 5), on: verde)
+      [ azul, roxo, verde ]
+    end
+
+    def card_row
+      Nokogiri::HTML(response.body)
+        .at("##{ActionView::RecordIdentifier.dom_id(credit_card_category, :row)}")
+    end
+
+    it "lists each card with its amount and due date under the consolidated total (AC 1)" do
+      three_cards
+
+      get root_path(month: "2026-03")
+
+      row = card_row
+      expect(row.name).to eq "details"
+      expect(row.at("summary").text).to include("orçado R$ 4.310,00")
+      lines = row.css("li").map { |li| li.text.gsub(/\s+/, " ").strip }
+      expect(lines.size).to eq 3
+      expect(lines[0]).to include("Azul").and include("vence 10/03").and include("R$ 2.100,00")
+      expect(lines[1]).to include("Roxo").and include("vence 16/03").and include("R$ 1.450,00")
+      expect(lines[2]).to include("Verde").and include("vence 25/03").and include("R$ 760,00")
+    end
+
+    it "links each line to that card's statement (AC 2)" do
+      azul, roxo, verde = three_cards
+
+      get root_path(month: "2026-03")
+
+      hrefs = card_row.css("li a").map { |a| a["href"] }
+      expect(hrefs).to eq [
+        card_statement_path(azul, "2026-03-03"),
+        card_statement_path(roxo, "2026-03-08"),
+        card_statement_path(verde, "2026-03-15")
+      ]
+    end
+
+    it "resolves a breakdown link to that card's statement for the month (AC 2)" do
+      azul, = three_cards
+      get root_path(month: "2026-03")
+      href = card_row.at("li a")["href"]
+
+      get href
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Azul").and include("vence 10/03")
+                                              .and include("R$ 2.100,00")
+    end
+
+    it "omits a card with nothing due in the month (AC 3)" do
+      three_cards
+      preto = create_card!(name: "Preto", closing_day: 20, due_day: 27)
+      # Bought after Preto's 20/03 closing, so it falls due on 27/04 — not this month.
+      credit_expense(50_000, Date.new(2026, 3, 25), on: preto)
+
+      get root_path(month: "2026-03")
+
+      row = card_row
+      expect(row.css("li").size).to eq 3
+      expect(row.text).not_to include("Preto")
+      expect(row.at("summary").text).to include("orçado R$ 4.310,00")
+    end
+
+    it "shows one line whose amount equals the total for a single card (AC 7)" do
+      card = create_card!(name: "Azul", closing_day: 3, due_day: 10)
+      credit_expense(210_000, Date.new(2026, 3, 2), on: card)
+
+      get root_path(month: "2026-03")
+
+      row = card_row
+      expect(row.css("li").size).to eq 1
+      expect(row.at("li").text).to include("Azul").and include("R$ 2.100,00")
+      expect(row.at("summary").text).to include("orçado R$ 2.100,00")
+    end
+
+    it "offers nothing to expand when no card has a statement due (AC 8)" do
+      get root_path(month: "2026-03")
+
+      row = card_row
+      expect(row.name).to eq "div"
+      expect(response.body).not_to include("<details")
+      expect(row.text).to include("orçado R$ 0,00")
+      expect(row.text).to include("cartão de crédito")
+    end
+  end
 end

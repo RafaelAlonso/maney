@@ -2,9 +2,18 @@
     The collapsed card row, unchanged in meaning: `gasto` is the statement
     payments entered this month, `orçado` is what falls due this month across
     every card — and the sum of the breakdown lines. %>
+<% spent = summary.spent_cents(category) %>
+<% budgeted = summary.budgeted_cents(category) %>
+<%# An unbudgeted category (budgeted 0) is not an overrun — it's a category the
+    user hasn't got to yet. Here `budgeted` is what falls due this month and
+    `spent` is what was actually paid against statements, so this highlights
+    the one case where CashForecast#card_committed switches from the due
+    amount to the payment amount: the user paid more than the month's
+    statements demand, e.g. settling an overdue statement from before. %>
+<% over = budgeted.positive? && spent > budgeted %>
 <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
       class: "hover:underline" %>
-<div class="text-sm text-right">
-  <span class="text-gray-500">gasto <%= brl(summary.spent_cents(category)) %> /</span>
-  <span class="text-gray-500">orçado <%= brl(summary.budgeted_cents(category)) %></span>
-</div>
+<span class="text-sm text-right block">
+  <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">gasto <%= brl(spent) %> /</span>
+  <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">orçado <%= brl(budgeted) %></span>
+</span>

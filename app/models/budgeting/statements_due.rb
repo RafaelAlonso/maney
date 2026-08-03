@@ -6,8 +6,8 @@ module Budgeting
   #
   # A row is one STATEMENT, not one card: a schedule change can leave two of one
   # card's statements due in the same calendar month, and the two have different
-  # due dates and different URLs, so merging them would have nowhere unambiguous
-  # to link.
+  # due dates and different amounts, so a merged line would have no single due
+  # date to show.
   #
   # A card with nothing due cannot produce a row, and a quiet month produces
   # none — not by a guard, but because due_in is keyed by statements that exist,

@@ -288,9 +288,32 @@ RSpec.describe "Home month view", type: :request do
 
       row = card_row
       expect(row.name).to eq "div"
-      expect(response.body).not_to include("<details")
+      expect(row.to_html).not_to include("<details")
       expect(row.text).to include("orçado R$ 0,00")
       expect(row.text).to include("cartão de crédito")
+    end
+
+    it "highlights the card row when statement payments exceed the statements due" do
+      card = create_card!(closing_day: 3, due_day: 10)
+      credit_expense(100_000, Date.new(2026, 3, 2), on: card) # statement due this month: 1.000
+      # A payment settling an overdue statement from before, larger than what's due now.
+      Expense.create!(name: "fatura", amount_cents: 150_000, date: Date.new(2026, 3, 15),
+                      payment_method: "debit", category: credit_card_category)
+
+      get root_path(month: "2026-03")
+
+      expect(card_row.to_html).to match(/text-red-700[^>]*>\s*gasto R\$ 1\.500,00/)
+    end
+
+    it "does not highlight the card row when statement payments stay within the statements due" do
+      card = create_card!(closing_day: 3, due_day: 10)
+      credit_expense(100_000, Date.new(2026, 3, 2), on: card) # statement due this month: 1.000
+      Expense.create!(name: "fatura", amount_cents: 60_000, date: Date.new(2026, 3, 15),
+                      payment_method: "debit", category: credit_card_category)
+
+      get root_path(month: "2026-03")
+
+      expect(card_row.to_html).not_to include("text-red-700")
     end
   end
 end

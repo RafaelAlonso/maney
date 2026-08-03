@@ -6,9 +6,10 @@
     This partial stays the single entry point — home/show must not choose
     between the two. budgets/create.turbo_stream.erb re-renders THIS partial for
     whatever category was posted, and posting a budget against the credit-card
-    category is reachable (Budget#not_on_credit_card_category rejects it and the
-    row comes back with an error), so bypassing this branch would render a
-    budget form for a category that cannot have one. %>
+    category is reachable (Budget#not_on_credit_card_category rejects it with a
+    422), so this branch must not blow up or render a budget form for a
+    category that cannot have one. The card row deliberately renders no error —
+    it has no budget form to correct, so there's nowhere on the row to show one. %>
 <% if category.credit_card? %>
   <%= render "home/credit_card_row", category:, summary: %>
 <% else %>

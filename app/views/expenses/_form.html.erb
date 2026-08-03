@@ -47,14 +47,17 @@
     </div>
   </fieldset>
   <div data-expense-form-target="cardSection" hidden>
-    <% if Card.none? %>
+    <%# Empty rather than `Card.none?`: with every card archived the user does own
+        cards but none can be chosen, and the story asks for this same guidance. %>
+    <% card_options = card_options_for(entry) %>
+    <% if card_options.empty? %>
       <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3">
         Para lançar no crédito, cadastre um cartão antes.
         <%= link_to "Cadastrar cartão", new_card_path, class: "text-blue-600 underline" %>
       </p>
     <% else %>
       <%= f.label :card_id, "Cartão", class: "block text-sm mb-1" %>
-      <%= f.select :card_id, Card.order(:name).pluck(:name, :id), { include_blank: "escolha…" },
+      <%= f.select :card_id, card_options, { include_blank: "escolha…" },
             class: "border rounded p-2 w-full" %>
     <% end %>
   </div>

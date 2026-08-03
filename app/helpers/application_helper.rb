@@ -20,6 +20,23 @@ module ApplicationHelper
     schedule.due_day > schedule.closing_day ? days : "#{days} (vence no mês seguinte)"
   end
 
+  # Cards offered when entering an expense: the active ones, plus this entry's
+  # own card when it has since been archived. That exception is not cosmetic —
+  # Expense#card_matches_method rejects a credit expense without a card, so
+  # without the option the edit could not be saved at all. Only the entry's own
+  # archived card is added: an edit must not be able to move an expense onto some
+  # other retired card.
+  #
+  # This is the ONLY place in the app that filters cards by archived state.
+  # Everywhere else — statements, month totals, charts, the forecast balance, the
+  # committed debt — must keep seeing every card.
+  def card_options_for(entry)
+    cards = Card.active.order(:name).to_a
+    current = Card.find_by(id: entry.card_id)
+    cards << current if current&.archived? && cards.exclude?(current)
+    cards.sort_by(&:name).map { |c| [c.archived? ? "#{c.name} (arquivado)" : c.name, c.id] }
+  end
+
   # Rails' `pluralize` inflects only the last word of the phrase, which is right
   # for English ("3 loose expenses") and wrong for Portuguese, where the plural
   # agrees across the whole noun phrase: `pluralize(3, "gasto avulso")` gives

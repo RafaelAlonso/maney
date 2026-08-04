@@ -235,7 +235,12 @@ RSpec.describe "Analysis", type: :request do
       expect(forms.size).to eq 1
     end
 
-    it "offers every card, archived ones included (AC 9)" do
+    # AC 9 also promises archived cards stay listed, but Card has no
+    # archiving concept yet (no archived_at, no Card.active scope) — the
+    # controller's guard against a future `Card.active` reaching this screen
+    # is a code comment for now. That half of AC 9 gets a real test once the
+    # sibling story w1-story-card-archiving introduces the scope.
+    it "lists every card in the system" do
       azul
       preto
       travel_to(Date.new(2026, 7, 1)) { get analysis_path }
@@ -283,6 +288,22 @@ RSpec.describe "Analysis", type: :request do
       expect(response.body).to include("Nenhum gasto em Azul em 2026.")
       expect(response.body).not_to include("Nenhum lançamento em 2026")
       # The two spending charts lose their canvas; profit and gastos-e-saídas keep theirs.
+      expect(Nokogiri::HTML(response.body).css("canvas").size).to eq 2
+    end
+
+    # The AC 8 example above seeds an Income and a debit expense before
+    # filtering, which keeps #any_data? true on the unfiltered path too and
+    # cannot catch a gate that reads the filtered analysis instead of the
+    # consolidated one. This example seeds neither, so the year has no
+    # unfiltered data of its own — only credit spending on another card.
+    it "renders the whole-year panels for a card with no spending in an otherwise-empty year" do
+      credit(4_000, on: Date.new(2026, 3, 5), card: preto)
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Nenhum gasto em Azul em 2026.")
+      expect(response.body).not_to include("Nenhum lançamento")
       expect(Nokogiri::HTML(response.body).css("canvas").size).to eq 2
     end
   end

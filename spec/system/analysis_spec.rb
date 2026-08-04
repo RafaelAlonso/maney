@@ -147,10 +147,13 @@ RSpec.describe "Analysis", type: :system do
         select "Azul", from: "card_id"
         # `march_bar` is a raw JS read with no Capybara retry of its own, and
         # the card select's `change` submits an async Turbo visit — reading
-        # right after `select` can catch the old chart still mounted. This
-        # guard is a Capybara matcher, so it polls until the select (and,
-        # with it, the redrawn chart) has actually landed.
-        expect(page).to have_select("card_id", selected: "Azul")
+        # right after `select` can catch the old chart still mounted.
+        # `have_select(selected:)` is NOT a safe guard here: it reads the
+        # option's DOM `selected` property, which `select` already flips on
+        # the pre-navigation document, so the matcher passes instantly, before
+        # the Turbo visit lands. Wait on something only the post-visit
+        # document has — the URL, which the visit rewrites — instead.
+        expect(page).to have_current_path(/card_id=#{azul.id}/)
         expect(march_bar).to eq 1_000.0
 
         # The year select still holds 2026 — one form, so the card submit carried it.

@@ -131,36 +131,44 @@ RSpec.describe "Analysis", type: :system do
     Expense.create!(name: "tênis", amount_cents: 70_000, payment_method: "credit",
                     category: mercado, card: azul, date: Date.new(2027, 2, 4))
 
-    travel_to(Date.new(2027, 5, 10)) do
-      visit analysis_path(year: 2026)
+    # Capybara's own default wait (2s) is tuned for DOM assertions, not for a
+    # Turbo visit finishing a fetch and redrawing a Chart.js canvas — a round
+    # trip that this page's two `select`s below trigger and that can outrun
+    # 2s on a loaded box even though the app is correct. Scoped to this
+    # example only, so it does not soften a real timeout anywhere else.
+    Capybara.using_wait_time(5) do
+      travel_to(Date.new(2027, 5, 10)) do
+        visit analysis_path(year: 2026)
 
-      # March's bar, straight off the live Chart.js instance: R$ 1.400 for both
-      # cards together.
-      expect(march_bar).to eq 1_400.0
+        # March's bar, straight off the live Chart.js instance: R$ 1.400 for
+        # both cards together.
+        expect(march_bar).to eq 1_400.0
 
-      select "Azul", from: "card_id"
-      # `march_bar` is a raw JS read with no Capybara retry of its own, and the
-      # card select's `change` submits an async Turbo visit — reading right
-      # after `select` can catch the old chart still mounted. This guard is a
-      # Capybara matcher, so it polls until the select (and, with it, the
-      # redrawn chart) has actually landed.
-      expect(page).to have_select("card_id", selected: "Azul")
-      expect(march_bar).to eq 1_000.0
+        select "Azul", from: "card_id"
+        # `march_bar` is a raw JS read with no Capybara retry of its own, and
+        # the card select's `change` submits an async Turbo visit — reading
+        # right after `select` can catch the old chart still mounted. This
+        # guard is a Capybara matcher, so it polls until the select (and,
+        # with it, the redrawn chart) has actually landed.
+        expect(page).to have_select("card_id", selected: "Azul")
+        expect(march_bar).to eq 1_000.0
 
-      # The year select still holds 2026 — one form, so the card submit carried it.
-      expect(page).to have_select("year", selected: "2026")
+        # The year select still holds 2026 — one form, so the card submit carried it.
+        expect(page).to have_select("year", selected: "2026")
 
-      select "2027", from: "year"
+        select "2027", from: "year"
 
-      # The card_id guard above reads the same "Azul" before and after this
-      # visit lands, so it cannot detect whether the year change has actually
-      # arrived — wait on the field that this action changes instead.
-      expect(page).to have_select("year", selected: "2027")
-      expect(page).to have_select("card_id", selected: "Azul")
-      expect(february_bar).to eq 700.0
+        # The card_id guard above reads the same "Azul" before and after this
+        # visit lands, so it cannot detect whether the year change has
+        # actually arrived — wait on the field that this action changes
+        # instead.
+        expect(page).to have_select("year", selected: "2027")
+        expect(page).to have_select("card_id", selected: "Azul")
+        expect(february_bar).to eq 700.0
 
-      select "Todos os cartões", from: "card_id"
-      expect(page).to have_select("year", selected: "2027")
+        select "Todos os cartões", from: "card_id"
+        expect(page).to have_select("year", selected: "2027")
+      end
     end
   end
 
@@ -168,16 +176,20 @@ RSpec.describe "Analysis", type: :system do
     create_card!(name: "Azul")
     seed_year
 
-    travel_to(Date.new(2026, 7, 1)) do
-      visit analysis_path
+    # See the comment in the example above: the card select's Turbo visit can
+    # outrun Capybara's 2s default even though the app is correct.
+    Capybara.using_wait_time(5) do
+      travel_to(Date.new(2026, 7, 1)) do
+        visit analysis_path
 
-      select "Azul", from: "card_id"
+        select "Azul", from: "card_id"
 
-      expect(page).to have_content("Nenhum gasto em Azul em 2026.")
-      expect(page).to have_content("Cobre todos os cartões")
-      # Profit and "Gastos e saídas" keep their canvases; the two spending charts
-      # lost theirs.
-      expect(page).to have_css("canvas", count: 2)
+        expect(page).to have_content("Nenhum gasto em Azul em 2026.")
+        expect(page).to have_content("Cobre todos os cartões")
+        # Profit and "Gastos e saídas" keep their canvases; the two spending
+        # charts lost theirs.
+        expect(page).to have_css("canvas", count: 2)
+      end
     end
   end
 end

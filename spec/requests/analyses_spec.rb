@@ -151,6 +151,17 @@ RSpec.describe "Analysis", type: :request do
       Nokogiri::HTML(response.body).at_css("select[name='card_id'] option[selected]")&.[]("value")
     end
 
+    # A chart's config as it was shipped to the browser, found by its heading —
+    # the profit chart mounts its own Stimulus controller on the <section> itself
+    # rather than on a descendant, hence checking the section's own attribute
+    # before falling back to a descendant (Nokogiri's css/at_css never match the
+    # context node itself, only its descendants).
+    def config_for(body, title)
+      section = Nokogiri::HTML(body).css("section").find { |s| s.at_css("h2")&.text&.include?(title) }
+      section["data-profit-chart-config-value"] ||
+        section.at_css("[data-chart-config-value]")["data-chart-config-value"]
+    end
+
     it "defaults to every card and totals the consolidated year (AC 1)" do
       credit(10_000, on: Date.new(2026, 3, 4), card: azul)
       credit(4_000, on: Date.new(2026, 3, 5), card: preto)
@@ -241,6 +252,38 @@ RSpec.describe "Analysis", type: :request do
       expect(response).to have_http_status(:ok)
       expect(selected_card).to be_nil
       expect(spending_bars[2]).to eq 100.0
+    end
+
+    it "keeps the all-cards charts whole and says so (AC 5)" do
+      Income.create!(name: "salário", amount_cents: 100_000, date: Date.new(2026, 3, 5))
+      credit(10_000, on: Date.new(2026, 3, 4), card: azul)
+      credit(4_000, on: Date.new(2026, 3, 5), card: preto)
+      debit(3_000, on: Date.new(2026, 3, 6))
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+      filtered_body = response.body
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path }
+      consolidated_body = response.body
+
+      expect(config_for(filtered_body, "Lucro por mês")).to eq config_for(consolidated_body, "Lucro por mês")
+      expect(config_for(filtered_body, "Gastos e saídas")).to eq config_for(consolidated_body, "Gastos e saídas")
+      expect(filtered_body.scan("Cobre todos os cartões").size).to eq 2
+      expect(consolidated_body).not_to include("Cobre todos os cartões")
+    end
+
+    it "shows an empty state instead of a blank chart for a card with no spending (AC 8)" do
+      Income.create!(name: "salário", amount_cents: 100_000, date: Date.new(2026, 3, 5))
+      debit(3_000, on: Date.new(2026, 3, 6))
+      azul
+
+      travel_to(Date.new(2026, 7, 1)) { get analysis_path(card_id: azul.id) }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("Nenhum gasto em Azul em 2026.")
+      expect(response.body).not_to include("Nenhum lançamento em 2026")
+      # The two spending charts lose their canvas; profit and gastos-e-saídas keep theirs.
+      expect(Nokogiri::HTML(response.body).css("canvas").size).to eq 2
     end
   end
 end

@@ -1,8 +1,12 @@
 <% content_for :title, "Análise" %>
 <%= render "analyses/solvency", solvency: @solvency %>
-<%= render "analyses/year_picker", year: @year, years: @years %>
+<%= render "analyses/filters", card: @card, cards: @cards, year: @year, years: @years %>
 
-<% if @analysis.any_data? %>
+<%# This gate asks "does this year have anything to show", not "does this card
+    have anything to show" — a filtered analysis's #any_data? answers the
+    narrower, wrong question, since its spending is card-scoped while profit
+    and cash-outflow-vs-income keep plotting the consolidated year regardless. %>
+<% if @analysis.consolidated.any_data? %>
   <%= render "shared/chart", chart: Analysis::SpendingChart.new(@analysis, palette: @palette) %>
   <%= render "shared/chart", chart: Analysis::CategoryStackChart.new(@analysis, palette: @palette) %>
   <%= render "analyses/profit_chart", chart: Analysis::ProfitChart.new(@analysis, palette: @palette) %>

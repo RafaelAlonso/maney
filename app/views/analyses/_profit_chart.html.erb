@@ -4,7 +4,7 @@
     so it passes the data attributes through to shared/card. %>
 <% heading_id = "#{chart.class.name.demodulize.underscore}-title" %>
 <%= render layout: "shared/card",
-           locals: { title: chart.title, heading_id:,
+           locals: { title: chart.title, heading_id:, note: chart.note,
                      attributes: { data: { controller: "profit-chart",
                                            profit_chart_config_value: chart.to_config.to_json,
                                            profit_chart_modes_value: chart.modes.to_json } } } do %>

@@ -1,10 +1,16 @@
 <%# locals: chart (an Analysis::BaseChart), controller (Stimulus identifier, optional) %>
 <% identifier = local_assigns.fetch(:controller, "chart") %>
 <% heading_id = "#{chart.class.name.demodulize.underscore}-title" %>
-<%= render layout: "shared/card", locals: { title: chart.title, heading_id: } do %>
-  <div class="h-64">
-    <canvas data-controller="<%= identifier %>"
-            data-<%= identifier %>-config-value="<%= chart.to_config.to_json %>"
-            aria-labelledby="<%= heading_id %>"></canvas>
-  </div>
+<%= render layout: "shared/card", locals: { title: chart.title, heading_id:, note: chart.note } do %>
+  <% if chart.empty? %>
+    <%# Same h-64 box as the canvas it replaces, so the page does not reflow as
+        the card selector changes. %>
+    <p class="h-64 flex items-center justify-center text-center text-sm text-gray-500"><%= chart.empty_message %></p>
+  <% else %>
+    <div class="h-64">
+      <canvas data-controller="<%= identifier %>"
+              data-<%= identifier %>-config-value="<%= chart.to_config.to_json %>"
+              aria-labelledby="<%= heading_id %>"></canvas>
+    </div>
+  <% end %>
 <% end %>

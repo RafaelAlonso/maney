@@ -242,4 +242,116 @@ RSpec.describe Budgeting::YearAnalysis do
       expect(analysis.profit_vs_spending.cents(march)).to eq(-5_000)
     end
   end
+
+  describe "with a card filter" do
+    let(:azul) { create_card!(name: "Azul") }
+    let(:preto) { create_card!(name: "Preto") }
+
+    def filtered(card) = described_class.new(year: 2026, card:, today: Date.new(2026, 7, 15))
+
+    it "counts only the selected card's credit purchases" do
+      spend(10_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: azul)
+      spend(4_000, on: Date.new(2026, 3, 5), category: mercado, method: "credit", card: preto)
+
+      expect(filtered(azul).spending.cents(march)).to eq 10_000
+      expect(analysis.spending.cents(march)).to eq 14_000
+    end
+
+    # Debit and cash carry no card at all (Expense#card_matches_method), so the
+    # single `where(card:)` excludes them with no payment_method clause.
+    it "excludes debit and cash spending, which belong to no card" do
+      spend(10_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: azul)
+      spend(3_000, on: Date.new(2026, 3, 6), category: mercado)
+      spend(2_000, on: Date.new(2026, 3, 7), category: mercado, method: "cash")
+
+      expect(filtered(azul).spending.cents(march)).to eq 10_000
+    end
+
+    it "splits a category spent on two cards into each card's share" do
+      spend(10_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: azul)
+      spend(4_000, on: Date.new(2026, 3, 5), category: mercado, method: "credit", card: preto)
+
+      expect(filtered(azul).spending_by_category[mercado].cents(march)).to eq 10_000
+      expect(filtered(preto).spending_by_category[mercado].cents(march)).to eq 4_000
+    end
+
+    it "leaves income and cash outflow exactly as they are" do
+      Income.create!(name: "salário", amount_cents: 100_000, date: Date.new(2026, 3, 5))
+      spend(3_000, on: Date.new(2026, 3, 6), category: mercado)
+      spend(20_000, on: Date.new(2026, 3, 12), category: credit_card_category)
+      spend(10_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: preto)
+
+      subject = filtered(azul)
+      expect(subject.income.cents(march)).to eq 100_000
+      # R$ 30 groceries + R$ 200 statement payment, neither of which has a card.
+      expect(subject.cash_outflow.cents(march)).to eq 23_000
+      expect(subject).to be_filtered
+      expect(analysis).not_to be_filtered
+    end
+
+    # Filtering narrows *which* rows are counted, never *when* they count: each
+    # parcel keeps the competence month Budgeting::Competence derives for it.
+    it "keeps each installment in its own competence month, card by card" do
+      InstallmentPurchase.create!(name: "sofá", total_cents: 90_000, installments_count: 3,
+                                  card: azul, category: mercado, date: Date.new(2026, 3, 10))
+      InstallmentPurchase.create!(name: "tv", total_cents: 60_000, installments_count: 3,
+                                  card: preto, category: mercado, date: Date.new(2026, 3, 10))
+
+      subject = filtered(azul)
+      expect(subject.spending.cents(march)).to eq 30_000
+      expect(subject.spending.cents(Date.new(2026, 4, 1))).to eq 30_000
+      expect(subject.spending.cents(Date.new(2026, 5, 1))).to eq 30_000
+    end
+
+    # A purchase made in March on a card closing on day 5 is due in April; the
+    # chart is competence-based and must still read it in March (AC 3).
+    it "counts a purchase in its purchase month, not its statement month" do
+      spend(15_000, on: Date.new(2026, 3, 20), category: mercado, method: "credit", card: azul)
+
+      subject = filtered(azul)
+      expect(subject.spending.cents(march)).to eq 15_000
+      expect(subject.spending.cents(Date.new(2026, 4, 1))).to eq 0
+    end
+
+    it "reads a card with nothing in the year as no spending, not as an error" do
+      spend(3_000, on: Date.new(2026, 3, 6), category: mercado)
+
+      subject = filtered(azul)
+      expect(subject.spending.any?).to be false
+      expect(subject.spending_by_category).to be_empty
+      # Income and outflow still answer, which is what keeps the page rendering.
+      expect(subject).to be_any_data
+    end
+
+    it "exposes the year and the card it was built with" do
+      subject = filtered(azul)
+      expect(subject.year).to eq 2026
+      expect(subject.card).to eq azul
+    end
+
+    # profit_vs_spending and the spending-vs-outflow pair are read through this
+    # twin, so a card selection labels those charts without narrowing them — a
+    # profit built from one card's spending is exactly what the story rejects.
+    describe "#consolidated" do
+      it "answers the unfiltered year while the analysis itself stays filtered" do
+        spend(10_000, on: Date.new(2026, 3, 4), category: mercado, method: "credit", card: azul)
+        spend(4_000, on: Date.new(2026, 3, 5), category: mercado, method: "credit", card: preto)
+
+        subject = filtered(azul)
+        expect(subject.spending.cents(march)).to eq 10_000
+        expect(subject.consolidated.spending.cents(march)).to eq 14_000
+        expect(subject.consolidated).not_to be_filtered
+      end
+
+      it "keeps the same active-month mask, so the two never disagree about gaps" do
+        subject = filtered(azul)
+        expect(subject.consolidated.active_months).to eq subject.active_months
+      end
+
+      it "is the analysis itself when no card is selected" do
+        subject = analysis
+        expect(subject.consolidated).to be subject
+      end
+    end
+  end
 end

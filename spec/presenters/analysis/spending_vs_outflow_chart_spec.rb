@@ -37,4 +37,24 @@ RSpec.describe Analysis::SpendingVsOutflowChart do
     expect(config[:data][:datasets].first[:data][0]).to be_nil
     expect(config[:data][:datasets].last[:data][7]).to be_nil
   end
+
+  describe "the all-cards note" do
+    # The file's existing `card` let already carries this year's credit expense.
+    def filtered = described_class.new(Budgeting::YearAnalysis.new(year: 2026, card:,
+                                                                   today: Date.new(2026, 7, 15)))
+
+    it "says it covers every card when a card is selected (AC 5)" do
+      expect(filtered.note).to eq "Cobre todos os cartões"
+    end
+
+    it "says nothing when no card is selected" do
+      expect(described_class.new(analysis).note).to be_nil
+    end
+
+    # Both series stay consolidated: one card's purchases against all the money
+    # leaving the account would render a gap that means nothing.
+    it "plots the same numbers filtered as unfiltered (AC 5)" do
+      expect(filtered.to_config).to eq described_class.new(analysis).to_config
+    end
+  end
 end

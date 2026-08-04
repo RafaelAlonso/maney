@@ -4,6 +4,8 @@ module Analysis
   class SpendingChart < BaseChart
     def title = "Gastos por mês"
 
+    def empty? = !analysis.spending.any?
+
     def to_config
       series = analysis.spending
       {

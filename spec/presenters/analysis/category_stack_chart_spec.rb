@@ -72,4 +72,22 @@ RSpec.describe Analysis::CategoryStackChart do
   it "sorts each month's tooltip by that month's own values, descending (AC 3)" do
     expect(config[:options][:plugins][:tooltip][:itemSort]).to eq "desc"
   end
+
+  describe "the empty state" do
+    let(:azul) { create_card!(name: "Azul") }
+
+    it "reports empty when the selected card has no spending (AC 8)" do
+      spend(5_000, on: Date.new(2026, 3, 4), category: mercado)
+
+      chart = described_class.new(Budgeting::YearAnalysis.new(year: 2026, card: azul,
+                                                              today: Date.new(2026, 7, 15)))
+      expect(chart).to be_empty
+      expect(chart.empty_message).to eq "Nenhum gasto em Azul em 2026."
+    end
+
+    it "is not empty once there is spending" do
+      spend(5_000, on: Date.new(2026, 3, 4), category: mercado)
+      expect(described_class.new(analysis)).not_to be_empty
+    end
+  end
 end

@@ -70,4 +70,29 @@ RSpec.describe Analysis::ProfitChart do
     expect(data[0]).to be_nil
     expect(data[7]).to be_nil
   end
+
+  describe "the all-cards note" do
+    # Reuse the file's existing `card` let — the credit expense in its outer
+    # `before` already sits on that card, so "filtered" here is a real filter.
+    def filtered = described_class.new(Budgeting::YearAnalysis.new(year: 2026, card:,
+                                                                   today: Date.new(2026, 7, 15)))
+
+    it "says it covers every card when a card is selected (AC 5)" do
+      expect(filtered.note).to eq "Cobre todos os cartões"
+    end
+
+    it "says nothing when no card is selected" do
+      expect(described_class.new(analysis).note).to be_nil
+    end
+
+    # Income is not attributable to a card, so profit is not either: the plotted
+    # numbers must be identical with and without a filter.
+    it "plots the same numbers filtered as unfiltered (AC 5)" do
+      expect(filtered.to_config).to eq described_class.new(analysis).to_config
+    end
+
+    it "never goes empty — it always has the whole year to show" do
+      expect(filtered).not_to be_empty
+    end
+  end
 end

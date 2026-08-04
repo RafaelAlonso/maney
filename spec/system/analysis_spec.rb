@@ -108,4 +108,76 @@ RSpec.describe "Analysis", type: :system do
       expect(page).to have_no_css("canvas")
     end
   end
+
+  # Reads a month's bar out of the live Chart.js instance rather than the DOM:
+  # a <canvas> renders identically whether Chart.js drew into it or threw, and
+  # the first canvas on the page is always "Gastos por mês".
+  def bar_at(index)
+    page.evaluate_script(<<~JS)
+      window.Chart.getChart(document.querySelector('canvas')).data.datasets[0].data[#{index}]
+    JS
+  end
+
+  def february_bar = bar_at(1)
+  def march_bar = bar_at(2)
+
+  it "filters by card and keeps the card when the year changes (AC 2, 6, 7)" do
+    azul = create_card!(name: "Azul")
+    preto = create_card!(name: "Preto")
+    Expense.create!(name: "tv", amount_cents: 100_000, payment_method: "credit",
+                    category: mercado, card: azul, date: Date.new(2026, 3, 4))
+    Expense.create!(name: "fone", amount_cents: 40_000, payment_method: "credit",
+                    category: mercado, card: preto, date: Date.new(2026, 3, 5))
+    Expense.create!(name: "tênis", amount_cents: 70_000, payment_method: "credit",
+                    category: mercado, card: azul, date: Date.new(2027, 2, 4))
+
+    travel_to(Date.new(2027, 5, 10)) do
+      visit analysis_path(year: 2026)
+
+      # March's bar, straight off the live Chart.js instance: R$ 1.400 for both
+      # cards together.
+      expect(march_bar).to eq 1_400.0
+
+      select "Azul", from: "card_id"
+      # `march_bar` is a raw JS read with no Capybara retry of its own, and the
+      # card select's `change` submits an async Turbo visit — reading right
+      # after `select` can catch the old chart still mounted. This guard is a
+      # Capybara matcher, so it polls until the select (and, with it, the
+      # redrawn chart) has actually landed.
+      expect(page).to have_select("card_id", selected: "Azul")
+      expect(march_bar).to eq 1_000.0
+
+      # The year select still holds 2026 — one form, so the card submit carried it.
+      expect(page).to have_select("year", selected: "2026")
+
+      select "2027", from: "year"
+
+      # The card_id guard above reads the same "Azul" before and after this
+      # visit lands, so it cannot detect whether the year change has actually
+      # arrived — wait on the field that this action changes instead.
+      expect(page).to have_select("year", selected: "2027")
+      expect(page).to have_select("card_id", selected: "Azul")
+      expect(february_bar).to eq 700.0
+
+      select "Todos os cartões", from: "card_id"
+      expect(page).to have_select("year", selected: "2027")
+    end
+  end
+
+  it "shows an empty state, not a blank chart, for a card with no spending (AC 8)" do
+    create_card!(name: "Azul")
+    seed_year
+
+    travel_to(Date.new(2026, 7, 1)) do
+      visit analysis_path
+
+      select "Azul", from: "card_id"
+
+      expect(page).to have_content("Nenhum gasto em Azul em 2026.")
+      expect(page).to have_content("Cobre todos os cartões")
+      # Profit and "Gastos e saídas" keep their canvases; the two spending charts
+      # lost theirs.
+      expect(page).to have_css("canvas", count: 2)
+    end
+  end
 end

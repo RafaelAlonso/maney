@@ -59,4 +59,15 @@ RSpec.describe Analysis::CategorySpendingChart do
 
     expect(config[:data]).to eq Analysis::SpendingChart.new(year).to_config[:data]
   end
+
+  # CategoryYear defines no `filtered?` and no `card`: the inherited
+  # SpendingChart#empty? predicate would reach `analysis.filtered?` through
+  # empty_message and raise. This chart overrides both empty? and
+  # empty_message so a zero-spending category-year never crashes.
+  it "never reports empty, even with no spending, and does not crash if empty_message is reached anyway" do
+    chart = described_class.new(category_year)
+
+    expect(chart.empty?).to be false
+    expect { chart.empty_message }.not_to raise_error
+  end
 end

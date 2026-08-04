@@ -16,5 +16,10 @@ module Analysis
     # predicate either: categories/show.html.erb renders its own empty state
     # before shared/_chart is reached.
     def empty? = false
+
+    # Reached only if a caller ignores `empty?`. The inherited empty_message
+    # calls `analysis.filtered?`, which Budgeting::CategoryYear does not
+    # answer and would raise; fall back to the year-only phrasing instead.
+    def empty_message = "Nenhum gasto em #{analysis.year}."
   end
 end

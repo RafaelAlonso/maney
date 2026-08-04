@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   resource :settings, only: %i[edit update]
   resource :analysis, only: :show
   resources :cards, except: :show do
+    resource :archival, only: %i[create destroy], controller: "card_archivals"
     resource :migration, only: %i[new create], controller: "card_migrations"
     resources :statements, only: %i[index show]
   end

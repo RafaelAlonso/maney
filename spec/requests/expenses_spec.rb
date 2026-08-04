@@ -392,4 +392,68 @@ RSpec.describe "Expenses", type: :request do
       expect(response).to redirect_to(expenses_path(month: "2026-12"))
     end
   end
+
+  describe "the card picker and archived cards" do
+    it "does not offer an archived card on a new expense (AC 2)" do
+      create_card!(name: "Azul")
+      create_card!(name: "Preto").archive!
+
+      get new_expense_path
+
+      expect(response.body).to include("Azul")
+      expect(response.body).not_to include("Preto")
+    end
+
+    # Expense#card_matches_method rejects a credit expense with no card, so
+    # without its own card in the list the select would fall back to "escolha…"
+    # and the edit could not be saved at all.
+    it "still offers the expense's own card once archived, labelled (AC 7)" do
+      card = create_card!(name: "Preto")
+      expense = Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 4),
+                                payment_method: "credit", card:, category: category("mercado"))
+      card.archive!
+
+      get edit_expense_path(expense)
+
+      expect(response.body).to include("Preto (arquivado)")
+    end
+
+    it "keeps the card when that expense is saved unchanged (AC 7)" do
+      card = create_card!(name: "Preto")
+      expense = Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 4),
+                                payment_method: "credit", card:, category: category("mercado"))
+      card.archive!
+
+      patch expense_path(expense), params: {
+        expense_entry: { name: "compra", amount: "1.200,00", date: "2026-03-04",
+                         category_id: category("mercado").id, payment_method: "credit",
+                         card_id: card.id }
+      }
+
+      expect(expense.reload.card_id).to eq card.id
+    end
+
+    it "does not offer another archived card when editing (AC 2)" do
+      own = create_card!(name: "Preto")
+      create_card!(name: "Roxo").archive!
+      expense = Expense.create!(name: "compra", amount_cents: 120_000, date: Date.new(2026, 3, 4),
+                                payment_method: "credit", card: own, category: category("mercado"))
+      own.archive!
+
+      get edit_expense_path(expense)
+
+      expect(response.body).to include("Preto (arquivado)")
+      expect(response.body).not_to include("Roxo")
+    end
+
+    # The copy is imperfect — the user does own cards — but the story asks for
+    # exactly the existing no-card guidance here.
+    it "shows the existing no-card guidance when every card is archived (AC 8)" do
+      create_card!(name: "Azul").archive!
+
+      get new_expense_path
+
+      expect(response.body).to include("Para lançar no crédito, cadastre um cartão antes.")
+    end
+  end
 end

@@ -5,6 +5,17 @@ class Card < ApplicationRecord
 
   validates :name, presence: true
 
+  # Archived means "I no longer spend on this card" — not settled, not deleted.
+  # Deliberately NOT a default_scope: an archived card's statements, totals and
+  # charts must keep counting everywhere, and the only place it disappears from
+  # is the picker for a NEW expense (ApplicationHelper#card_options_for). A
+  # default scope would quietly take it out of all of them instead.
+  scope :active, -> { where(archived_at: nil) }
+
+  def archived? = archived_at.present?
+  def archive! = update!(archived_at: Time.current)
+  def reactivate! = update!(archived_at: nil)
+
   # Editing the days never rewrites the old validity window: it creates a new
   # one effective from the start of the window open today — already-closed
   # statements stay derived from the old one, and the boundary is always a real

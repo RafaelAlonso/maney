@@ -49,22 +49,26 @@ RSpec.describe Users::Claim, :no_current_user do
         end
       end
     ensure
-      # Known accepted gap, verified by a scratch experiment (forcing a raise
-      # inside the block above, then reverting it — see the Task 5 fix report):
-      # if the DELETE fails so completely that no row anywhere gets cleaned
-      # (e.g. disable_referential_integrity itself refuses before touching any
-      # table), this restore call is genuinely unable to succeed — you cannot
-      # make a column NOT NULL over rows that are still null, savepoint or not.
-      # That failure then escapes this `ensure`, and because
-      # MinitestLifecycleAdapter's around calls `after_teardown` as plain
-      # sequential code (no rescue), the per-example ROLLBACK never runs,
-      # leaking an aborted transaction into every later example on this
-      # connection for the rest of the process. Living with that risk rests on
-      # two assumptions holding in every environment this suite runs in: the
-      # Postgres role owns these tables (so disabling triggers cannot itself
-      # be refused for lack of privilege), and the FK graph among the eight
-      # TABLES stays what FINGERPRINT already documents (so ordering doesn't
-      # regress the ForeignKeyViolation this method was written to prevent).
+      # Known accepted gap, confirmed with a scratch experiment (forcing a
+      # raise inside the block above, running the specs, observing the
+      # cascade, then reverting — see "Verifying the residual gap" in the
+      # Task 5 fix report): if the cleanup above still leaves rows with a
+      # null user_id anywhere — e.g. a DELETE hits an FK violation the
+      # savepoint above cannot paper over, or disable_referential_integrity's
+      # own ActiveRecord::InvalidForeignKey re-raise reaches here — this
+      # restore call is genuinely unable to succeed: you cannot make a column
+      # NOT NULL over rows that are still null, savepoint or not. That failure
+      # then escapes this `ensure`, and because MinitestLifecycleAdapter's
+      # around calls `after_teardown` as plain sequential code (no rescue),
+      # the per-example ROLLBACK never runs, leaking an aborted transaction
+      # into every later example on this connection for the rest of the
+      # process (confirmed by the same experiment). Living with that risk
+      # rests on two assumptions holding in every environment this suite runs
+      # in: the Postgres role owns these tables (so disabling triggers is
+      # never refused for lack of privilege), and the FK graph among the
+      # eight TABLES stays what FINGERPRINT already documents (so deletion
+      # order doesn't regress the ForeignKeyViolation this method exists to
+      # prevent).
       described_class::TABLES.each { |table| migration.change_column_null(table, :user_id, false) }
     end
   end

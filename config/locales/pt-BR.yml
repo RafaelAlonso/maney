@@ -98,6 +98,7 @@ pt-BR:
       income: "Ganho"
       installment_purchase: "Compra parcelada"
       setting: "Configuração"
+      user: "Pessoa"
     attributes:
       card:
         name: "Nome"
@@ -144,3 +145,6 @@ pt-BR:
         initial_balance: "Saldo inicial"
         initial_balance_cents: "Saldo inicial"
         alert_threshold_percent: "Limite de alerta"
+      user:
+        email_address: "E-mail"
+        password: "Senha"

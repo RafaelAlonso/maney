@@ -1,0 +1,16 @@
+<%# app/views/sessions/new.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Entrar</h1>
+
+<%= form_with url: session_path, class: "space-y-4" do |f| %>
+  <div>
+    <%= f.label :email_address, "E-mail", class: "block text-sm mb-1" %>
+    <%= f.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
+          value: params[:email_address], class: "border rounded p-2 w-full" %>
+  </div>
+  <div>
+    <%= f.label :password, "Senha", class: "block text-sm mb-1" %>
+    <%= f.password_field :password, required: true, autocomplete: "current-password",
+          maxlength: 72, class: "border rounded p-2 w-full" %>
+  </div>
+  <%= f.submit "entrar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+<% end %>

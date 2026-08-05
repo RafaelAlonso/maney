@@ -8,9 +8,6 @@ module Users
 
     Result = Data.define(:user, :rows_attached)
 
-    TABLES = %w[settings categories cards card_schedules incomes expenses
-                installment_purchases budgets].freeze
-
     # Per table, what a lost, duplicated or reassigned row would move. Read with
     # raw SQL on purpose: OwnedByUser's default_scope cannot reach a fingerprint
     # taken this way, which is the only reason it can be trusted to compare a
@@ -25,6 +22,13 @@ module Users
       "installment_purchases" => { numeric: %w[total_cents installments_count first_installment], dates: %w[date] },
       "budgets" => { numeric: %w[amount_cents], dates: %w[month] }
     }.freeze
+
+    # Derived from FINGERPRINT, not hand-maintained alongside it: two
+    # independently listed sets of "every owned table" can only drift apart, and
+    # the dangerous direction is a table backfilled by `attach` that FINGERPRINT
+    # never learns to verify — exactly the class of bug this migration exists to
+    # rule out. One list, one source of truth.
+    TABLES = FINGERPRINT.keys.freeze
 
     def initialize(email_address:, password:)
       @email_address = email_address

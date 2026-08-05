@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#059669">
+    <title>Maney</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        padding: 2rem;
+        text-align: center;
+        background: #f9fafb;
+        color: #111827;
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+      p { margin: 0; max-width: 20rem; line-height: 1.5; color: #374151; }
+      button {
+        margin-top: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        border: 0;
+        border-radius: 9999px;
+        background: #059669;
+        color: #ffffff;
+        font-size: 1rem;
+        font-family: inherit;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="72" height="72" viewBox="0 0 512 512" role="img" aria-label="Maney">
+      <rect width="512" height="512" rx="112" fill="#059669"/>
+      <path d="M 152 356 L 152 156 L 256 300 L 360 156 L 360 356"
+            fill="none" stroke="#ffffff" stroke-width="56"
+            stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h1>Maney</h1>
+    <p>Maney precisa de internet para mostrar os seus números.</p>
+    <button type="button" id="retry">Tentar de novo</button>
+    <script>
+      document.getElementById("retry").addEventListener("click", () => location.reload())
+    </script>
+  </body>
+</html>

@@ -8,5 +8,7 @@
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
 
-Category.find_or_create_by!(role: "others") { |c| c.name = "outros" }
-Category.find_or_create_by!(role: "credit_card") { |c| c.name = "cartão de crédito" }
+# Nothing to seed. The reserved categories ("outros", "cartão de crédito") are
+# one person's, not the database's — they are created per person by
+# SetupController on first-run setup. A seed running with no Current.user would
+# fail OwnedByUser's `belongs_to :user` outright.

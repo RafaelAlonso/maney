@@ -40,13 +40,26 @@ module AuthenticationHelpers
     fill_in "Senha", with: PASSWORD
     click_button "entrar"
     # `click_button` returns as soon as the click fires — it does not wait for
-    # the resulting redirect to land. Without this, the example's own `before`
-    # block (which mutates the database right after this method returns) can
-    # race the still-in-flight sign-in navigation, and an unrelated request
-    # occasionally observes the database mid-transition. Polling for the
-    # sign-in form's own disappearance blocks until the redirect has actually
-    # landed, on whatever page it lands on.
-    expect(page).to have_no_button("entrar")
+    # the resulting navigation to land. The example's own `before` block mutates
+    # the database the instant this method returns, and the server runs in this
+    # same process against the same connection: an in-flight sign-in request
+    # then reads a database being rewritten underneath it. That is not
+    # theoretical — the log shows a `Setting Create` from the example's thread
+    # landing between two queries of the redirect's own `GET /`.
+    #
+    # Waiting for the *landing page* is what closes that window, and it has to
+    # be the page, not the form. Turbo disables the submit button while the form
+    # is in flight, and Capybara's button selector ignores disabled buttons, so
+    # "the entrar button is gone" goes true the moment the POST leaves the
+    # browser — before the server has even read it. `disabled: :all` looks at
+    # the DOM instead, and the path check proves the whole POST → `/` → `/setup`
+    # chain finished rendering.
+    #
+    # `/setup` is the deterministic destination: every example signs in as a
+    # brand-new person, and a person with no Setting is sent there by
+    # `require_setup` (see the `driven_by` block in spec/support/system.rb).
+    expect(page).to have_no_button("entrar", disabled: :all)
+    expect(page).to have_current_path(setup_path)
   end
 
   # Leaves the spec's own thread with nobody signed in. Does not touch the

@@ -12,13 +12,6 @@ RSpec.describe Category do
     expect(Category.new(name: "outros 2", role: "others")).not_to be_valid
   end
 
-  it "the seeds create the reserved categories and are idempotent" do
-    2.times { Rails.application.load_seed }
-    expect(Category.where(role: "others").count).to eq(1)
-    expect(Category.where(role: "credit_card").count).to eq(1)
-    expect(Category.find_by(role: "credit_card")).to be_credit_card
-  end
-
   it "Fix 2: refuses to delete a reserved category" do
     reserved = Category.create!(name: "cartão de crédito", role: "credit_card")
     expect(reserved.destroy).to be(false)

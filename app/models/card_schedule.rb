@@ -1,4 +1,6 @@
 class CardSchedule < ApplicationRecord
+  include OwnedByUser
+
   belongs_to :card
 
   validates :closing_day, :due_day, inclusion: { in: 1..31 }

@@ -1,4 +1,6 @@
 class Income < ApplicationRecord
+  include OwnedByUser
+
   # Not persisted: holds the text exactly as the user typed it (e.g. "abc",
   # "0,00") so the form can re-render with it after a 422 — without this the
   # field would fall back to `amount_cents` (which is nil when the parse fails)

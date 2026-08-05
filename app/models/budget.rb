@@ -1,4 +1,6 @@
 class Budget < ApplicationRecord
+  include OwnedByUser
+
   belongs_to :category
 
   before_validation { self.month = month&.beginning_of_month }

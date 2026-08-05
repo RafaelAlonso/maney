@@ -1,4 +1,6 @@
 class InstallmentPurchase < ApplicationRecord
+  include OwnedByUser
+
   belongs_to :card
   belongs_to :category
   has_many :expenses, dependent: :destroy

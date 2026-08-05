@@ -1,11 +1,17 @@
 class Category < ApplicationRecord
+  include OwnedByUser
+
   ROLES = %w[others credit_card].freeze
 
   has_many :budgets, dependent: :destroy
   has_many :expenses, dependent: :restrict_with_error
 
   validates :name, presence: true
-  validates :role, inclusion: { in: ROLES }, uniqueness: true, allow_nil: true
+  # Rails' uniqueness validator queries via `klass.unscoped`, so it never sees
+  # OwnedByUser's default_scope on its own — without an explicit `scope:` here,
+  # one person picking "credit_card" would block every other person from ever
+  # doing the same.
+  validates :role, inclusion: { in: ROLES }, uniqueness: { scope: :user_id }, allow_nil: true
   validate :reserved_role_cannot_change
 
   before_destroy :reject_destroy_of_reserved_role

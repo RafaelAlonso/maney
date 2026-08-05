@@ -1,4 +1,6 @@
 class Expense < ApplicationRecord
+  include OwnedByUser
+
   PAYMENT_METHODS = %w[credit debit cash].freeze
 
   belongs_to :category

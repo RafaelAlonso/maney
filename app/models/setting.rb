@@ -1,4 +1,6 @@
 class Setting < ApplicationRecord
+  include OwnedByUser
+
   before_validation { self.first_month = first_month&.beginning_of_month }
 
   validates :first_month, presence: true

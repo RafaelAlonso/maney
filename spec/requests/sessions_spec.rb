@@ -63,4 +63,14 @@ RSpec.describe "Sessions", type: :request do
 
     expect(Session.exists?(other_device.id)).to be(true)
   end
+
+  it "shows no navigation and no entry button while signed out" do
+    sign_out_request
+
+    get new_session_path
+
+    expect(response.body).to include("Entrar")
+    expect(response.body).not_to include("Categorias")
+    expect(response.body).not_to include("Lançar")
+  end
 end

@@ -26,7 +26,7 @@
   </head>
 
   <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">
-    <% unless Setting.instance.nil? %>
+    <% if authenticated? && Setting.instance %>
       <%# `shrink-0` + `whitespace-nowrap` are what make `overflow-x-auto` work.
           Flex items shrink below their content by default, so on a 360 px phone
           the nav silently squeezed the last items instead of overflowing —
@@ -47,6 +47,6 @@
     <% if notice %><p class="bg-emerald-50 text-emerald-800 px-4 py-2 text-sm"><%= notice %></p><% end %>
     <% if alert %><p class="bg-red-50 text-red-800 px-4 py-2 text-sm"><%= alert %></p><% end %>
     <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
-    <%= render "shared/fab" unless Setting.instance.nil? %>
+    <%= render "shared/fab" if authenticated? && Setting.instance %>
   </body>
 </html>

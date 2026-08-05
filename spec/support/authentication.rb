@@ -78,6 +78,20 @@ module AuthenticationHelpers
     Current.session = nil
     Holder.session = nil
   end
+
+  # Builds records as somebody else, then hands the example back to its own
+  # person. Only the spec thread's `Current` moves — the cookie a request spec
+  # is holding still belongs to whoever signed in.
+  def as(user)
+    previous_session = Current.session
+    previous_user = @current_user
+    sign_in(user)
+    yield
+  ensure
+    @current_user = previous_user
+    Current.session = previous_session
+    Holder.session = previous_session
+  end
 end
 
 # `ActiveSupport::CurrentAttributes` is reset by the Rails executor when a

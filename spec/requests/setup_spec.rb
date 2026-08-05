@@ -66,4 +66,26 @@ RSpec.describe "Setup", type: :request do
     expect(Setting.instance).to be_nil
     expect(Category.count).to eq 0
   end
+
+  it "asks a brand-new person for first-run setup and gives them their own reserved categories (AC 8)" do
+    create_setting!
+    create_reserved_categories!
+    mine = Category.unscoped.where(role: "others").pluck(:id)
+
+    other = create_user!(email_address: "outra@example.com")
+    sign_out_request
+    post session_path, params: { email_address: other.email_address,
+                                 password: AuthenticationHelpers::PASSWORD }
+
+    get root_path
+    expect(response).to redirect_to(setup_path)
+
+    post setup_path, params: { setup: { first_month: "2026-05", initial_balance: "0,00" } }
+    follow_redirect!
+
+    theirs = Category.unscoped.where(user_id: other.id)
+    expect(theirs.where(role: "others").pluck(:name)).to eq([ "outros" ])
+    expect(theirs.where(role: "credit_card").pluck(:name)).to eq([ "cartão de crédito" ])
+    expect(theirs.where(role: "others").pluck(:id)).not_to eq(mine)
+  end
 end

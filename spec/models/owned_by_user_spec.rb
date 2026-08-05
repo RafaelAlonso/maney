@@ -43,4 +43,39 @@ RSpec.describe OwnedByUser do
     expect { Setting.create!(first_month: Date.new(2026, 5, 1)) }.not_to raise_error
     expect(Setting.instance.first_month).to eq(Date.new(2026, 5, 1))
   end
+
+  # The guard that outlives this story: a table added later cannot join the
+  # schema unscoped without failing here.
+  describe "the schema" do
+    exempt = %w[users sessions schema_migrations ar_internal_metadata]
+
+    it "requires a person on every table that holds budgeting data" do
+      tables = ActiveRecord::Base.connection.tables - exempt
+
+      tables.each do |table|
+        column = ActiveRecord::Base.connection.columns(table).find { |c| c.name == "user_id" }
+        expect(column).to be_present, "#{table} has no user_id"
+        expect(column.null).to be(false), "#{table}.user_id is nullable"
+      end
+    end
+
+    it "scopes every model backed by one of those tables" do
+      tables = ActiveRecord::Base.connection.tables - exempt
+      Rails.application.eager_load!
+
+      ActiveRecord::Base.descendants.select { |model| tables.include?(model.table_name) }.each do |model|
+        expect(model.include?(OwnedByUser)).to be(true), "#{model} does not include OwnedByUser"
+      end
+    end
+  end
+
+  it "lets two people each keep their own reserved categories" do
+    create_reserved_categories!
+
+    other = create_user!(email_address: "outra@example.com")
+    Current.session = Session.create!(user: other)
+
+    expect { create_reserved_categories! }.not_to raise_error
+    expect(Category.unscoped.where(role: "others").count).to eq(2)
+  end
 end

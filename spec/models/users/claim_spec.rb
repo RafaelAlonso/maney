@@ -5,6 +5,29 @@ require "rails_helper"
 RSpec.describe Users::Claim, :no_current_user do
   let(:march) { Date.new(2026, 3, 1) }
 
+  # `user_id` is NOT NULL on every owned table (Task 5), but this spec has to
+  # reproduce the pre-account schema state Users::Claim actually runs against
+  # in production: `db:migrate` stops right before that migration, `users:claim`
+  # runs while the column is still nullable, then `db:migrate` finishes the job.
+  # The test database is always fully migrated, so the constraint is relaxed
+  # for the duration of this file only, and restored afterwards.
+  around do |example|
+    migration = ActiveRecord::Migration.new
+    described_class::TABLES.each { |table| migration.change_column_null(table, :user_id, true) }
+    example.run
+  ensure
+    # The "rolls everything back" example deliberately leaves rows with a null
+    # user_id sitting in an open transaction — restoring NOT NULL would fail on
+    # exactly the data this file exists to create. Transactional fixtures clean
+    # that up on rollback, but only once this hook returns, so the delete here
+    # is what actually makes the column change_column_null-safe again; whatever
+    # a successful claim already reattached is untouched (no null rows left).
+    ActiveRecord::Base.connection.disable_referential_integrity do
+      described_class::TABLES.each { |table| ActiveRecord::Base.connection.execute(%(DELETE FROM "#{table}" WHERE user_id IS NULL)) }
+    end
+    described_class::TABLES.each { |table| migration.change_column_null(table, :user_id, false) }
+  end
+
   # Builds the pre-account database: rows that exist and belong to nobody. They
   # have to be created through a temporary person (OwnedByUser requires one),
   # then detached and the person removed.

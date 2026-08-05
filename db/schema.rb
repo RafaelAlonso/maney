@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
+ActiveRecord::Schema[8.1].define(version: 2026_08_05_214025) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -20,7 +20,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.datetime "created_at", null: false
     t.date "month", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["category_id", "month"], name: "index_budgets_on_category_id_and_month", unique: true
     t.index ["category_id"], name: "index_budgets_on_category_id"
     t.index ["user_id"], name: "index_budgets_on_user_id"
@@ -32,7 +32,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.datetime "created_at", null: false
     t.integer "due_day", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.date "valid_from", null: false
     t.index ["card_id", "valid_from"], name: "index_card_schedules_on_card_id_and_valid_from", unique: true
     t.index ["card_id"], name: "index_card_schedules_on_card_id"
@@ -44,7 +44,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.datetime "created_at", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_cards_on_user_id"
   end
 
@@ -53,8 +53,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.string "name", null: false
     t.string "role"
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
-    t.index ["role"], name: "index_categories_on_role", unique: true, where: "(role IS NOT NULL)"
+    t.bigint "user_id", null: false
+    t.index ["user_id", "role"], name: "index_categories_on_user_id_and_role", unique: true, where: "(role IS NOT NULL)"
     t.index ["user_id"], name: "index_categories_on_user_id"
   end
 
@@ -69,7 +69,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.string "name", null: false
     t.string "payment_method", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["card_id"], name: "index_expenses_on_card_id"
     t.index ["category_id"], name: "index_expenses_on_category_id"
     t.index ["installment_purchase_id"], name: "index_expenses_on_installment_purchase_id"
@@ -82,7 +82,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.date "date", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_incomes_on_user_id"
   end
 
@@ -96,7 +96,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.string "name", null: false
     t.integer "total_cents", null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["card_id"], name: "index_installment_purchases_on_card_id"
     t.index ["category_id"], name: "index_installment_purchases_on_category_id"
     t.index ["user_id"], name: "index_installment_purchases_on_user_id"
@@ -117,7 +117,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_05_165437) do
     t.date "first_month", null: false
     t.integer "initial_balance_cents", default: 0, null: false
     t.datetime "updated_at", null: false
-    t.bigint "user_id"
+    t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_settings_on_user_id"
   end
 

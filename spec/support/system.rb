@@ -14,6 +14,10 @@ end
 #
 # So `page.go_back` / `page.go_forward` wait for Turbo to have no visit in
 # flight, the same way every other Capybara call waits for the page to settle.
+#
+# The price: this monkey-patches a third-party class (`Capybara::Session`) and
+# reads Turbo internals (`Turbo.session.navigator.currentVisit`) that carry no
+# compatibility promise, so a Turbo or Capybara upgrade can break it here.
 module SettledTurboBeforeHistoryNavigation
   # A visit is one request plus one render, so it normally settles in a couple
   # of hundred milliseconds; the budget only has to be long enough to survive a

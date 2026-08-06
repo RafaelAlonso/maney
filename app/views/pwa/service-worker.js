@@ -5,7 +5,16 @@ const CACHE = "maney-offline-v1"
 const OFFLINE_URL = "/offline.html"
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll([OFFLINE_URL])))
+  // `cache: "reload"` bypasses the HTTP cache for this one fetch. Production
+  // serves everything in public/ with `max-age=31536000`, and addAll's default
+  // cache mode would happily populate a freshly named cache from a year-old
+  // stored copy — so editing offline.html and bumping CACHE would install a new
+  // cache holding the *old* page, on exactly the devices that already have the
+  // app. caches.match(OFFLINE_URL) still matches this entry: cache keys match
+  // by URL, not by the Request object used to store them.
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll([ new Request(OFFLINE_URL, { cache: "reload" }) ]))
+  )
   self.skipWaiting()
 })
 
@@ -28,5 +37,15 @@ self.addEventListener("fetch", (event) => {
   // triggers a resubmission prompt. Capturing writes offline is w3's job.
   if (request.mode !== "navigate" || request.method !== "GET") return
 
+  // This `fetch` inherits the navigation's cache mode, so keeping app HTML
+  // fresh is the HTTP cache's job, not the worker's. It works today only
+  // because Rails' default `must-revalidate` forbids serving a stored body
+  // without asking the server: offline, revalidation fails, and we fall through
+  // to the no-connection screen. Adding `expires_in` or `http_cache_forever` to
+  // any screen with figures on it would let this line resolve straight from the
+  // HTTP cache and serve stale money offline, with no test failing.
+  //
+  // `{cache: "no-store"}` is not the fix: it downgrades a `mode: "navigate"`
+  // request to `same-origin` and breaks redirect handling.
   event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)))
 })

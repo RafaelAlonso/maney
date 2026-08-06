@@ -18,13 +18,20 @@ RSpec.describe "The no-connection screen", type: :system do
 
   # Capybara reuses one browser across the whole suite, so a worker left
   # registered here would go on intercepting navigations in later examples.
+  #
+  # The guard matters on a red run: when an example fails the browser may be
+  # sitting on Chrome's own error page, which has no `navigator.serviceWorker`,
+  # and an unguarded script would raise here — hiding the real failure behind a
+  # cleanup error and leaving the worker registered for the next example.
   after do
     go_online
     page.execute_script(<<~JS)
-      navigator.serviceWorker.getRegistrations().then((registrations) => {
-        registrations.forEach((registration) => registration.unregister())
-      })
-      caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
+      if (navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          registrations.forEach((registration) => registration.unregister())
+        })
+        caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)))
+      }
     JS
   end
 
@@ -87,6 +94,29 @@ RSpec.describe "The no-connection screen", type: :system do
     click_link "Gastos"
     expect(page).to have_current_path(expenses_path)
     go_offline
+
+    page.go_back
+
+    expect(page).to have_content("Maney precisa de internet")
+    expect(page.text).not_to match(/\d{1,3},\d{2}/)
+  end
+
+  # The two examples above go back through Turbo, which makes a real request and
+  # so never exercises the bfcache guard in app/javascript/pwa.js. This one does:
+  # a full-document `visit` leaves an entry in the browser's back-forward cache,
+  # and restoring it renders a whole page of figures with no request for the
+  # service worker to intercept.
+  #
+  # `navigator.onLine` stays true for the whole example — the outage is at the
+  # socket, not the link layer, which is the shape of a captive-portal wifi, a
+  # network that needs a VPN, or a self-hosted server that is simply down. A
+  # guard conditioned on `navigator.onLine` would let the stale page through.
+  it "does not restore a bfcached page of figures when the server is unreachable but the phone is online" do
+    install_service_worker
+    visit expenses_path
+    expect(page).to have_current_path(expenses_path)
+    go_offline
+    expect(page.evaluate_script("navigator.onLine")).to be true
 
     page.go_back
 

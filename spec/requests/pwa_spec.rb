@@ -34,5 +34,15 @@ RSpec.describe "PWA", type: :request do
       expect(response.body).to include('name="theme-color"')
       expect(response.body).to include("#059669")
     end
+
+    # Without this meta, iOS names the home-screen icon after <title>, which
+    # every screen that sets content_for(:title) overrides — installing from
+    # Análise would produce an app called "Análise".
+    it "names the installed app Maney on iOS whatever the page title is (AC 1, 3)" do
+      get analysis_path
+
+      expect(response.body).to include("<title>Análise</title>")
+      expect(response.body).to include('<meta name="apple-mobile-web-app-title" content="Maney">')
+    end
   end
 end

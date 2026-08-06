@@ -9,7 +9,10 @@ class RequireUserOnOwnedTables < ActiveRecord::Migration[8.1]
     left_behind = TABLES.select { |table| connection.select_value("SELECT 1 FROM #{table} WHERE user_id IS NULL LIMIT 1") }
     if left_behind.any?
       raise ActiveRecord::MigrationError,
-            "#{left_behind.join(', ')} still hold rows belonging to nobody — run `bin/rails users:claim` first."
+            "#{left_behind.join(', ')} ainda têm linhas sem pessoa. Rode `bin/rails users:claim` primeiro " \
+            "e só depois retome `bin/rails db:migrate`. NÃO crie uma pessoa por outro caminho (ex.: " \
+            "`rails console`) antes disso — se a criar, rode `users:claim` mesmo assim: ele adota essa " \
+            "pessoa em vez de recusar, desde que ela ainda não tenha nenhum dado seu."
     end
 
     TABLES.each { |table| change_column_null table, :user_id, false }

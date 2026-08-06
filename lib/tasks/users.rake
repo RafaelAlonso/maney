@@ -1,7 +1,10 @@
 require "io/console"
 
 namespace :users do
-  desc "Create the first person and attach every existing row to them (one-shot)"
+  desc "Cria a primeira pessoa e anexa a ela todas as linhas existentes (roda uma única vez). " \
+       "Rode isto ANTES de criar qualquer pessoa por outro caminho (ex.: `rails console`): se já existir " \
+       "mais de uma pessoa, ou uma pessoa que já tem dados seus, este comando se recusa a rodar e não há " \
+       "como desfazer isso pelo app."
   task claim: :environment do
     read_secret = lambda do |label|
       print label

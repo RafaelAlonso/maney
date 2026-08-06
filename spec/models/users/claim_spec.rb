@@ -90,4 +90,51 @@ RSpec.describe Users::Claim, :no_current_user do
     expect(User.count).to eq(0)
     expect(Category.unscoped.where(user_id: nil).count).to be > 0
   end
+
+  # I1: the operational trap. An operator who created an account by hand before
+  # running `users:claim` — the natural instinct after `db:migrate` stops asking
+  # for one — must have a way out that does not require touching the database
+  # by hand.
+  describe "adopting an existing person" do
+    # The `before` above already leaves the database in exactly the state this
+    # guards against: fixtures built through a temporary person, then detached
+    # and that person destroyed, so every row already sits with a null
+    # `user_id` before this example even starts.
+    it "adopts the sole existing person and attaches every row to them, leaving their credentials untouched" do
+      already_here = User.create!(email_address: "ja-existe@example.com", password: "senha-original")
+
+      result = described_class.new(email_address: "rafael@example.com", password: "outra-senha").call
+
+      expect(result.user).to eq(already_here)
+      expect(User.count).to eq(1)
+      described_class::TABLES.each do |table|
+        model = table.classify.constantize
+        expect(model.unscoped.where(user_id: nil).count).to eq(0), "#{table} still has unattached rows"
+        expect(model.unscoped.where(user_id: already_here.id).count).to be > 0
+      end
+      # Adoption must not touch the account it adopts: the password passed to
+      # `Claim.new` above ("outra-senha") is only ever used when a person is
+      # created, never when one is adopted.
+      expect(already_here.authenticate("senha-original")).to be_truthy
+      expect(already_here.authenticate("outra-senha")).to be_falsy
+    end
+
+    it "still raises AlreadyClaimed with two or more existing people, even though neither owns a row yet" do
+      User.create!(email_address: "a@example.com", password: "segredo-de-teste")
+      User.create!(email_address: "b@example.com", password: "segredo-de-teste")
+
+      expect { claim }.to raise_error(described_class::AlreadyClaimed)
+      expect(User.count).to eq(2)
+    end
+
+    it "still raises AlreadyClaimed when the sole existing person already owns rows" do
+      already_here = User.create!(email_address: "ja-existe@example.com", password: "senha-original")
+      # Only one table is attached to them — the guard must still block the
+      # whole claim, not merely skip what's already owned.
+      Setting.unscoped.update_all(user_id: already_here.id)
+
+      expect { claim }.to raise_error(described_class::AlreadyClaimed)
+      expect(User.count).to eq(1)
+    end
+  end
 end

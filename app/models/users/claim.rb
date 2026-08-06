@@ -2,6 +2,12 @@ module Users
   # The one-shot migration of a pre-account database: every row that belongs to
   # nobody becomes the first person's. Refuses to finish unless the data is
   # provably the same on the way out as on the way in.
+  #
+  # If exactly one person already exists and owns nothing yet, that person is
+  # adopted instead of a new one being created — the supported recovery for an
+  # operator who created an account before running this task. Any other
+  # existing-person state (two or more, or one that already owns rows) raises
+  # AlreadyClaimed; see `call`.
   class Claim
     AlreadyClaimed = Class.new(StandardError)
     Tampered = Class.new(StandardError)
@@ -36,11 +42,26 @@ module Users
     end
 
     def call
-      raise AlreadyClaimed if User.exists?
+      raise AlreadyClaimed if User.count > 1
+
+      # The operational trap this guards against: `db:migrate` stops asking for
+      # `users:claim`, the operator's first instinct is "I need an account to
+      # log in" and creates one by hand before running this task. That person
+      # is then indistinguishable from a real prior claim UNLESS they own
+      # nothing yet — so adopting them (rather than creating a second person)
+      # is only safe while both of these hold. Either one failing means either
+      # a real claim already happened, or this account already has its own
+      # data, and in both cases raising is the only safe answer.
+      user = User.first
+      raise AlreadyClaimed if user && owns_rows?(user)
 
       ActiveRecord::Base.transaction do
         before = fingerprint
-        user = User.create!(email_address: @email_address, password: @password)
+        # Adopt rather than create when the guard above passed: this is the
+        # accidentally-created account being folded into the migration, not a
+        # second person, so its email and password are left exactly as they
+        # are.
+        user ||= User.create!(email_address: @email_address, password: @password)
         attached = TABLES.sum { |table| attach(table, user) }
         verify!(before)
         Result.new(user:, rows_attached: attached)
@@ -48,6 +69,10 @@ module Users
     end
 
     private
+
+    def owns_rows?(user)
+      TABLES.any? { |table| table.classify.constantize.unscoped.exists?(user_id: user.id) }
+    end
 
     def attach(table, user)
       table.classify.constantize.unscoped.where(user_id: nil).update_all(user_id: user.id)

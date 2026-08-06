@@ -15,63 +15,16 @@ RSpec.describe Users::Claim, :no_current_user do
     migration = ActiveRecord::Migration.new
     described_class::TABLES.each { |table| migration.change_column_null(table, :user_id, true) }
     example.run
-  ensure
-    # The "rolls everything back" example deliberately leaves rows with a null
-    # user_id sitting in an open transaction — restoring NOT NULL would fail on
-    # exactly the data this file exists to create. Transactional fixtures clean
-    # that up on rollback, but only once this hook returns, so the delete here
-    # is what actually makes the column change_column_null-safe again; whatever
-    # a successful claim already reattached is untouched (no null rows left).
-    #
-    # The restore gets its own `ensure` on purpose: this outer `around` sits
-    # *inside* rspec-rails's own `around` (MinitestLifecycleAdapter wraps
-    # `before_setup; example.run; after_teardown` around every example group's
-    # hooks), so an exception escaping here — e.g. the DELETE raising, which
-    # has already happened once in this file's history as an uncaught
-    # PG::ForeignKeyViolation, or disable_referential_integrity re-raising
-    # ActiveRecord::InvalidForeignKey if the connection's role can't disable
-    # triggers — would skip `after_teardown` entirely, i.e. skip the ROLLBACK,
-    # leaving the column nullable and the transaction abandoned for the rest
-    # of the process. Nesting the restore in its own `ensure` means it always
-    # attempts to run, independent of whether the cleanup above succeeded.
-    begin
-      # A savepoint, not a bare call: if the DELETE raises mid-way (it has,
-      # historically — an uncaught PG::ForeignKeyViolation), an exception
-      # inside a plain Postgres statement leaves the whole surrounding
-      # transaction ABORTED, and every statement after it — including the
-      # restore below — is rejected with "current transaction is aborted"
-      # rather than actually running. `requires_new: true` opens a SAVEPOINT,
-      # so a failure here only rolls back to that savepoint and leaves the
-      # outer (per-example) transaction healthy for the restore to run in.
-      ActiveRecord::Base.transaction(requires_new: true) do
-        ActiveRecord::Base.connection.disable_referential_integrity do
-          described_class::TABLES.each { |table| ActiveRecord::Base.connection.execute(%(DELETE FROM "#{table}" WHERE user_id IS NULL)) }
-        end
-      end
-    ensure
-      # Known accepted gap, confirmed with a scratch experiment (forcing a
-      # raise inside the block above, running the specs, observing the
-      # cascade, then reverting — see "Verifying the residual gap" in the
-      # Task 5 fix report): if the cleanup above still leaves rows with a
-      # null user_id anywhere — e.g. a DELETE hits an FK violation the
-      # savepoint above cannot paper over, or disable_referential_integrity's
-      # own ActiveRecord::InvalidForeignKey re-raise reaches here — this
-      # restore call is genuinely unable to succeed: you cannot make a column
-      # NOT NULL over rows that are still null, savepoint or not. That failure
-      # then escapes this `ensure`, and because MinitestLifecycleAdapter's
-      # around calls `after_teardown` as plain sequential code (no rescue),
-      # the per-example ROLLBACK never runs, leaking an aborted transaction
-      # into every later example on this connection for the rest of the
-      # process (confirmed by the same experiment). Living with that risk
-      # rests on two assumptions holding in every environment this suite runs
-      # in: the Postgres role owns these tables (so disabling triggers is
-      # never refused for lack of privilege), and the FK graph among the
-      # eight TABLES stays what FINGERPRINT already documents (so deletion
-      # order doesn't regress the ForeignKeyViolation this method exists to
-      # prevent).
-      described_class::TABLES.each { |table| migration.change_column_null(table, :user_id, false) }
-    end
   end
+
+  # No manual restore here: `change_column_null` above runs inside the same
+  # per-example transaction rspec-rails opens in `before_setup` (it wraps this
+  # `around`, not the other way round — MinitestLifecycleAdapter's own
+  # `group.around` is the outer hook), and PostgreSQL DDL is transactional. The
+  # `after_teardown` ROLLBACK that ends every example therefore already undoes
+  # the relaxation and discards any null-`user_id` rows the example left behind
+  # — including the "rolls everything back" example's — with nothing left for
+  # this file to clean up by hand.
 
   # Builds the pre-account database: rows that exist and belong to nobody. They
   # have to be created through a temporary person (OwnedByUser requires one),

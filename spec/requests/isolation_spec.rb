@@ -40,13 +40,43 @@ RSpec.describe "Isolation between people", type: :request do
 
   it "keeps the other person off every screen (AC 5)" do
     [ root_path(month: "2026-03"), expenses_path(month: "2026-03"), incomes_path(month: "2026-03"),
-      cards_path, categories_path, analysis_path, edit_settings_path,
-      card_statements_path(@card) ].each do |path|
+      cards_path, categories_path, analysis_path ].each do |path|
       get path
 
       expect(response).to have_http_status(:ok), "#{path} did not render"
       leaks.each { |leak| expect(response.body).not_to include(leak), "#{path} leaked #{leak}" }
     end
+  end
+
+  # `edit_settings_path` and `card_statements_path` never render any of the
+  # `leaks` strings even when correctly scoped — the reserved-category names are
+  # the fixed "outros" / "cartão de crédito" every person gets, and a statement
+  # list prints only the visited card's own name and numeric totals, never a
+  # category, income or expense name. A `leaks.each { not_to include }` sweep
+  # against either page would pass whether or not scoping worked, so each of
+  # these two gets its own assertion on the thing that page could actually get
+  # wrong.
+  it "keeps another person's reserved-category records off the settings form (AC 5)" do
+    get edit_settings_path
+    expect(response).to have_http_status(:ok), "#{edit_settings_path} did not render"
+
+    # The rename form's action embeds the category id — Task 5 made the reserved
+    # pair unique per user (uniqueness: { scope: :user_id }) even though the two
+    # names collide across every person — so a scoping bug shows up as a foreign
+    # id in the form, never as a foreign name.
+    rendered_ids = response.body.scan(%r{/categories/(\d+)"}).flatten.map(&:to_i)
+    their_reserved_ids = Category.unscoped.where(user_id: other.id).where.not(role: nil).pluck(:id)
+
+    expect(rendered_ids & their_reserved_ids).to be_empty
+  end
+
+  it "keeps another person's card unreachable from this account's statement screen (AC 5)" do
+    get card_statements_path(@card)
+    expect(response).to have_http_status(:ok), "#{card_statements_path(@card)} did not render"
+
+    # Nothing on this page names a category, income or expense, so the only
+    # foreign thing it could expose is a link to the other person's own card.
+    expect(response.body).not_to match(%r{/cards/#{their[:card].id}(["/])})
   end
 
   it "keeps the month's figures free of the other person's money (AC 5)" do

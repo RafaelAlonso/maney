@@ -72,4 +72,38 @@ RSpec.describe "The no-connection screen", type: :system do
     expect(page).to have_link("Gastos")
     expect(page).not_to have_content("Maney precisa de internet")
   end
+
+  it "shows the no-connection screen when the connection drops mid-navigation" do
+    install_service_worker
+    go_offline
+
+    click_link "Gastos"
+
+    expect(page).to have_content("Maney precisa de internet para mostrar os seus números.")
+  end
+
+  it "does not restore a cached page of figures when going back offline" do
+    install_service_worker
+    click_link "Gastos"
+    expect(page).to have_current_path(expenses_path)
+    go_offline
+
+    page.go_back
+
+    expect(page).to have_content("Maney precisa de internet")
+    expect(page.text).not_to match(/\d{1,3},\d{2}/)
+  end
+
+  it "does not restore a cached page of figures when going forward offline" do
+    install_service_worker
+    click_link "Gastos"
+    page.go_back
+    expect(page).to have_link("Gastos")
+    go_offline
+
+    page.go_forward
+
+    expect(page).to have_content("Maney precisa de internet")
+    expect(page.text).not_to match(/\d{1,3},\d{2}/)
+  end
 end

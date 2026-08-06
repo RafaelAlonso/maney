@@ -132,4 +132,33 @@ RSpec.describe "Isolation between people", type: :request do
     expect(response.body).to include("R$ 4.000,00")
     leaks.each { |leak| expect(response.body).not_to include(leak) }
   end
+
+  # Every other example here asserts what the signed-in person can READ. This
+  # one asserts what a freshly created record is STAMPED with — nothing else
+  # in the suite checks a new row's `user_id` against the raw table.
+  #
+  # Verified (per the review that requested this example) that this does NOT
+  # single out `belongs_to :user, default:` the way it set out to: with that
+  # option deleted from `OwnedByUser`, this example still passes, because
+  # `default_scope { where(user_id: Current.user.id) }` is itself an equality
+  # condition, and Rails derives `.new`'s default attributes from exactly that
+  # kind of default-scope clause (`scope_for_create`) independently of
+  # `belongs_to`'s own `default:`. The two mechanisms currently overlap
+  # completely on every owned model's create path, so `belongs_to default:` is
+  # redundant there today — real, but harmless, defense in depth (it would
+  # start to matter the moment `default_scope`'s clause stopped being a plain
+  # equality). The example still earns its place: it is the one place that
+  # would catch a stamping bug from EITHER mechanism, e.g. a callback that
+  # overwrites `user_id`, or `default_scope` changing shape.
+  it "stamps a newly created record with the poster's own id (AC 5)" do
+    post expenses_path, params: { expense_entry: { name: "recém-criado", amount: "10,00", date: "2026-03-15",
+                                                    category_id: @mercado.id, payment_method: "debit" } }
+
+    # `unscoped`, not the default-scoped finder: a `belongs_to default:` bug
+    # that stamps the wrong person would still satisfy a scoped lookup as long
+    # as it wrote the signed-in person's own id, but this must survive that
+    # bug being reintroduced, so it reads the raw row instead.
+    expense = Expense.unscoped.find_by!(name: "recém-criado")
+    expect(expense.user_id).to eq(current_user.id)
+  end
 end

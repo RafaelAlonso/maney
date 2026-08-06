@@ -5,18 +5,31 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Maney">
+    <%# Without this, Add to Home Screen on iOS names the app after <title>, so
+        installing from Análise would call it "Análise". Android reads
+        short_name from the manifest and needs no equivalent. %>
+    <meta name="apple-mobile-web-app-title" content="Maney">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+    <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+    <meta name="theme-color" content="#059669">
+    <%# Offline, a restored snapshot would present old totals as current — the one
+        failure this app cannot afford. Without a snapshot, a back-navigation makes
+        a real request, which fails and lands on the no-connection screen. %>
+    <meta name="turbo-cache-control" content="no-cache">
+    <%# Prefetching keeps a fetched page in memory and hands it to a later visit
+        without a request leaving the browser, so neither the service worker nor
+        the tag above ever sees it. Offline that means figures up to ten seconds
+        old presented as current — the same failure by another route. %>
+    <meta name="turbo-prefetch" content="false">
 
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
 

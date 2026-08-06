@@ -18,3 +18,53 @@ end
 # was correct. Raising it here only slows a spec down when a matcher would
 # otherwise time out for real.
 Capybara.default_max_wait_time = 5
+
+# `click_link` returns as soon as the click is dispatched, but a Turbo Drive
+# visit fetches the page first and only writes its history entry once that
+# response renders — a couple of hundred milliseconds later on a busy machine.
+# Driving the browser's history inside that window steps back past the page the
+# visit started from (in a fresh tab, all the way to `about:blank`) and the
+# example never recovers, because the entry it meant to leave behind did not
+# exist yet.
+#
+# So `page.go_back` / `page.go_forward` wait for Turbo to have no visit in
+# flight, the same way every other Capybara call waits for the page to settle.
+#
+# The price: this monkey-patches a third-party class (`Capybara::Session`) and
+# reads Turbo internals (`Turbo.session.navigator.currentVisit`) that carry no
+# compatibility promise, so a Turbo or Capybara upgrade can break it here.
+module SettledTurboBeforeHistoryNavigation
+  # A visit is one request plus one render, so it normally settles in a couple
+  # of hundred milliseconds; the budget only has to be long enough to survive a
+  # loaded machine, where Capybara's own two seconds are not always enough.
+  SETTLE_TIMEOUT = 10
+
+  def go_back
+    wait_for_turbo
+    super
+  end
+
+  def go_forward
+    wait_for_turbo
+    super
+  end
+
+  private
+
+  def wait_for_turbo
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + SETTLE_TIMEOUT
+    sleep 0.01 until turbo_settled? || Process.clock_gettime(Process::CLOCK_MONOTONIC) > deadline
+  end
+
+  # A page Turbo does not drive — the offline screen, `about:blank`, a browser
+  # error page — has nothing to wait for.
+  def turbo_settled?
+    evaluate_script(<<~JS)
+      !(window.Turbo && (Turbo.session.navigator.currentVisit || Turbo.session.navigator.formSubmission))
+    JS
+  rescue StandardError
+    true
+  end
+end
+
+Capybara::Session.prepend(SettledTurboBeforeHistoryNavigation)

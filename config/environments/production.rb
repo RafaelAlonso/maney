@@ -53,17 +53,21 @@ Rails.application.configure do
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
   # config.action_mailer.raise_delivery_errors = false
 
-  # Set host to be used by links generated in mailer templates.
-  config.action_mailer.default_url_options = { host: "example.com" }
-
-  # Specify outgoing SMTP server. Remember to add smtp/* credentials via bin/rails credentials:edit.
-  # config.action_mailer.smtp_settings = {
-  #   user_name: Rails.application.credentials.dig(:smtp, :user_name),
-  #   password: Rails.application.credentials.dig(:smtp, :password),
-  #   address: "smtp.example.com",
-  #   port: 587,
-  #   authentication: :plain
-  # }
+  # Brevo's free tier: 300 emails a day against an expected handful a year.
+  # A verified sender address is enough; a verified domain is not required,
+  # so this does not block on the domain being registered.
+  config.action_mailer.delivery_method = :smtp
+  config.action_mailer.raise_delivery_errors = true
+  config.action_mailer.smtp_settings = {
+    address: "smtp-relay.brevo.com",
+    port: 587,
+    user_name: Rails.application.credentials.dig(:brevo, :user_name),
+    password: Rails.application.credentials.dig(:brevo, :password),
+    authentication: :plain,
+    enable_starttls_auto: true
+  }
+  # The app's public address, so invitation and recovery links resolve.
+  config.action_mailer.default_url_options = { host: ENV.fetch("MANEY_HOST", "localhost"), protocol: "https" }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

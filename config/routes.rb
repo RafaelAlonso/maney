@@ -1,6 +1,8 @@
 Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
   get "privacy", to: "privacy_policies#show"
+  get  "signup/:token", to: "signups#new", as: :signup
+  post "signup/:token", to: "signups#create"
   get "up" => "rails/health#show", as: :rails_health_check
 
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

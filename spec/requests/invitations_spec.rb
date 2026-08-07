@@ -74,14 +74,49 @@ RSpec.describe "Invitations", type: :request do
 
   # AC 8: not a 403 — a 403 is a way of existing.
   it "hides every invitation route from someone who is not Rafael" do
+    invitation, _token = Invitation.issue(email_address: "outra@example.com", invited_by: current_user)
+
     sign_out_request
     sign_in(create_user!(email_address: "irma@example.com"))
     authenticate_request
 
-    post invitations_path, params: { invitation: { email_address: "outra@example.com" } }
-
+    post invitations_path, params: { invitation: { email_address: "outra2@example.com" } }
     expect(response).to redirect_to(root_path)
     expect(flash[:alert]).to eq("Este registro não existe mais.")
-    expect(Invitation.count).to eq(0)
+    expect(Invitation.count).to eq(1)
+
+    delete invitation_path(invitation)
+    expect(response).to redirect_to(root_path)
+    expect(invitation.reload).to be_pending
+
+    post resend_invitation_path(invitation)
+    expect(response).to redirect_to(root_path)
+  end
+
+  # Guards the fix for the ordering bug this task's review caught: `require_admin`
+  # must run ahead of `require_setup` (so a non-admin is refused regardless of
+  # their own setup state — the assertion above), but not ahead of
+  # `require_authentication` — a signed-out visitor belongs at the sign-in
+  # screen, not blocked here as if the route didn't exist.
+  it "sends a signed-out visitor to the sign-in screen rather than treating them as a non-admin" do
+    sign_out_request
+
+    post invitations_path, params: { invitation: { email_address: "outra@example.com" } }
+
+    expect(response).to redirect_to(new_session_path)
+  end
+
+  # And `require_setup` must still gate Rafael himself: `require_admin` runs
+  # first so a non-admin's refusal never depends on the admin's own setup
+  # state, but that reordering must not let an admin who hasn't finished
+  # `/setup` reach this screen either.
+  it "still sends an admin who has not completed setup to /setup" do
+    sign_out_request
+    sign_in(create_user!(email_address: "novo-admin@example.com", admin: true))
+    authenticate_request
+
+    post invitations_path, params: { invitation: { email_address: "outra@example.com" } }
+
+    expect(response).to redirect_to(setup_path)
   end
 end

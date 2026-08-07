@@ -1,10 +1,16 @@
 class InvitationsController < ApplicationController
-  # Administering the group is orthogonal to Rafael's own budget setup, and AC 8
-  # needs `require_admin` to fire for a non-admin unconditionally — including
-  # one who has not been through `/setup` yet, which `require_setup` (declared
-  # on ApplicationController, and so ordered first) would otherwise intercept.
+  # `require_admin` must run before `require_setup` — a non-admin's refusal
+  # (AC 8) must not depend on whether they have completed their own setup —
+  # but `require_authentication` (declared first, via `include Authentication`
+  # on ApplicationController) must still run before either: a signed-out
+  # visitor belongs at the sign-in screen, not blocked here. Verified with
+  # `prepend_before_action :require_admin`: it also jumps ahead of
+  # `require_authentication`, sending a signed-out visitor to `root_path`
+  # instead of `new_session_path` — that would have been a regression, so we
+  # skip and reinsert `require_setup` at the right spot instead.
   skip_before_action :require_setup
   before_action :require_admin
+  before_action :require_setup
 
   def create
     email_address = params.require(:invitation)[:email_address].to_s.strip.downcase

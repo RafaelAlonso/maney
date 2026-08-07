@@ -1,9 +1,9 @@
 class PeopleController < ApplicationController
-  # See InvitationsController: `require_admin` must fire even for a signed-in
-  # non-admin who has not completed `/setup`, which `require_setup` — declared
-  # on ApplicationController and so ordered first — would otherwise intercept.
+  # See InvitationsController for why this is `skip` + reinsert rather than
+  # `skip_before_action :require_setup` alone or `prepend_before_action`.
   skip_before_action :require_setup
   before_action :require_admin
+  before_action :require_setup
 
   # Statuses and email addresses only. This screen never touches an owned model,
   # which is what keeps W1's isolation intact while Rafael administers the group.

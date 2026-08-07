@@ -39,6 +39,28 @@ RSpec.describe "People", type: :request do
     expect(response).to redirect_to(root_path)
   end
 
+  # Guards the ordering fix from this task's review: `require_admin` must run
+  # ahead of `require_setup` (the assertion above), but not ahead of
+  # `require_authentication` — a signed-out visitor belongs at the sign-in
+  # screen — and `require_setup` must still gate Rafael himself.
+  it "sends a signed-out visitor to the sign-in screen rather than treating them as a non-admin" do
+    sign_out_request
+
+    get people_path
+
+    expect(response).to redirect_to(new_session_path)
+  end
+
+  it "still sends an admin who has not completed setup to /setup" do
+    sign_out_request
+    sign_in(create_user!(email_address: "novo-admin@example.com", admin: true))
+    authenticate_request
+
+    get people_path
+
+    expect(response).to redirect_to(setup_path)
+  end
+
   it "is linked from Config for Rafael and nobody else" do
     get edit_settings_path
     expect(response.body).to include(people_path)

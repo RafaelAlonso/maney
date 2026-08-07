@@ -24,8 +24,6 @@ RSpec.describe "Invitations", type: :request do
 
   # AC 7
   it "kills the link when Rafael cancels" do
-    pending "SignupsController arrives in Task 5"
-
     invitation, token = Invitation.issue(email_address: "irma@example.com", invited_by: current_user)
 
     delete invitation_path(invitation)
@@ -37,8 +35,6 @@ RSpec.describe "Invitations", type: :request do
 
   # The brainstorming decision: a resend supersedes.
   it "kills the previously mailed link on resend" do
-    pending "SignupsController arrives in Task 5"
-
     invitation, first_token = Invitation.issue(email_address: "irma@example.com", invited_by: current_user)
 
     post resend_invitation_path(invitation)
@@ -61,8 +57,6 @@ RSpec.describe "Invitations", type: :request do
 
   # Edge case from the story: two invitations to the same address.
   it "lets a second invitation supersede the first" do
-    pending "SignupsController arrives in Task 5"
-
     _first, first_token = Invitation.issue(email_address: "irma@example.com", invited_by: current_user)
 
     post invitations_path, params: { invitation: { email_address: "irma@example.com" } }

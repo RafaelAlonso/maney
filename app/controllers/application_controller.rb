@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
+  before_action :require_active_account
   before_action :require_setup
   before_action :canonicalize_month
   helper_method :current_month, :month_param, :default_entry_date
@@ -21,6 +22,26 @@ class ApplicationController < ActionController::Base
   rescue_from ActiveRecord::RecordNotFound, with: :record_not_found
 
   private
+
+  # Someone whose access was cut while they were signed in on a phone still
+  # holds a valid session cookie. Revocation has to bite on their next action,
+  # not on their next sign-in, or "revoked" would mean nothing until they
+  # happened to sign out.
+  #
+  # This closes out every session the person holds, not just the one making
+  # this request — the same guarantee `People::AccessesController#destroy`
+  # gives when Rafael revokes access directly, extended to the case where the
+  # account went stale (or was revoked out of band) and only gets noticed here.
+  #
+  # Task 8 extends this with the deleted-account branch.
+  def require_active_account
+    user = Current.user
+    return unless user&.access_revoked?
+
+    terminate_session
+    user.sessions.destroy_all
+    redirect_to new_session_path, alert: "Seu acesso ao Maney foi encerrado."
+  end
 
   def require_setup
     redirect_to setup_path if Setting.instance.nil?

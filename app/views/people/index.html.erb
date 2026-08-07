@@ -34,6 +34,19 @@
     <li class="border rounded p-3 text-sm">
       <p class="font-medium"><%= person.email_address %></p>
       <p class="text-gray-500 text-xs"><%= person_status(person) %></p>
+      <% unless person == Current.user %>
+        <div class="flex gap-2 mt-2">
+          <% if person.access_revoked? %>
+            <%= button_to "Restaurar acesso", person_access_path(person),
+                  class: "bg-gray-700 text-white rounded px-3 py-1 text-xs" %>
+          <% else %>
+            <%= button_to "Revogar", person_access_path(person), method: :delete,
+                  class: "bg-gray-200 text-gray-800 rounded px-3 py-1 text-xs" %>
+          <% end %>
+        </div>
+      <% else %>
+        <p class="text-gray-400 text-xs mt-1">Você é a única pessoa que pode convidar.</p>
+      <% end %>
     </li>
   <% end %>
 </ul>

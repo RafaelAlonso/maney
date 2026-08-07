@@ -6,7 +6,9 @@ Rails.application.routes.draw do
   resources :invitations, only: %i[create destroy] do
     post :resend, on: :member
   end
-  resources :people, only: :index
+  resources :people, only: :index do
+    resource :access, only: %i[create destroy], controller: "people/accesses"
+  end
   get "up" => "rails/health#show", as: :rails_health_check
 
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

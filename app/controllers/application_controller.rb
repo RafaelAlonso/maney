@@ -30,6 +30,14 @@ class ApplicationController < ActionController::Base
     redirect_to root_path, alert: "Este registro não existe mais."
   end
 
+  # Rafael is the sole inviter by decision. This raises rather than rendering a
+  # forbidden page: AC 8 asks that no way to invite *exists* for anyone else,
+  # and a 403 is a way of existing. The existing RecordNotFound handler turns
+  # this into the app's ordinary "this record is gone" message.
+  def require_admin
+    raise ActiveRecord::RecordNotFound unless Current.user&.admin?
+  end
+
   def current_month
     @current_month ||= begin
       month = begin

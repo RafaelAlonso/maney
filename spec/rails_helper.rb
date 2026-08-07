@@ -65,6 +65,10 @@ RSpec.configure do |config|
   # To enable this behaviour uncomment the line below.
   # config.infer_spec_type_from_file_location!
 
+  # Lets a request spec run the delivery job inline with `perform_enqueued_jobs`,
+  # so "did the email go out" is assertable from the request that triggered it.
+  config.include ActiveJob::TestHelper
+
   # Filter lines from Rails gems in backtraces.
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:

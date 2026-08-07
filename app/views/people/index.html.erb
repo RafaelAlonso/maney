@@ -1,0 +1,39 @@
+<%# app/views/people/index.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Pessoas</h1>
+
+<h2 class="font-medium mb-2">Convidar</h2>
+<%= form_with url: invitations_path, scope: :invitation, class: "flex gap-2 mb-8" do |f| %>
+  <%= f.email_field :email_address, required: true, placeholder: "email@exemplo.com",
+        class: "border rounded p-2 flex-1" %>
+  <%= f.submit "Convidar", class: "bg-blue-600 text-white rounded px-4 py-2 text-sm" %>
+<% end %>
+
+<% if @invitations.any? %>
+  <h2 class="font-medium mb-2">Convites</h2>
+  <ul class="space-y-3 mb-8">
+    <% @invitations.each do |invitation| %>
+      <li class="border rounded p-3 text-sm">
+        <p class="font-medium"><%= invitation.email_address %></p>
+        <p class="text-gray-500 text-xs">
+          <%= invitation_status(invitation) %> · <%= delivery_status(invitation) %>
+        </p>
+        <div class="flex gap-2 mt-2">
+          <%= button_to "Reenviar", resend_invitation_path(invitation),
+                class: "bg-gray-700 text-white rounded px-3 py-1 text-xs" %>
+          <%= button_to "Cancelar", invitation_path(invitation), method: :delete,
+                class: "bg-gray-200 text-gray-800 rounded px-3 py-1 text-xs" %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>
+
+<h2 class="font-medium mb-2">No grupo</h2>
+<ul class="space-y-3">
+  <% @people.each do |person| %>
+    <li class="border rounded p-3 text-sm">
+      <p class="font-medium"><%= person.email_address %></p>
+      <p class="text-gray-500 text-xs"><%= person_status(person) %></p>
+    </li>
+  <% end %>
+</ul>

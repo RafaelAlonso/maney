@@ -3,6 +3,10 @@ Rails.application.routes.draw do
   get "privacy", to: "privacy_policies#show"
   get  "signup/:token", to: "signups#new", as: :signup
   post "signup/:token", to: "signups#create"
+  resources :invitations, only: %i[create destroy] do
+    post :resend, on: :member
+  end
+  resources :people, only: :index
   get "up" => "rails/health#show", as: :rails_health_check
 
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

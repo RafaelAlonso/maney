@@ -35,6 +35,9 @@
 
 <h2 class="font-medium mt-8 mb-2">Conta</h2>
 <div class="space-y-3">
+  <% if Current.user.admin? %>
+    <p><%= link_to "Pessoas", people_path, class: "text-blue-600 text-sm" %></p>
+  <% end %>
   <p><%= link_to "política de privacidade", privacy_path, class: "text-blue-600 text-sm" %></p>
   <%= button_to "sair", session_path, method: :delete,
         class: "bg-gray-700 text-white rounded px-4 py-2 text-sm" %>

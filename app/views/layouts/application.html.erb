@@ -35,7 +35,12 @@
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
+    <%# The import map pins scoped package names ("@hotwired/turbo-rails", ...),
+        so it puts a literal "@" in every response that includes it. The
+        invalid-link screen (SignupsController) must reveal nothing about whose
+        invitation it was, so it sets @omit_importmap_tags to keep that "@" out
+        of its body — everything else here still applies to it. %>
+    <%= javascript_importmap_tags unless @omit_importmap_tags %>
   </head>
 
   <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">

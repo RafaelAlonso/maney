@@ -3,7 +3,6 @@ class SignupsController < ApplicationController
   # gates have to stand aside.
   allow_unauthenticated_access
   skip_before_action :require_setup
-  layout "signup"
 
   before_action :load_invitation
 
@@ -56,6 +55,10 @@ class SignupsController < ApplicationController
       "Este convite não é mais válido."
     end
 
+    # The import map's pinned package names ("@hotwired/...") would otherwise
+    # put an "@" in this response, and this screen must reveal nothing about
+    # whose invitation it was.
+    @omit_importmap_tags = true
     render :invalid, status: :gone
   end
 end

@@ -47,6 +47,6 @@ module Budgeting
     end
     alias eql? ==
 
-    def hash = [card.id, nominal_closing, nominal_due].hash
+    def hash = [ card.id, nominal_closing, nominal_due ].hash
   end
 end

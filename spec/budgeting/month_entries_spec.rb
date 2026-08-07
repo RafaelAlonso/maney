@@ -31,7 +31,7 @@ RSpec.describe Budgeting::MonthEntries do
                     category: others, date: Date.new(2026, 3, 10))
 
     names = described_class.expenses(month: march, category: mercado).map(&:name)
-    expect(names).to eq ["feira"]
+    expect(names).to eq [ "feira" ]
   end
 
   it "sorts by date then name" do
@@ -54,7 +54,7 @@ RSpec.describe Budgeting::MonthEntries do
     InstallmentPurchase.create!(name: "zzz", total_cents: 100_000, installments_count: 10,
                                 card:, category: others, date: Date.new(2026, 3, 10))
 
-    expect(described_class.expenses(month: march).map(&:name)).to eq ["aaa", "zzz 1/10", "bbb"]
+    expect(described_class.expenses(month: march).map(&:name)).to eq [ "aaa", "zzz 1/10", "bbb" ]
   end
 
   # The purchase's day has no counterpart in a shorter month — the sort key is
@@ -66,7 +66,7 @@ RSpec.describe Budgeting::MonthEntries do
     Expense.create!(name: "aaa", amount_cents: 100, payment_method: "cash",
                     category: others, date: Date.new(2026, 4, 5))
 
-    expect(described_class.expenses(month: Date.new(2026, 4, 1)).map(&:name)).to eq ["aaa", "sofá 2/6"]
+    expect(described_class.expenses(month: Date.new(2026, 4, 1)).map(&:name)).to eq [ "aaa", "sofá 2/6" ]
   end
 
   it "includes an installment whose competence lands months after the purchase" do
@@ -74,6 +74,6 @@ RSpec.describe Budgeting::MonthEntries do
     InstallmentPurchase.create!(name: "sofá", total_cents: 60_000, installments_count: 6,
                                 card:, category: others, date: Date.new(2026, 3, 10))
 
-    expect(described_class.expenses(month: Date.new(2026, 6, 1)).map(&:name)).to eq ["sofá 4/6"]
+    expect(described_class.expenses(month: Date.new(2026, 6, 1)).map(&:name)).to eq [ "sofá 4/6" ]
   end
 end

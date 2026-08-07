@@ -15,7 +15,7 @@ RSpec.describe "Cards", type: :request do
     post cards_path, params: { card: { name: "Azul", closing_day: 5, due_day: 12 } }
     card = Card.find_by!(name: "Azul")
     schedule = Budgeting::Schedule.for(card:, date: Date.new(2026, 3, 10))
-    expect([schedule.closing_day, schedule.due_day]).to eq [5, 12]
+    expect([ schedule.closing_day, schedule.due_day ]).to eq [ 5, 12 ]
     expect(schedule.valid_from).to eq Setting.instance.first_month
   end
 

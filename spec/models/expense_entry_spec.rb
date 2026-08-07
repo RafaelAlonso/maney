@@ -74,7 +74,7 @@ RSpec.describe ExpenseEntry do
       e = entry(payment_method: "credit", card_id: card.id.to_s, installment: "1",
                 amount: "100,00", installments_count: "3", date: "2026-03-10")
       e.save
-      expect(e.record.expenses.order(:installment_number).map(&:amount_cents)).to eq [3_334, 3_333, 3_333]
+      expect(e.record.expenses.order(:installment_number).map(&:amount_cents)).to eq [ 3_334, 3_333, 3_333 ]
     end
 
     it "starts at the given first installment (AC 8)" do

@@ -14,7 +14,7 @@ RSpec.describe Budgeting::StatementAttribution do
   end
 
   it "AC 2: purchases on the closing day (05/03) and after (06/03) go to the next statement" do
-    [Date.new(2026, 3, 5), Date.new(2026, 3, 6)].each do |date|
+    [ Date.new(2026, 3, 5), Date.new(2026, 3, 6) ].each do |date|
       expect(statement_for(date).effective_due).to eq(Date.new(2026, 4, 13))
     end
   end
@@ -66,7 +66,7 @@ RSpec.describe Budgeting::StatementAttribution do
     c = statement_for(Date.new(2026, 3, 6))
     expect(a).to eq(b)
     expect(a).not_to eq(c)
-    expect([a, b, c].uniq.size).to eq(2)
+    expect([ a, b, c ].uniq.size).to eq(2)
   end
 
   it "installments: each installment lands on the card's next statement (AC 9, sequence)" do
@@ -216,7 +216,7 @@ RSpec.describe Budgeting::StatementAttribution do
       end
 
       it "property: the boundary bounds the statement in each month of the new validity window" do
-        [Date.new(2026, 4, 5), Date.new(2026, 5, 10), Date.new(2026, 6, 20), Date.new(2026, 12, 20)].each do |probe|
+        [ Date.new(2026, 4, 5), Date.new(2026, 5, 10), Date.new(2026, 6, 20), Date.new(2026, 12, 20) ].each do |probe|
           expect_window_start_to_bound_the_statement(card, probe)
         end
       end
@@ -233,7 +233,7 @@ RSpec.describe Budgeting::StatementAttribution do
         card31 = create_card(name: "Trinta e um", closing_day: 31, due_day: 10, valid_from: Date.new(2026, 1, 1))
         card31.reschedule(closing_day: 1, due_day: 10, today: Date.new(2026, 3, 10)).save!
 
-        [Date.new(2026, 3, 20), Date.new(2026, 6, 15), Date.new(2026, 9, 8)].each do |probe|
+        [ Date.new(2026, 3, 20), Date.new(2026, 6, 15), Date.new(2026, 9, 8) ].each do |probe|
           expect_window_start_to_bound_the_statement(card31, probe)
         end
       end

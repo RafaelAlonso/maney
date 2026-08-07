@@ -30,9 +30,9 @@ class Card < ApplicationRecord
   # future), the existing row itself comes back dirty. The caller always saves —
   # never branch on `persisted?` / `new_record?`.
   def reschedule(closing_day:, due_day:, today: Date.current)
-    wanted = [closing_day.to_i, due_day.to_i]
+    wanted = [ closing_day.to_i, due_day.to_i ]
     current = Budgeting::Schedule.for(card: self, date: today)
-    return nil if [current.closing_day, current.due_day] == wanted
+    return nil if [ current.closing_day, current.due_day ] == wanted
 
     row = card_schedules.find_or_initialize_by(valid_from: schedule_start_on(today))
     row.assign_attributes(closing_day: wanted[0], due_day: wanted[1])
@@ -50,6 +50,6 @@ class Card < ApplicationRecord
   def schedule_start_on(today)
     boundary = Budgeting::StatementAttribution.window_start(card: self, date: today)
     # maximum is never nil here: Schedule.for would have raised without a validity window.
-    [boundary, card_schedules.maximum(:valid_from)].max
+    [ boundary, card_schedules.maximum(:valid_from) ].max
   end
 end

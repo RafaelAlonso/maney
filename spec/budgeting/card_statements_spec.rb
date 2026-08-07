@@ -62,9 +62,9 @@ RSpec.describe Budgeting::CardStatements do
     statements = described_class.new(card:, today: Date.new(2026, 3, 20))
 
     expect(statements.open.map { |row| row.statement.effective_due })
-      .to eq [Date.new(2026, 4, 13), Date.new(2026, 5, 12), Date.new(2026, 6, 12)]
+      .to eq [ Date.new(2026, 4, 13), Date.new(2026, 5, 12), Date.new(2026, 6, 12) ]
     expect(statements.closed.map { |row| row.statement.effective_due })
-      .to eq [Date.new(2026, 3, 12), Date.new(2026, 1, 12)]
+      .to eq [ Date.new(2026, 3, 12), Date.new(2026, 1, 12) ]
   end
 
   it "finds a statement by its nominal closing date, not its effective one" do
@@ -110,7 +110,7 @@ RSpec.describe Budgeting::CardStatements do
     def count_queries
       count = 0
       counter = lambda do |_name, _start, _finish, _id, payload|
-        count += 1 unless payload[:name].in?(["SCHEMA", "TRANSACTION"]) || payload[:cached]
+        count += 1 unless payload[:name].in?([ "SCHEMA", "TRANSACTION" ]) || payload[:cached]
       end
       ActiveSupport::Notifications.subscribed(counter, "sql.active_record") { yield }
       count

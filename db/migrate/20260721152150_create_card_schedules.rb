@@ -7,6 +7,6 @@ class CreateCardSchedules < ActiveRecord::Migration[8.0]
       t.date :valid_from, null: false
       t.timestamps
     end
-    add_index :card_schedules, [:card_id, :valid_from], unique: true
+    add_index :card_schedules, [ :card_id, :valid_from ], unique: true
   end
 end

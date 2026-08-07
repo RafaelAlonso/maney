@@ -12,8 +12,8 @@ RSpec.describe InstallmentPurchase do
     expenses = purchase.expenses.order(:installment_number)
     expect(expenses.map(&:name)).to eq((1..10).map { |k| "sofá #{k}/10" })
     expect(expenses.map(&:amount_cents)).to all(eq(10_000))
-    expect(expenses.map(&:payment_method).uniq).to eq(["credit"])
-    expect(expenses.map(&:date).uniq).to eq([nil])
+    expect(expenses.map(&:payment_method).uniq).to eq([ "credit" ])
+    expect(expenses.map(&:date).uniq).to eq([ nil ])
   end
 
   it "AC 11 (creation): first installment 4 generates only sofá 4/10..10/10" do
@@ -35,13 +35,13 @@ RSpec.describe InstallmentPurchase do
 
     over_max = InstallmentPurchase.new(**sofa_attrs, total_cents: 1_200_00, installments_count: 121)
     expect(over_max).not_to be_valid
-    expect(over_max.errors[:installments_count]).to eq(["deve ter entre 2 e 120 parcelas"])
+    expect(over_max.errors[:installments_count]).to eq([ "deve ter entre 2 e 120 parcelas" ])
   end
 
   it "Decision 1: keeps the minimum of 2 installments using the same message as the upper limit" do
     under_min = InstallmentPurchase.new(**sofa_attrs, installments_count: 1)
     expect(under_min).not_to be_valid
-    expect(under_min.errors[:installments_count]).to eq(["deve ter entre 2 e 120 parcelas"])
+    expect(under_min.errors[:installments_count]).to eq([ "deve ter entre 2 e 120 parcelas" ])
   end
 
   it "refuses the reserved credit-card category (it's a credit purchase)" do
@@ -56,7 +56,7 @@ RSpec.describe InstallmentPurchase do
 
   it "Fix 4: a total equal to the installment count is the valid limit — generates installments of exactly 1 cent" do
     purchase = InstallmentPurchase.create!(**sofa_attrs, total_cents: 10, installments_count: 10)
-    expect(purchase.expenses.pluck(:amount_cents).uniq).to eq([1])
+    expect(purchase.expenses.pluck(:amount_cents).uniq).to eq([ 1 ])
   end
 
   # regenerate_installments! declares that the transaction lives in it precisely

@@ -31,7 +31,7 @@ module Budgeting
     def category_committed(summary, category)
       cash   = summary.cash_spent_cents(category)
       credit = summary.spent_cents(category) - cash
-      [[summary.budgeted_cents(category) - credit, 0].max, cash].max
+      [ [ summary.budgeted_cents(category) - credit, 0 ].max, cash ].max
     end
 
     # A statement due in a PAST month that was never paid contributes nothing here:
@@ -39,7 +39,7 @@ module Budgeting
     # a statement, so carrying one forward needs matching the schema doesn't have.
     # Deliberate — the solvency story owns it.
     def card_committed(summary)
-      [summary.statements_due_cents, summary.statement_payments_cents].max
+      [ summary.statements_due_cents, summary.statement_payments_cents ].max
     end
   end
 end

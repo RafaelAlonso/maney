@@ -111,11 +111,11 @@ RSpec.describe Card do
 
         card.reschedule(closing_day: 21, due_day: 27).save!
 
-        rows = card.card_schedules.reload.order(:valid_from).map { [_1.valid_from, _1.closing_day, _1.due_day] }
+        rows = card.card_schedules.reload.order(:valid_from).map { [ _1.valid_from, _1.closing_day, _1.due_day ] }
         expect(rows).to eq([
-                             [Date.new(2026, 3, 1), 5, 12],
-                             [Date.new(2026, 7, 3), 20, 27],
-                             [Date.new(2026, 7, 20), 21, 27]
+                             [ Date.new(2026, 3, 1), 5, 12 ],
+                             [ Date.new(2026, 7, 3), 20, 27 ],
+                             [ Date.new(2026, 7, 20), 21, 27 ]
                            ])
         expect(schedule_on(Date.current).closing_day).to eq(21)
         expect(schedule_on(Date.new(2026, 3, 10)).closing_day).to eq(5)
@@ -160,11 +160,11 @@ RSpec.describe Card do
                                   "new validity window at #{row.valid_from}: went retroactive over already-closed statements"
         row.save!
 
-        rows = card.card_schedules.reload.order(:valid_from).map { [_1.valid_from, _1.closing_day, _1.due_day] }
+        rows = card.card_schedules.reload.order(:valid_from).map { [ _1.valid_from, _1.closing_day, _1.due_day ] }
         expect(rows).to eq([
-                             [Date.new(2026, 1, 1), 31, 10],
-                             [Date.new(2026, 3, 3), 1, 10],
-                             [Date.new(2026, 6, 1), 15, 20]
+                             [ Date.new(2026, 1, 1), 31, 10 ],
+                             [ Date.new(2026, 3, 3), 1, 10 ],
+                             [ Date.new(2026, 6, 1), 15, 20 ]
                            ])
         expect_every_schedule_on_a_real_boundary
       end
@@ -204,13 +204,13 @@ RSpec.describe Card do
     # most — they are what every past statement is still derived from.
     it "changes nothing but the flag on an archive/reactivate round trip" do
       card = create_card!(name: "Azul", closing_day: 5, due_day: 12)
-      before = [card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from)]
+      before = [ card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from) ]
 
       card.archive!
       card.reactivate!
       card.reload
 
-      expect([card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from)]).to eq before
+      expect([ card.name, card.card_schedules.pluck(:closing_day, :due_day, :valid_from) ]).to eq before
       expect(card.archived_at).to be_nil
     end
   end

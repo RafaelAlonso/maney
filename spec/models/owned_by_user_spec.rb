@@ -47,7 +47,10 @@ RSpec.describe OwnedByUser do
   # The guard that outlives this story: a table added later cannot join the
   # schema unscoped without failing here.
   describe "the schema" do
-    exempt = %w[users sessions schema_migrations ar_internal_metadata]
+    # `invitations` is exempt on purpose, not by oversight: an invitation exists
+    # before anyone owns it and belongs to the group rather than to a budget.
+    # Its `invited_by_id` is provenance and scopes nothing.
+    exempt = %w[users sessions invitations schema_migrations ar_internal_metadata]
 
     it "requires a person on every table that holds budgeting data" do
       tables = ActiveRecord::Base.connection.tables - exempt

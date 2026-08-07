@@ -16,8 +16,8 @@ module AuthenticationHelpers
 
   def current_user = @current_user
 
-  def create_user!(email_address: "rafael@example.com")
-    User.create!(email_address:, password: PASSWORD)
+  def create_user!(email_address: "rafael@example.com", admin: false)
+    User.create!(email_address:, password: PASSWORD, admin:)
   end
 
   # Establishes the person for code running in the spec's own thread. Request
@@ -115,7 +115,9 @@ RSpec.configure do |config|
   # `:no_current_user` opts an example out — used by the claim spec, which needs
   # a database with no person in it at all.
   config.before(:each) do |example|
-    sign_in(create_user!) unless example.metadata[:no_current_user]
+    # The person every example runs as is Rafael: on a real install the claimed
+    # account is the admin, and specs that need a plain member create one.
+    sign_in(create_user!(admin: true)) unless example.metadata[:no_current_user]
   end
 
   config.before(:each, type: :request) do |example|

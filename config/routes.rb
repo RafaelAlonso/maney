@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
+  resources :passwords, param: :token, only: %i[new create edit update]
   get "privacy", to: "privacy_policies#show"
   get  "signup/:token", to: "signups#new", as: :signup
   post "signup/:token", to: "signups#create"

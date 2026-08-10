@@ -42,4 +42,16 @@ class User < ApplicationRecord
 
     ((deleted_at + DELETION_GRACE).to_date - Date.current).to_i
   end
+
+  # Signing out every device at once is half of what deletion means: the app has
+  # to become unreachable immediately, while the data stays untouched for 30
+  # days. Nothing is erased here — that is Users::Purge, a month later.
+  def delete_account!
+    transaction do
+      update!(deleted_at: Time.current)
+      sessions.destroy_all
+    end
+  end
+
+  def restore_account! = update!(deleted_at: nil)
 end

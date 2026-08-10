@@ -11,4 +11,18 @@ class PeopleController < ApplicationController
     @invitations = Invitation.pending.order(created_at: :desc)
     @people = User.order(:email_address)
   end
+
+  # AC 16: an account Rafael deletes takes the same 30-day path, with the same
+  # restore window, as one deleted by its owner.
+  def destroy
+    person = User.find(params[:id])
+
+    if person == Current.user
+      return redirect_to people_path,
+                         alert: "Você é a única pessoa que pode convidar — sua conta não pode ser encerrada nem excluída."
+    end
+
+    person.delete_account!
+    redirect_to people_path, notice: "Conta excluída — restaurável por 30 dias."
+  end
 end

@@ -43,6 +43,8 @@
             <%= button_to "Revogar", person_access_path(person), method: :delete,
                   class: "bg-gray-200 text-gray-800 rounded px-3 py-1 text-xs" %>
           <% end %>
+          <%= button_to "Excluir", person_path(person), method: :delete,
+                class: "bg-red-600 text-white rounded px-3 py-1 text-xs" %>
         </div>
       <% else %>
         <p class="text-gray-400 text-xs mt-1">Você é a única pessoa que pode convidar.</p>

@@ -42,14 +42,26 @@ class ApplicationController < ActionController::Base
   # closed; it means this filter reaches every session row the person owns,
   # cookie-bound or not.
   #
-  # Task 8 extends this with the deleted-account branch.
   def require_active_account
-    user = Current.user
-    return unless user&.access_revoked?
+    return if Current.user.nil?
 
-    terminate_session
-    user.sessions.destroy_all
-    redirect_to new_session_path, alert: "Seu acesso ao Maney foi encerrado."
+    if Current.user.access_revoked?
+      terminate_session
+      Current.user.sessions.destroy_all
+      return redirect_to new_session_path, alert: "Seu acesso ao Maney foi encerrado."
+    end
+
+    # A deleted account reaches the restore screen and nothing else. The purge
+    # is a nightly task, so a session that outlived the 30 days is possible;
+    # treat it as gone rather than restorable.
+    return unless Current.user.deleted?
+
+    if Current.user.purge_due?
+      terminate_session
+      redirect_to new_session_path, alert: "Email ou senha inválidos."
+    else
+      redirect_to new_restoration_path
+    end
   end
 
   def require_setup

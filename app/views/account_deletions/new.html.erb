@@ -1,0 +1,15 @@
+<%# app/views/account_deletions/new.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Excluir minha conta</h1>
+
+<div class="bg-red-50 border border-red-200 text-red-800 rounded p-3 text-sm space-y-2 mb-4">
+  <p>Você sai do Maney na hora, em todos os aparelhos.</p>
+  <p>
+    Seus ganhos, gastos, cartões, categorias e orçamentos são apagados em
+    <strong>definitivo depois de 30 dias</strong>. Não há como recuperar depois disso.
+  </p>
+  <p>Durante esses 30 dias, basta entrar com seu email e sua senha para voltar atrás.</p>
+</div>
+
+<%= button_to "excluir minha conta", account_deletion_path,
+      class: "bg-red-600 text-white rounded px-4 py-2" %>
+<p class="mt-4"><%= link_to "cancelar", edit_settings_path, class: "text-blue-600 text-sm" %></p>

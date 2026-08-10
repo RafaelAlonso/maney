@@ -7,7 +7,9 @@ Rails.application.routes.draw do
   resources :invitations, only: %i[create destroy] do
     post :resend, on: :member
   end
-  resources :people, only: :index do
+  resource :account_deletion, only: %i[new create]
+  resource :restoration, only: %i[new create]
+  resources :people, only: %i[index destroy] do
     resource :access, only: %i[create destroy], controller: "people/accesses"
   end
   get "up" => "rails/health#show", as: :rails_health_check

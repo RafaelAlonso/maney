@@ -41,4 +41,7 @@
   <p><%= link_to "política de privacidade", privacy_path, class: "text-blue-600 text-sm" %></p>
   <%= button_to "sair", session_path, method: :delete,
         class: "bg-gray-700 text-white rounded px-4 py-2 text-sm" %>
+  <p class="pt-2">
+    <%= link_to "excluir minha conta", new_account_deletion_path, class: "text-red-600 text-sm" %>
+  </p>
 </div>

@@ -25,7 +25,21 @@ class SessionsController < ApplicationController
       return redirect_to new_session_path, alert: "Seu acesso ao Maney foi encerrado."
     end
 
+    # Past the grace period the row may still exist — the purge runs nightly —
+    # but the app must already answer as though it does not.
+    if user.purge_due?
+      return redirect_to new_session_path, alert: "Email ou senha inválidos."
+    end
+
     start_new_session_for user
+
+    # A deleted-but-restorable person signs in normally: the session exists so
+    # they can reach `RestorationsController`, which is the one screen that
+    # doesn't require `require_active_account`. Sending them to
+    # `after_authentication_url` first would land them on a page that filter
+    # then bounces anyway — this goes straight there.
+    return redirect_to new_restoration_path if user.deleted?
+
     redirect_to after_authentication_url
   end
 

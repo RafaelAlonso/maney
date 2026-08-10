@@ -28,10 +28,19 @@ class ApplicationController < ActionController::Base
   # not on their next sign-in, or "revoked" would mean nothing until they
   # happened to sign out.
   #
-  # This closes out every session the person holds, not just the one making
-  # this request — the same guarantee `People::AccessesController#destroy`
-  # gives when Rafael revokes access directly, extended to the case where the
-  # account went stale (or was revoked out of band) and only gets noticed here.
+  # This is also where every session the person holds gets closed out, not
+  # just the one making this request — `People::AccessesController#destroy`
+  # deliberately leaves sessions alone (see its comment) so that this filter,
+  # not the destroy action, is what the revoked person's cookie actually runs
+  # into.
+  #
+  # Note for whoever reads the "mid-session" spec: its `sessions.count == 0`
+  # assertion is partly test-plumbing churn, not proof of multiple real
+  # devices — the spec helpers (`sign_in` + `authenticate_request`, `as`) each
+  # create their own `Session` row, and only one of those is ever cookie-bound.
+  # `destroy_all` clearing all of them doesn't mean several real devices were
+  # closed; it means this filter reaches every session row the person owns,
+  # cookie-bound or not.
   #
   # Task 8 extends this with the deleted-account branch.
   def require_active_account

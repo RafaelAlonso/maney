@@ -27,6 +27,14 @@ module Users
         # outside the tables above.
         Invitation.where(email_address: @user.email_address).delete_all
 
+        # The other direction: invitations *they* sent. `invited_by_id` is a
+        # `null: false` foreign key with no ON DELETE clause, so leaving these
+        # behind would make `@user.destroy!` below hit a live reference and
+        # roll back the whole purge. Deleting is also the right semantics —
+        # a pending invitation whose inviter no longer exists is not something
+        # an erasure feature keeps.
+        Invitation.where(invited_by_id: @user.id).delete_all
+
         @user.sessions.delete_all
         @user.destroy!
       end

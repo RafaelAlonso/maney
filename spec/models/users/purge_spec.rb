@@ -49,6 +49,15 @@ RSpec.describe Users::Purge do
     expect(Invitation.where(email_address: "irma@example.com").count).to eq(0)
   end
 
+  it "erases the invitations they sent, not just the one addressed to them" do
+    Invitation.issue(email_address: "convidada@example.com", invited_by: irma)
+
+    described_class.new(irma).call
+
+    expect(Invitation.where(invited_by_id: irma.id).count).to eq(0)
+    expect(User.find_by(id: irma.id)).to be_nil
+  end
+
   it "signs them out of everywhere on the way" do
     Session.create!(user: irma)
 

@@ -35,3 +35,6 @@
 !/app/assets/builds/.keep
 
 /.worktrees/
+
+# Kamal secrets. Real values, never committed. See .kamal/secrets.example.
+/.kamal/secrets

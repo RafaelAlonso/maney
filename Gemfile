@@ -52,3 +52,5 @@ gem "tailwindcss-rails", "~> 4.6"
 
 gem "capybara", "~> 3.40", group: :test
 gem "selenium-webdriver", "~> 4.46", group: :test
+
+gem "kamal", "~> 2.12", :group => :development

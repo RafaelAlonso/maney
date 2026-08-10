@@ -6,6 +6,11 @@ servers:
   web:
     - <instance-ip>
 
+# Kamal would otherwise connect as root, which Oracle Cloud's Ubuntu images
+# refuse: `kamal setup` dies on authentication before it does anything at all.
+ssh:
+  user: ubuntu
+
 proxy:
   ssl: true
   host: <domain>

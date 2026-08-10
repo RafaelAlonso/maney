@@ -1,11 +1,13 @@
 module People
   class AccessesController < ApplicationController
+    include SelfTargetingGuard
+
     # See InvitationsController for why this is `skip` + reinsert rather than
     # `skip_before_action :require_setup` alone or `prepend_before_action`.
     skip_before_action :require_setup
     before_action :require_admin
     before_action :require_setup
-    before_action :refuse_self
+    before_action :refuse_self_as_target
 
     def create
       person.update!(access_revoked_at: nil)
@@ -30,11 +32,6 @@ module People
 
     def person = @person ||= User.find(params[:person_id])
 
-    def refuse_self
-      return unless person == Current.user
-
-      redirect_to people_path,
-                  alert: "Você é a única pessoa que pode convidar — sua conta não pode ser encerrada nem excluída."
-    end
+    def refuse_self_as_target = refuse_self(person)
   end
 end

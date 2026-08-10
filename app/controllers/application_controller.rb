@@ -57,12 +57,25 @@ class ApplicationController < ActionController::Base
     return unless Current.user.deleted?
 
     if Current.user.purge_due?
+      # No `sessions.destroy_all` here, unlike the revoked branch above: by
+      # the time an account is purge-due, `delete_account!` already destroyed
+      # every session it had at the moment of deletion. Any session found
+      # here was created after that (e.g. by signing back in past day 30, an
+      # edge SessionsController's own `purge_due?` check already closes off)
+      # and this branch terminates it on its own next request regardless —
+      # there is never a second session left over to clean up.
       terminate_session
       redirect_to new_session_path, alert: "Email ou senha inválidos."
     else
-      redirect_to new_restoration_path
+      redirect_to restoration_target
     end
   end
+
+  # Where a deleted-but-restorable person is sent — whether caught here on any
+  # authenticated request, or immediately after signing back in in
+  # `SessionsController#create`. Both sites have to agree on the same
+  # destination, so this is the one place that names it.
+  def restoration_target = new_restoration_path
 
   def require_setup
     redirect_to setup_path if Setting.instance.nil?

@@ -38,7 +38,7 @@ class SessionsController < ApplicationController
     # doesn't require `require_active_account`. Sending them to
     # `after_authentication_url` first would land them on a page that filter
     # then bounces anyway — this goes straight there.
-    return redirect_to new_restoration_path if user.deleted?
+    return redirect_to restoration_target if user.deleted?
 
     redirect_to after_authentication_url
   end

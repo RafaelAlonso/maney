@@ -1,4 +1,6 @@
 class PeopleController < ApplicationController
+  include SelfTargetingGuard
+
   # See InvitationsController for why this is `skip` + reinsert rather than
   # `skip_before_action :require_setup` alone or `prepend_before_action`.
   skip_before_action :require_setup
@@ -16,11 +18,7 @@ class PeopleController < ApplicationController
   # restore window, as one deleted by its owner.
   def destroy
     person = User.find(params[:id])
-
-    if person == Current.user
-      return redirect_to people_path,
-                         alert: "Você é a única pessoa que pode convidar — sua conta não pode ser encerrada nem excluída."
-    end
+    return if refuse_self(person)
 
     person.delete_account!
     redirect_to people_path, notice: "Conta excluída — restaurável por 30 dias."

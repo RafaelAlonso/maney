@@ -34,7 +34,7 @@ module ApplicationHelper
     cards = Card.active.order(:name).to_a
     current = Card.find_by(id: entry.card_id)
     cards << current if current&.archived? && cards.exclude?(current)
-    cards.sort_by(&:name).map { |c| [c.archived? ? "#{c.name} (arquivado)" : c.name, c.id] }
+    cards.sort_by(&:name).map { |c| [ c.archived? ? "#{c.name} (arquivado)" : c.name, c.id ] }
   end
 
   # Rails' `pluralize` inflects only the last word of the phrase, which is right
@@ -67,14 +67,14 @@ module ApplicationHelper
   # (a 12x bought in December) can't be read as this year's, while the everyday
   # label stays short.
   def statement_due_label(statement, today: Date.current)
-    "vence #{statement_date(statement.effective_due, [statement.effective_due], today)}"
+    "vence #{statement_date(statement.effective_due, [ statement.effective_due ], today)}"
   end
 
   # The statement's purchase period: from the previous effective closing to the
   # day before this one. Same year rule as the due label, applied to both ends
   # together so the two dates always read in the same format.
   def statement_period_label(row, today: Date.current)
-    dates = [row.period_start, row.period_end]
+    dates = [ row.period_start, row.period_end ]
     "#{statement_date(row.period_start, dates, today)} – #{statement_date(row.period_end, dates, today)}"
   end
 

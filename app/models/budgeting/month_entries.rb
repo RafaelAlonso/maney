@@ -12,7 +12,7 @@ module Budgeting
       undated = Expense.where(date: nil).includes(:installment_purchase, :category, :card)
       undated = undated.where(category:) if category
       undated = undated.select { |expense| Competence.month_of(expense) == target }
-      (dated.to_a + undated).sort_by { |expense| [listing_date(expense, target), expense.name] }
+      (dated.to_a + undated).sort_by { |expense| [ listing_date(expense, target), expense.name ] }
     end
 
     # The date a row is listed under. An installment carries `date: nil` (its
@@ -26,7 +26,7 @@ module Budgeting
       return expense.date if expense.date
 
       purchase_day = expense.installment_purchase.date.day
-      month.change(day: [purchase_day, month.end_of_month.day].min)
+      month.change(day: [ purchase_day, month.end_of_month.day ].min)
     end
   end
 end

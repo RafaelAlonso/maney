@@ -295,7 +295,7 @@ RSpec.describe "Expenses", type: :request do
     purchase.reload
     expect(purchase.expenses.count).to eq 5
     expect(purchase.expenses.sum(:amount_cents)).to eq 50_000
-    expect(purchase.expenses.pluck(:payment_method).uniq).to eq ["credit"]
+    expect(purchase.expenses.pluck(:payment_method).uniq).to eq [ "credit" ]
     expect(purchase.category).to eq others
     expect(purchase.card).to eq card
   end

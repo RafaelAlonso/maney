@@ -35,3 +35,9 @@
 !/app/assets/builds/.keep
 
 /.worktrees/
+
+# Kamal secrets. Real values, never committed. Kamal reads three shapes:
+# `secrets`, `secrets-common` and `secrets.<destination>` — all of them hold a
+# RAILS_MASTER_KEY, so all of them stay out of git. Only the example is tracked.
+/.kamal/secrets*
+!/.kamal/secrets.example

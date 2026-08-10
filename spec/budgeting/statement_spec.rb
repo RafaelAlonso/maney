@@ -36,6 +36,6 @@ RSpec.describe Budgeting::Statement do
 
     expect(statement_before).not_to eq(statement_after)
     expect(statement_before.hash).not_to eq(statement_after.hash)
-    expect([statement_before, statement_after].uniq.size).to eq(2)
+    expect([ statement_before, statement_after ].uniq.size).to eq(2)
   end
 end

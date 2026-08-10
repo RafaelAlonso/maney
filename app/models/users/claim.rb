@@ -84,7 +84,7 @@ module Users
       # Checked against FINGERPRINT's keys, not TABLES: the whole point of this
       # pass is to catch a TABLES that itself forgot a table, so it cannot share
       # the same possibly-truncated list it is meant to be verifying.
-      left_behind = FINGERPRINT.keys.select { |table| connection.select_value("SELECT 1 FROM #{table} WHERE user_id IS NULL LIMIT 1") }
+      left_behind = FINGERPRINT.keys.select { |table| connection.select_value("SELECT 1 FROM #{connection.quote_table_name(table)} WHERE user_id IS NULL LIMIT 1") }
       return if left_behind.empty?
 
       raise Tampered, "#{left_behind.join(', ')} still hold rows belonging to nobody — nothing was saved"
@@ -93,12 +93,19 @@ module Users
     def fingerprint
       FINGERPRINT.to_h do |table, columns|
         selects = [ "COUNT(*) AS row_count", "COALESCE(SUM(id), 0) AS id_sum" ]
-        columns[:numeric].each { |column| selects << "COALESCE(SUM(#{column}), 0) AS sum_#{column}" }
-        columns[:dates].each do |column|
-          selects << "MIN(#{column}) AS min_#{column}"
-          selects << "MAX(#{column}) AS max_#{column}"
+        # The value fed to SUM/MIN/MAX is quoted as an identifier; the alias after
+        # AS is left bare on purpose — it names the key `verify!` reads back out
+        # of the result hash, and quoting it would change that key.
+        columns[:numeric].each do |column|
+          quoted_column = connection.quote_column_name(column)
+          selects << "COALESCE(SUM(#{quoted_column}), 0) AS sum_#{column}"
         end
-        [ table, connection.select_one("SELECT #{selects.join(', ')} FROM #{table}") ]
+        columns[:dates].each do |column|
+          quoted_column = connection.quote_column_name(column)
+          selects << "MIN(#{quoted_column}) AS min_#{column}"
+          selects << "MAX(#{quoted_column}) AS max_#{column}"
+        end
+        [ table, connection.select_one("SELECT #{selects.join(', ')} FROM #{connection.quote_table_name(table)}") ]
       end
     end
 

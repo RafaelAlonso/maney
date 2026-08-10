@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+# A guard on the deploy command, not a CI pipeline: this runs on the operator's
+# own machine. bin/ci runs the suite plus the style and security scans.
+echo "Running bin/ci before deploying..."
+bin/ci

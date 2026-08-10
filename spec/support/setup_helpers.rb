@@ -4,8 +4,8 @@ module SetupHelpers
   end
 
   def create_reserved_categories!
-    [Category.find_or_create_by!(role: "others") { |c| c.name = "outros" },
-     Category.find_or_create_by!(role: "credit_card") { |c| c.name = "cartão de crédito" }]
+    [ Category.find_or_create_by!(role: "others") { |c| c.name = "outros" },
+     Category.find_or_create_by!(role: "credit_card") { |c| c.name = "cartão de crédito" } ]
   end
 
   # Same card as the reference scenario (ReferenceScenario#create_card), but with

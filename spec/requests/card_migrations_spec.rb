@@ -64,7 +64,7 @@ RSpec.describe "CardMigrations", type: :request do
     expect(Expense.find_by!(name: "mercado").card).to eq target
     purchase = InstallmentPurchase.find_by!(name: "sofá")
     expect(purchase.card).to eq target
-    expect(purchase.expenses.pluck(:card_id).uniq).to eq [target.id]
+    expect(purchase.expenses.pluck(:card_id).uniq).to eq [ target.id ]
   end
 
   it "deletes everything and the card (AC 17)" do

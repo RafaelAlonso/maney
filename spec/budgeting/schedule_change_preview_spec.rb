@@ -25,9 +25,9 @@ RSpec.describe Budgeting::ScheduleChangePreview do
 
     expect(rows.map { |row| row.cycle.strftime("%m/%Y") }).to eq %w[08/2026 09/2026 10/2026]
     # 12/09 is a Saturday, so it lands on the 14th; the other two are weekdays.
-    expect(rows.map(&:before_due)).to eq [Date.new(2026, 8, 12), Date.new(2026, 9, 14), Date.new(2026, 10, 12)]
+    expect(rows.map(&:before_due)).to eq [ Date.new(2026, 8, 12), Date.new(2026, 9, 14), Date.new(2026, 10, 12) ]
     # Each cycle is now due the month after it closes: 08 → 12/09 (Sat) → 14/09.
-    expect(rows.map(&:after_due)).to eq [Date.new(2026, 9, 14), Date.new(2026, 10, 12), Date.new(2026, 11, 12)]
+    expect(rows.map(&:after_due)).to eq [ Date.new(2026, 9, 14), Date.new(2026, 10, 12), Date.new(2026, 11, 12) ]
     expect(rows).to all(be_shifts)
   end
 

@@ -44,6 +44,6 @@ module Maney
     # `I18n.locale = :en` can't silently reintroduce English validation
     # messages — the whole point of config/locales/pt-BR.yml.
     config.i18n.default_locale = :"pt-BR"
-    config.i18n.available_locales = [:"pt-BR"]
+    config.i18n.available_locales = [ :"pt-BR" ]
   end
 end

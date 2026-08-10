@@ -46,9 +46,11 @@ group :development do
   gem "web-console"
 end
 
-gem "rspec-rails", "~> 8.0", :groups => [:development, :test]
+gem "rspec-rails", "~> 8.0", groups: [ :development, :test ]
 
 gem "tailwindcss-rails", "~> 4.6"
 
-gem "capybara", "~> 3.40", :group => :test
-gem "selenium-webdriver", "~> 4.46", :group => :test
+gem "capybara", "~> 3.40", group: :test
+gem "selenium-webdriver", "~> 4.46", group: :test
+
+gem "kamal", "~> 2.12", group: :development

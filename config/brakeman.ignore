@@ -1,0 +1,28 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SQL Injection",
+      "warning_code": 0,
+      "fingerprint": "aa163d9b022b0176d4bf34789f608eabd9d04bdc69605e8057ff68963431f631",
+      "check_name": "SQL",
+      "message": "Possible SQL injection",
+      "file": "app/models/users/claim.rb",
+      "line": 108,
+      "link": "https://brakemanscanner.org/docs/warning_types/sql_injection/",
+      "code": "connection.select_one(\"SELECT #{\"COUNT(*) AS row_count, COALESCE(SUM(id), 0) AS id_sum, #{\"COALESCE(SUM(#{connection.quote_column_name(column)}), 0) AS sum_#{column}\"}, #{\"MIN(#{connection.quote_column_name(column)}) AS min_#{column}\"}, #{\"MAX(#{connection.quote_column_name(column)}) AS max_#{column}\"}\"} FROM #{connection.quote_table_name(table)}\")",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Users::Claim",
+        "method": "fingerprint"
+      },
+      "user_input": "column",
+      "confidence": "Medium",
+      "cwe_id": [
+        89
+      ],
+      "note": "False positive: `column` and `table` are only ever iterated out of the frozen Users::Claim::FINGERPRINT constant defined at the top of this file -- no user input can reach them. The value is additionally passed through connection.quote_column_name/quote_table_name before interpolation; Brakeman cannot trace that the sanitized local (not the raw parameter) is what ends up in the SQL string. See app/models/users/claim.rb for the full argument."
+    }
+  ],
+  "brakeman_version": "8.0.5"
+}

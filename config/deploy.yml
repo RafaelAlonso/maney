@@ -1,0 +1,71 @@
+service: maney
+
+image: <gh-user>/maney
+
+servers:
+  web:
+    - <instance-ip>
+
+# Kamal would otherwise connect as root, which Oracle Cloud's Ubuntu images
+# refuse: `kamal setup` dies on authentication before it does anything at all.
+ssh:
+  user: ubuntu
+
+proxy:
+  ssl: true
+  host: <domain>
+  app_port: 80
+  healthcheck:
+    path: /up
+
+registry:
+  server: ghcr.io
+  username: <gh-user>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: arm64
+
+env:
+  clear:
+    DB_HOST: maney-db
+  secret:
+    - RAILS_MASTER_KEY
+    - MANEY_DATABASE_PASSWORD
+
+accessories:
+  db:
+    image: postgres:17
+    host: <instance-ip>
+    # Published to loopback only. Postgres is never reachable from the internet.
+    port: "127.0.0.1:5432:5432"
+    env:
+      clear:
+        POSTGRES_USER: maney
+        POSTGRES_DB: maney_production
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      # A host directory, outside every container's lifecycle. This is what
+      # makes an expense survive a deploy.
+      - data:/var/lib/postgresql/data
+
+  backup:
+    image: ghcr.io/<gh-user>/maney-backup:latest
+    host: <instance-ip>
+    env:
+      clear:
+        TZ: America/Sao_Paulo
+        PGHOST: maney-db
+        PGUSER: maney
+        PGDATABASE: maney_production
+        AGE_RECIPIENT: <age public key>
+        R2_BUCKET: maney-backups
+        R2_ENDPOINT: <r2 endpoint url>
+        BACKUP_PREFIX: nightly
+      secret:
+        - POSTGRES_PASSWORD
+        - R2_ACCESS_KEY_ID
+        - R2_SECRET_ACCESS_KEY
+        - HEALTHCHECK_URL

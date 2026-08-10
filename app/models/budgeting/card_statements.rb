@@ -47,8 +47,8 @@ module Budgeting
     def partition
       @partition ||= begin
         open_rows, closed_rows = rows.partition { |row| row.statement.open?(today: @today) }
-        [open_rows.sort_by { |row| row.statement.effective_due },
-         closed_rows.sort_by { |row| row.statement.effective_due }.reverse]
+        [ open_rows.sort_by { |row| row.statement.effective_due },
+         closed_rows.sort_by { |row| row.statement.effective_due }.reverse ]
       end
     end
 
@@ -56,7 +56,7 @@ module Budgeting
       period_end = statement.effective_closing - 1
       Row.new(
         statement:,
-        expenses: expenses.sort_by { |expense| [expense.date || period_end, expense.name] },
+        expenses: expenses.sort_by { |expense| [ expense.date || period_end, expense.name ] },
         total_cents: expenses.sum(&:amount_cents),
         # NOT obtained by walking the chain backward with `succ`: `succ`
         # re-resolves the validity window at each closing, so the chain can move

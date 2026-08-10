@@ -120,7 +120,7 @@ RSpec.describe "Competence and StatementSet" do
     groups = Budgeting::StatementSet.for_card(card:)
 
     # both fall on the same nominal closing — the scenario that collided before the fix
-    expect(groups.keys.map(&:nominal_closing).uniq).to eq([Date.new(2026, 4, 5)])
+    expect(groups.keys.map(&:nominal_closing).uniq).to eq([ Date.new(2026, 4, 5) ])
     expect(groups.keys.size).to eq(2)
 
     april = groups.keys.find { |s| s.effective_due == Date.new(2026, 4, 13) }
@@ -141,7 +141,7 @@ RSpec.describe "Competence and StatementSet" do
                                            date: Date.new(2026, 3, 6), card:, category: category("casa"))
     third = purchase.expenses.find_by!(installment_number: 3)
 
-    labels = Budgeting::StatementSet.labels_for([a, b, cash, third])
+    labels = Budgeting::StatementSet.labels_for([ a, b, cash, third ])
 
     expect(labels[a.id].effective_due).to eq Date.new(2026, 3, 12)
     expect(labels[b.id].effective_due).to eq Date.new(2026, 3, 27)

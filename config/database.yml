@@ -81,5 +81,6 @@ test:
 production:
   <<: *default
   database: maney_production
+  host: <%= ENV["DB_HOST"] %>
   username: maney
   password: <%= ENV["MANEY_DATABASE_PASSWORD"] %>

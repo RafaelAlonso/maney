@@ -21,9 +21,11 @@ RSpec.describe "Password recovery", type: :request do
   end
 
   it "emails a real account a link that sets a new password" do
-    expect {
-      post passwords_path, params: { email_address: current_user.email_address }
-    }.to change { ActionMailer::Base.deliveries.size }.by(1)
+    perform_enqueued_jobs do
+      expect {
+        post passwords_path, params: { email_address: current_user.email_address }
+      }.to change { ActionMailer::Base.deliveries.size }.by(1)
+    end
 
     token = current_user.generate_token_for(:password_reset)
     put password_path(token), params: { user: { password: "nova-senha-longa",
@@ -67,5 +69,15 @@ RSpec.describe "Password recovery", type: :request do
     get new_session_path
 
     expect(response.body).to include(new_password_path)
+  end
+
+  it "shows a fully Portuguese message when the confirmation does not match" do
+    token = current_user.generate_token_for(:password_reset)
+    put password_path(token), params: { user: { password: "nova-senha-longa",
+                                                password_confirmation: "outra-coisa" } }
+
+    expect(response).to redirect_to(edit_password_path(token))
+    follow_redirect!
+    expect(response.body).to include("Confirmação de senha não corresponde a Senha")
   end
 end

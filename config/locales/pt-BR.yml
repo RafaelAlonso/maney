@@ -150,4 +150,5 @@ pt-BR:
       user:
         email_address: "E-mail"
         password: "Senha"
+        password_confirmation: "Confirmação de senha"
         consent: "Consentimento"

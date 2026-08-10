@@ -15,7 +15,7 @@ class PasswordsController < ApplicationController
   # turns this form into a way of asking who is in the group.
   def create
     user = User.find_by(email_address: params[:email_address].to_s.strip.downcase)
-    PasswordsMailer.reset(user).deliver_now if user
+    PasswordsMailer.reset(user).deliver_later if user
 
     redirect_to new_session_path,
                 notice: "Se esse email tiver uma conta, enviamos um link para redefinir a senha."

@@ -5,6 +5,7 @@
 .worktrees/
 .ruby-lsp/
 .superpowers/
+.claude/
 project/
 spec/
 log/*

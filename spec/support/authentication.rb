@@ -79,6 +79,19 @@ module AuthenticationHelpers
     Holder.session = nil
   end
 
+  # Switches the request spec's signed-in person, and the cookie, to a plain
+  # member rather than the default admin. Several account-lifecycle examples
+  # (self-deletion in particular) need this: finding 1 made the admin unable
+  # to delete his own account, so exercising the path every other person can
+  # use means signing in as somebody else first.
+  def sign_in_as_member!(email_address: "irma@example.com")
+    member = create_user!(email_address:)
+    sign_out_request
+    sign_in(member)
+    authenticate_request
+    as(member) { create_setting!; create_reserved_categories! }
+  end
+
   # Builds records as somebody else, then hands the example back to its own
   # person. Only the spec thread's `Current` moves — the cookie a request spec
   # is holding still belongs to whoever signed in.

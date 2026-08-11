@@ -10,14 +10,29 @@ module SelfTargetingGuard
 
   private
 
+  ALERT = "Você é a única pessoa que pode convidar — sua conta não pode ser encerrada nem excluída.".freeze
+
   # Returns true (having already redirected) when `person` is the caller —
   # callers either wire this as a `before_action` wrapper or check the
   # return value inline, whichever fits their action.
   def refuse_self(person)
     return false unless person == Current.user
 
-    redirect_to people_path,
-                alert: "Você é a única pessoa que pode convidar — sua conta não pode ser encerrada nem excluída."
+    redirect_to people_path, alert: ALERT
+    true
+  end
+
+  # Same rule as `refuse_self`, but for actions with no separate "person"
+  # argument to compare against — the caller *is* the target by construction
+  # (`AccountDeletionsController#create` is always Current.user deleting
+  # Current.user), so what disqualifies the action is being the sole
+  # inviter, not an identity comparison. Non-admins are unaffected: deleting
+  # your own account stays offered to everyone but the one person whose
+  # departure would leave nobody able to invite.
+  def refuse_admin_self_deletion
+    return false unless Current.user.admin?
+
+    redirect_to people_path, alert: ALERT
     true
   end
 end

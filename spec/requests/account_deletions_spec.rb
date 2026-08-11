@@ -5,6 +5,8 @@ RSpec.describe "Account deletion", type: :request do
 
   # AC 13
   it "signs the person out at once and says what happens in 30 days" do
+    sign_in_as_member!
+
     get new_account_deletion_path
     expect(response.body).to include("30 dias")
     expect(response.body).to include("definitiv")
@@ -18,6 +20,7 @@ RSpec.describe "Account deletion", type: :request do
   end
 
   it "erases nothing on the day it is asked for" do
+    sign_in_as_member!
     Income.create!(name: "Salário", amount_cents: 100_00, date: Date.new(2026, 3, 5))
 
     post account_deletion_path
@@ -27,6 +30,7 @@ RSpec.describe "Account deletion", type: :request do
 
   # AC 14
   it "offers restoration inside the 30 days and nothing else" do
+    sign_in_as_member!
     Income.create!(name: "Salário", amount_cents: 100_00, date: Date.new(2026, 3, 5))
     post account_deletion_path
 
@@ -86,6 +90,18 @@ RSpec.describe "Account deletion", type: :request do
     delete person_path(current_user)
 
     expect(current_user.reload).not_to be_deleted
+  end
+
+  # Finding 1 from the whole-branch review: PeopleController already refuses
+  # this for the admin; this screen offered a second, contradicting path to
+  # the same unrecoverable outcome (a group with nobody left who can invite).
+  it "refuses to let the admin delete his own account directly" do
+    post account_deletion_path
+
+    expect(current_user.reload).not_to be_deleted
+    expect(response).to redirect_to(people_path)
+    follow_redirect!
+    expect(response.body).to include("sua conta não pode ser encerrada nem excluída")
   end
 
   it "is offered to everyone, not only Rafael" do

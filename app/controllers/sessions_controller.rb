@@ -1,5 +1,10 @@
 class SessionsController < ApplicationController
   allow_unauthenticated_access only: %i[ new create ]
+  # A deleted-but-restorable person is otherwise held on the restore screen
+  # by `require_active_account` redirecting every request there, including
+  # this one — without this, someone who signs back in to reconsider has no
+  # way to sign back out short of clearing cookies.
+  skip_before_action :require_active_account, only: :destroy
   # Signing in must work before the app has been set up — an admin creates the
   # first person via `rails console` and signs in before ever touching /setup.
   # Without this, `require_setup` would redirect a fresh install's first sign-in

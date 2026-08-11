@@ -64,6 +64,47 @@ RSpec.describe "Sessions", type: :request do
     expect(Session.exists?(other_device.id)).to be(true)
   end
 
+  # Finding 2: `require_active_account` sends every request from a
+  # deleted-but-restorable person to the restore screen, `destroy` included —
+  # that pinned someone who signed back in to reconsider on that screen with
+  # no way out short of clearing cookies.
+  it "lets a deleted-but-restorable person sign out from the restore screen" do
+    sign_in_as_member!
+    post account_deletion_path
+
+    post session_path, params: { email_address: current_user.email_address,
+                                 password: AuthenticationHelpers::PASSWORD }
+    expect(response).to redirect_to(new_restoration_path)
+
+    delete session_path
+    expect(response).to redirect_to(new_session_path)
+
+    get root_path
+    expect(response).to redirect_to(new_session_path)
+  end
+
+  it "offers a sign-out control on the restore screen itself" do
+    sign_in_as_member!
+    post account_deletion_path
+    post session_path, params: { email_address: current_user.email_address,
+                                 password: AuthenticationHelpers::PASSWORD }
+
+    get new_restoration_path
+
+    expect(response.body).to include(session_path)
+  end
+
+  it "shows no navigation for a deleted-but-restorable person" do
+    sign_in_as_member!
+    post account_deletion_path
+    post session_path, params: { email_address: current_user.email_address,
+                                 password: AuthenticationHelpers::PASSWORD }
+
+    get new_restoration_path
+
+    expect(response.body).not_to include("Categorias")
+  end
+
   it "shows no navigation and no entry button while signed out" do
     sign_out_request
 

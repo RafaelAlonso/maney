@@ -8,10 +8,13 @@ module Analysis
   # competence rule as CompetenceSpending, so it can never disagree with the bar
   # chart above it either.
   #
-  # Subclasses BaseChart for `reais` and the shared conventions, but overrides
-  # the constructor — there is no YearAnalysis here — and builds its own options,
-  # because BaseChart#base_options describes a value axis a pie does not have.
-  class CategoryBreakdownChart < BaseChart
+  # Not a BaseChart: there is no YearAnalysis here, and BaseChart#base_options
+  # describes a value axis a pie does not have. It takes the one thing it does
+  # share — cents-to-reais — from MoneyValues, so it cannot inherit a
+  # constructor it has no arguments for.
+  class CategoryBreakdownChart
+    include MoneyValues
+
     Slice = Data.define(:name, :amount_cents, :color, :share_percent)
 
     def initialize(expenses:, category:, month:, palette: Palette.new)
@@ -34,9 +37,10 @@ module Analysis
       @slices ||= begin
         ordered = @expenses.sort_by { |expense| [ -expense.amount_cents, expense.name ] }
         colors = palette.shades_for(@category, count: ordered.size)
+        shares = share_percents(ordered)
         ordered.each_with_index.map do |expense, index|
           Slice.new(name: expense.name, amount_cents: expense.amount_cents, color: colors[index],
-                    share_percent: (expense.amount_cents * 100.0 / total_cents).round)
+                    share_percent: shares[index])
         end
       end
     end
@@ -64,6 +68,29 @@ module Analysis
           plugins: { legend: { display: false } }
         }
       }
+    end
+
+    private
+
+    attr_reader :palette
+
+    # Largest remainder, not a plain `round` per slice: the list under the pie is
+    # read as a breakdown of the month, and three expenses rounding independently
+    # can print 53/24/22 — a month that visibly does not add up. Each slice takes
+    # its floor, and the leftover points go to the largest fractions first, so
+    # the column always totals 100. Ties fall to the slice already listed higher,
+    # which is the larger one.
+    #
+    # `total_cents` cannot be zero while any slice exists (Expense validates
+    # amount_cents > 0), but the guard keeps a NaN out of `.floor` regardless.
+    def share_percents(ordered)
+      return [] if ordered.empty? || total_cents.zero?
+      exact = ordered.map { |expense| expense.amount_cents * 100.0 / total_cents }
+      shares = exact.map(&:floor)
+      leftover = 100 - shares.sum
+      by_fraction = exact.each_with_index.sort_by { |value, index| [ -(value % 1), index ] }
+      by_fraction.first(leftover).each { |(_value, index)| shares[index] += 1 }
+      shares
     end
   end
 end

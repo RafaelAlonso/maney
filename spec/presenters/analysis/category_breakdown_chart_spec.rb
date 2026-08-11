@@ -27,7 +27,25 @@ RSpec.describe Analysis::CategoryBreakdownChart do
     slices = breakdown.slices
     expect(slices.map(&:name)).to eq [ "mercado extra", "padaria", "feira livre" ]
     expect(slices.map(&:amount_cents)).to eq [ 48_000, 22_000, 20_000 ]
-    expect(slices.map(&:share_percent)).to eq [ 53, 24, 22 ]
+    expect(slices.map(&:share_percent)).to eq [ 53, 25, 22 ]
+  end
+
+  it "keeps the shares adding up to 100, whatever the rounding" do
+    # 53.33 / 24.44 / 22.22 — floored independently these print 99%, which reads
+    # as a month with a piece missing.
+    spend(48_000, name: "mercado extra")
+    spend(22_000, name: "padaria")
+    spend(20_000, name: "feira livre")
+
+    expect(breakdown.slices.sum(&:share_percent)).to eq 100
+  end
+
+  it "keeps the shares adding up to 100 when every expense is identical" do
+    3.times { |index| spend(1_000, name: "gasto #{index}") }
+
+    shares = breakdown.slices.map(&:share_percent)
+    expect(shares.sum).to eq 100
+    expect(shares).to eq [ 34, 33, 33 ]
   end
 
   it "shows a single expense at 100%" do

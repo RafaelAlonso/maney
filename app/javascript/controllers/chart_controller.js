@@ -28,7 +28,12 @@ const axisTick = (value) => (Number.isInteger(value) ? BRL_ROUND : BRL).format(v
 // slice names itself per point (`item.label`) and parses to a bare number.
 // Reading both here keeps the tooltip generic, so the presenters stay the only
 // place that knows what kind of chart is being drawn.
-const seriesLabel = (item) => item.dataset.label ?? item.label
+//
+// `seriesLabel` is deliberately `dataset.label` alone, with no fallback to
+// `item.label`: Chart.js's default *title* callback already prints `item.label`
+// for a pie or doughnut, so falling back would name the slice twice: title
+// "padaria" over body "padaria: R$ 220,00". A pie tooltip reads title + amount.
+const seriesLabel = (item) => item.dataset.label ?? null
 const seriesValue = (item) => (typeof item.parsed === "number" ? item.parsed : item.parsed?.y)
 
 // Renders a Chart.js config built server-side (app/presenters/analysis). The
@@ -74,7 +79,9 @@ export default class extends Controller {
           callbacks: {
             label: (item) => {
               const value = seriesValue(item)
-              return value == null ? seriesLabel(item) : `${seriesLabel(item)}: ${BRL.format(value)}`
+              const name = seriesLabel(item)
+              if (value == null) return name ?? ""
+              return name == null ? BRL.format(value) : `${name}: ${BRL.format(value)}`
             }
           }
         }
@@ -100,7 +107,14 @@ export default class extends Controller {
   tooltipOptions(options) {
     const tooltip = { ...((options.plugins || {}).tooltip || {}) }
     if (tooltip.itemSort === "desc") {
-      tooltip.itemSort = (a, b) => b.parsed.y - a.parsed.y
+      // Through `seriesValue`, not `parsed.y`, for the same reason the label
+      // callback is: a pie parses to a bare number, and `undefined - undefined`
+      // is NaN — a comparator returning NaN leaves the order arbitrary rather
+      // than descending. A gap (null) sorts last.
+      tooltip.itemSort = (a, b) => {
+        const [ first, second ] = [ seriesValue(b) ?? -Infinity, seriesValue(a) ?? -Infinity ]
+        return first === second ? 0 : first - second
+      }
     }
     return tooltip
   }

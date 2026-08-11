@@ -159,6 +159,33 @@ RSpec.describe "Categories", type: :request do
       expect(response.body).to include("Composição de 02/2027")
     end
 
+    # The month nav has no forward bound, so a future month is two clicks away.
+    # The chart above stops at the current month while the pie below shows the
+    # committed parcel — the screen has to say so instead of just disagreeing.
+    it "says the year chart stops at the current month when the user is past it" do
+      InstallmentPurchase.create!(name: "sofá", total_cents: 90_000, installments_count: 6,
+                                  card: create_card!, category: mercado, date: Date.new(2026, 6, 10))
+
+      travel_to(Date.new(2026, 8, 15)) { get category_path(mercado, month: "2026-10") }
+
+      expect(response.body).to include("Composição de 10/2026").and include("sofá")
+      expect(response.body).to include("O gráfico do ano cobre só os meses já acontecidos")
+      expect(response.body).to include("10/2026 aparece apenas na composição abaixo")
+    end
+
+    it "does not claim a not-yet-reached year is empty while its parcels show below" do
+      InstallmentPurchase.create!(name: "sofá", total_cents: 240_000, installments_count: 12,
+                                  card: create_card!, category: mercado, date: Date.new(2026, 6, 10))
+
+      travel_to(Date.new(2026, 8, 15)) { get category_path(mercado, month: "2027-01") }
+
+      # The pie and the list below do show a parcel, which is why the old copy
+      # ("Nenhum gasto nesta categoria em 2027") read as a flat contradiction.
+      expect(response.body).to include("Composição de 01/2027").and include("sofá")
+      expect(response.body).not_to include("Nenhum gasto nesta categoria em 2027.")
+      expect(response.body).to include("2027 ainda não começou.")
+    end
+
     it "keeps the year chart and empties only the breakdown for a month with no expenses (AC 4)" do
       spend(5_000, on: Date.new(2026, 3, 10))
 

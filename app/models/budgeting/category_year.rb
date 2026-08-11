@@ -28,6 +28,18 @@ module Budgeting
 
     def any_data? = spending.any?
 
+    # Whether the year chart plots the given month at all. The drill-down needs
+    # this because the month nav has no forward bound: the list and the pie show
+    # a future month's committed parcels, while the chart above them stops at the
+    # current month by design. Without saying so, the screen reads as two panels
+    # contradicting each other.
+    def covers?(month) = @calendar.active?(month)
+
+    # Whether any month of this year is plotted at all — false for a year the
+    # user has not reached yet, which is a different empty state from "this
+    # category had no spending".
+    def started? = @calendar.active_months.any?
+
     private
 
     def totals_by_month

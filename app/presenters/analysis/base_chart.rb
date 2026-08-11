@@ -12,6 +12,8 @@ module Analysis
   # text in ink tokens rather than in the series colour, and one shared tooltip
   # listing every series at the hovered month.
   class BaseChart
+    include MoneyValues
+
     MONTH_LABELS = MonthLabels::SHORT
 
     # The skill's bar spec: cap the mark instead of letting it fill the band, and
@@ -58,8 +60,6 @@ module Analysis
     def bar_defaults
       { maxBarThickness: MAX_BAR_THICKNESS, pointStyle: "rect" }
     end
-
-    def reais(cents) = cents.nil? ? nil : (cents / 100.0).round(2)
 
     def values(series) = series.values_for_chart.map { |cents| reais(cents) }
 

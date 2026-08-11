@@ -46,8 +46,14 @@ Rails.application.configure do
   # Replace the default in-process memory cache store with a durable alternative.
   # config.cache_store = :mem_cache_store
 
-  # Replace the default in-process and non-durable queuing backend for Active Job.
-  # config.active_job.queue_adapter = :resque
+  # Replace the default in-process and non-durable queuing backend for Active
+  # Job: :async loses any job in flight on deploy or crash, which is silent
+  # for password-reset mail (deliberately deliver_later — see sessions spec).
+  # No `config.solid_queue.connects_to` here: the app has one Postgres
+  # database and no infrastructure to run a second one, so Solid Queue's
+  # tables live alongside the app's own (see its "Single database
+  # configuration" docs) instead of a dedicated `queue` database.
+  config.active_job.queue_adapter = :solid_queue
 
   # Ignore bad email addresses and do not raise email delivery errors.
   # Set this to true and configure the email server for immediate delivery to raise delivery errors.
@@ -66,8 +72,11 @@ Rails.application.configure do
     authentication: :plain,
     enable_starttls_auto: true
   }
-  # The app's public address, so invitation and recovery links resolve.
-  config.action_mailer.default_url_options = { host: ENV.fetch("MANEY_HOST", "localhost"), protocol: "https" }
+  # The app's public address, so invitation and recovery links resolve. No
+  # fallback, deliberately: mail still sends successfully against a missing
+  # env var, with every link pointing at an unreachable "https://localhost/…"
+  # and nothing anywhere to say so. Fail loud at boot instead.
+  config.action_mailer.default_url_options = { host: ENV.fetch("MANEY_HOST"), protocol: "https" }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

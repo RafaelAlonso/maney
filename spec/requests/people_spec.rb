@@ -61,6 +61,21 @@ RSpec.describe "People", type: :request do
     expect(response).to redirect_to(setup_path)
   end
 
+  # Finding 5: "Excluir" on an already-deleted person resets their 30-day
+  # erasure clock (delete_account! sets deleted_at: Time.current again), and
+  # "Revogar" on one leaves them unrestorable until access is restored first.
+  # The status still has to show — only the buttons go.
+  it "offers no destructive action for a deleted person's row" do
+    irma = create_user!(email_address: "irma@example.com")
+    irma.delete_account!
+
+    get people_path
+
+    expect(response.body).to include("irma@example.com")
+    expect(response.body).not_to include(person_path(irma))
+    expect(response.body).not_to include(person_access_path(irma))
+  end
+
   it "is linked from Config for Rafael and nobody else" do
     get edit_settings_path
     expect(response.body).to include(people_path)

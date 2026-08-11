@@ -34,7 +34,13 @@
     <li class="border rounded p-3 text-sm">
       <p class="font-medium"><%= person.email_address %></p>
       <p class="text-gray-500 text-xs"><%= person_status(person) %></p>
-      <% unless person == Current.user %>
+      <% if person == Current.user %>
+        <p class="text-gray-400 text-xs mt-1">Você é a única pessoa que pode convidar.</p>
+      <% elsif !person.deleted? %>
+        <%# A deleted person's actions are hidden, not just disabled: "Excluir" on
+            one already deleted resets their 30-day erasure clock, and "Revogar"
+            on one already deleted leaves them unrestorable until access is
+            restored first. Status still shows above; only the buttons go. %>
         <div class="flex gap-2 mt-2">
           <% if person.access_revoked? %>
             <%= button_to "Restaurar acesso", person_access_path(person),
@@ -46,8 +52,6 @@
           <%= button_to "Excluir", person_path(person), method: :delete,
                 class: "bg-red-600 text-white rounded px-3 py-1 text-xs" %>
         </div>
-      <% else %>
-        <p class="text-gray-400 text-xs mt-1">Você é a única pessoa que pode convidar.</p>
       <% end %>
     </li>
   <% end %>

@@ -6,6 +6,27 @@ servers:
   web:
     - <instance-ip>
 
+  # Runs Solid Queue. Without it nothing performs an enqueued job, and a
+  # `deliver_later` invitation or password-reset email is never sent — silently,
+  # since the person was already told a link was on its way.
+  #
+  # Same host as the web role: this is one small instance, and the work is a
+  # handful of emails a year plus the nightly erasure sweep.
+  #
+  # Only the web container migrates (see bin/docker-entrypoint), so on the very
+  # first deploy this one can come up before Solid Queue's tables exist and
+  # restart until they do. That settles itself; it is not a failed deploy.
+  job:
+    hosts:
+      - <instance-ip>
+    cmd: ./bin/jobs
+    env:
+      clear:
+        # config/recurring.yml schedules the nightly purge at 4am; the app's
+        # own time zone is UTC, so this is what makes 4am mean 4am in São Paulo.
+        # Matches the backup accessory below.
+        TZ: America/Sao_Paulo
+
 # Kamal would otherwise connect as root, which Oracle Cloud's Ubuntu images
 # refuse: `kamal setup` dies on authentication before it does anything at all.
 ssh:
@@ -30,6 +51,14 @@ builder:
 env:
   clear:
     DB_HOST: maney-db
+    # The app's public address, which invitation and password-reset links are
+    # built from. Deliberately has no fallback in production.rb: a default
+    # would send perfectly deliverable mail carrying links to localhost, with
+    # nothing anywhere reporting a failure. Unset, the app refuses to boot.
+    MANEY_HOST: <domain>
+    # The sender address verified in Brevo. Both roles need these — the job
+    # container is what actually renders and sends the mail.
+    MANEY_MAIL_FROM: <verified brevo sender address>
   secret:
     - RAILS_MASTER_KEY
     - MANEY_DATABASE_PASSWORD

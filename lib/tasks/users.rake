@@ -33,19 +33,21 @@ namespace :users do
   end
 
   desc "Apaga em definitivo as contas excluídas há mais de 30 dias. " \
-       "Roda toda noite; não há como desfazer."
+       "Roda toda noite pelo Solid Queue; este comando é para rodar na mão. " \
+       "Não há como desfazer."
   task purge: :environment do
-    purged = User.purgeable.to_a
+    # The sweep itself lives in the job, so the scheduled run and this manual
+    # one cannot drift apart. This task is the operator-facing view of it.
+    outcomes = Users::PurgeDueAccountsJob.perform_now
 
-    purged.each do |user|
-      Users::Purge.new(user).call
-      puts "Conta apagada em definitivo: #{user.email_address}"
-    rescue => error
-      # One person's row failing to purge must not take the rest of the night's
-      # batch down with it — log and move on to the next purgeable account.
-      puts "Falha ao apagar #{user.email_address}: #{error.message}"
+    outcomes.each do |outcome|
+      if outcome.error
+        puts "Falha ao apagar #{outcome.email_address}: #{outcome.error.message}"
+      else
+        puts "Conta apagada em definitivo: #{outcome.email_address}"
+      end
     end
 
-    puts "Nada a apagar." if purged.empty?
+    puts "Nada a apagar." if outcomes.empty?
   end
 end

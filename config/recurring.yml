@@ -13,3 +13,11 @@ production:
   clear_solid_queue_finished_jobs:
     command: "SolidQueue::Job.clear_finished_in_batches(sleep_between_batches: 0.3)"
     schedule: every hour at minute 12
+
+  # The other end of account deletion: 30 days after someone deletes their
+  # account, everything of theirs is erased for good. Scheduled here rather
+  # than as a host cron line so it is version-controlled and deploys with the
+  # app. The job container sets TZ=America/Sao_Paulo, so this is 4am local.
+  purge_deleted_accounts:
+    class: Users::PurgeDueAccountsJob
+    schedule: every day at 4am

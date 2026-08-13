@@ -31,4 +31,21 @@ namespace :users do
 
     puts "Pronto: #{result.rows_attached} linhas atribuídas a #{result.user.email_address}."
   end
+
+  desc "Apaga em definitivo as contas excluídas há mais de 30 dias. " \
+       "Roda toda noite; não há como desfazer."
+  task purge: :environment do
+    purged = User.purgeable.to_a
+
+    purged.each do |user|
+      Users::Purge.new(user).call
+      puts "Conta apagada em definitivo: #{user.email_address}"
+    rescue => error
+      # One person's row failing to purge must not take the rest of the night's
+      # batch down with it — log and move on to the next purgeable account.
+      puts "Falha ao apagar #{user.email_address}: #{error.message}"
+    end
+
+    puts "Nada a apagar." if purged.empty?
+  end
 end

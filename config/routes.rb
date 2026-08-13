@@ -1,5 +1,17 @@
 Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
+  resources :passwords, param: :token, only: %i[new create edit update]
+  get "privacy", to: "privacy_policies#show"
+  get  "signup/:token", to: "signups#new", as: :signup
+  post "signup/:token", to: "signups#create"
+  resources :invitations, only: %i[create destroy] do
+    post :resend, on: :member
+  end
+  resource :account_deletion, only: %i[new create]
+  resource :restoration, only: %i[new create]
+  resources :people, only: %i[index destroy] do
+    resource :access, only: %i[create destroy], controller: "people/accesses"
+  end
   get "up" => "rails/health#show", as: :rails_health_check
 
   get "manifest" => "rails/pwa#manifest", as: :pwa_manifest

@@ -47,10 +47,20 @@ RSpec.describe OwnedByUser do
   # The guard that outlives this story: a table added later cannot join the
   # schema unscoped without failing here.
   describe "the schema" do
-    exempt = %w[users sessions schema_migrations ar_internal_metadata]
+    # `invitations` is exempt on purpose, not by oversight: an invitation exists
+    # before anyone owns it and belongs to the group rather than to a budget.
+    # Its `invited_by_id` is provenance and scopes nothing.
+    #
+    # `solid_queue_*` tables are exempt for the same reason as `sessions`:
+    # infrastructure the whole app shares, not budgeting data belonging to any
+    # one person. Solid Queue owns their schema (a migration copied verbatim
+    # from the gem, per its single-database install path) and its own models,
+    # neither of which this app's `OwnedByUser` convention should reach into.
+    exempt = %w[users sessions invitations schema_migrations ar_internal_metadata]
 
     it "requires a person on every table that holds budgeting data" do
       tables = ActiveRecord::Base.connection.tables - exempt
+      tables = tables.reject { |table| table.start_with?("solid_queue_") }
 
       tables.each do |table|
         column = ActiveRecord::Base.connection.columns(table).find { |c| c.name == "user_id" }
@@ -61,6 +71,7 @@ RSpec.describe OwnedByUser do
 
     it "scopes every model backed by one of those tables" do
       tables = ActiveRecord::Base.connection.tables - exempt
+      tables = tables.reject { |table| table.start_with?("solid_queue_") }
       Rails.application.eager_load!
 
       ActiveRecord::Base.descendants.select { |model| tables.include?(model.table_name) }.each do |model|

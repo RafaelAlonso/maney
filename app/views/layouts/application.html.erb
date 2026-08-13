@@ -35,11 +35,19 @@
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
-    <%= javascript_importmap_tags %>
+    <%# The import map pins scoped package names ("@hotwired/turbo-rails", ...),
+        so it puts a literal "@" in every response that includes it. The
+        invalid-link screen (SignupsController) must reveal nothing about whose
+        invitation it was, so it sets @omit_importmap_tags to keep that "@" out
+        of its body — everything else here still applies to it. %>
+    <%= javascript_importmap_tags unless @omit_importmap_tags %>
   </head>
 
   <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">
-    <% if authenticated? && Setting.instance %>
+    <%# A deleted-but-restorable person is held on the restore screen by
+        `require_active_account` — every one of these links bounces them
+        straight back, so the nav is dead weight rather than navigation. %>
+    <% if authenticated? && Setting.instance && !Current.user.deleted? %>
       <%# `shrink-0` + `whitespace-nowrap` are what make `overflow-x-auto` work.
           Flex items shrink below their content by default, so on a 360 px phone
           the nav silently squeezed the last items instead of overflowing —
@@ -60,6 +68,6 @@
     <% if notice %><p class="bg-emerald-50 text-emerald-800 px-4 py-2 text-sm"><%= notice %></p><% end %>
     <% if alert %><p class="bg-red-50 text-red-800 px-4 py-2 text-sm"><%= alert %></p><% end %>
     <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
-    <%= render "shared/fab" if authenticated? && Setting.instance %>
+    <%= render "shared/fab" if authenticated? && Setting.instance && !Current.user.deleted? %>
   </body>
 </html>

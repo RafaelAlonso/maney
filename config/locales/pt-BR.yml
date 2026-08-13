@@ -57,6 +57,7 @@ pt-BR:
       even: "deve ser par"
       taken: "já está em uso"
       required: "é obrigatório"
+      accepted: "precisa ser aceito"
 
   activemodel:
     errors:
@@ -99,6 +100,7 @@ pt-BR:
       installment_purchase: "Compra parcelada"
       setting: "Configuração"
       user: "Pessoa"
+      invitation: "Convite"
     attributes:
       card:
         name: "Nome"
@@ -148,3 +150,5 @@ pt-BR:
       user:
         email_address: "E-mail"
         password: "Senha"
+        password_confirmation: "Confirmação de senha"
+        consent: "Consentimento"

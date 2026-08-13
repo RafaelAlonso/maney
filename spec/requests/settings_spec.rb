@@ -60,4 +60,21 @@ RSpec.describe "Settings", type: :request do
     expect(response).to have_http_status(:unprocessable_entity)
     expect(Setting.instance.alert_threshold_percent).to eq(80)
   end
+
+  # Finding 1: the admin has no way to lose the account that invites, so the
+  # link to a path that would try is hidden — the link and the guard behind
+  # it (see account_deletions_spec) have to agree.
+  it "hides the deletion link for the admin but shows it for a member" do
+    get edit_settings_path
+    expect(response.body).not_to include(new_account_deletion_path)
+
+    irma = create_user!(email_address: "irma@example.com")
+    sign_out_request
+    sign_in(irma)
+    authenticate_request
+    as(irma) { create_setting!; create_reserved_categories! }
+
+    get edit_settings_path
+    expect(response.body).to include(new_account_deletion_path)
+  end
 end

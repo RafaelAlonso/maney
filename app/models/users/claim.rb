@@ -61,7 +61,11 @@ module Users
         # accidentally-created account being folded into the migration, not a
         # second person, so its email and password are left exactly as they
         # are.
-        user ||= User.create!(email_address: @email_address, password: @password)
+        user ||= User.create!(email_address: @email_address, password: @password, admin: true)
+        # The adoption path creates nobody, so the admin flag has to be set
+        # here too — otherwise the recovery route out of "I made an account
+        # before running the task" produces a group with no inviter.
+        user.update!(admin: true) unless user.admin?
         attached = TABLES.sum { |table| attach(table, user) }
         verify!(before)
         Result.new(user:, rows_attached: attached)

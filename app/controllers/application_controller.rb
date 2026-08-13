@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
   # Changes to the importmap will invalidate the etag for HTML responses
   stale_when_importmap_changes
 
+  before_action :require_active_account
   before_action :require_setup
   before_action :canonicalize_month
   helper_method :current_month, :month_param, :default_entry_date
@@ -22,12 +23,74 @@ class ApplicationController < ActionController::Base
 
   private
 
+  # Someone whose access was cut while they were signed in on a phone still
+  # holds a valid session cookie. Revocation has to bite on their next action,
+  # not on their next sign-in, or "revoked" would mean nothing until they
+  # happened to sign out.
+  #
+  # This is also where every session the person holds gets closed out, not
+  # just the one making this request — `People::AccessesController#destroy`
+  # deliberately leaves sessions alone (see its comment) so that this filter,
+  # not the destroy action, is what the revoked person's cookie actually runs
+  # into.
+  #
+  # Note for whoever reads the "mid-session" spec: its `sessions.count == 0`
+  # assertion is partly test-plumbing churn, not proof of multiple real
+  # devices — the spec helpers (`sign_in` + `authenticate_request`, `as`) each
+  # create their own `Session` row, and only one of those is ever cookie-bound.
+  # `destroy_all` clearing all of them doesn't mean several real devices were
+  # closed; it means this filter reaches every session row the person owns,
+  # cookie-bound or not.
+  #
+  def require_active_account
+    return if Current.user.nil?
+
+    if Current.user.access_revoked?
+      terminate_session
+      Current.user.sessions.destroy_all
+      return redirect_to new_session_path, alert: "Seu acesso ao Maney foi encerrado."
+    end
+
+    # A deleted account reaches the restore screen and nothing else. The purge
+    # is a nightly task, so a session that outlived the 30 days is possible;
+    # treat it as gone rather than restorable.
+    return unless Current.user.deleted?
+
+    if Current.user.purge_due?
+      # No `sessions.destroy_all` here, unlike the revoked branch above: by
+      # the time an account is purge-due, `delete_account!` already destroyed
+      # every session it had at the moment of deletion. Any session found
+      # here was created after that (e.g. by signing back in past day 30, an
+      # edge SessionsController's own `purge_due?` check already closes off)
+      # and this branch terminates it on its own next request regardless —
+      # there is never a second session left over to clean up.
+      terminate_session
+      redirect_to new_session_path, alert: "Email ou senha inválidos."
+    else
+      redirect_to restoration_target
+    end
+  end
+
+  # Where a deleted-but-restorable person is sent — whether caught here on any
+  # authenticated request, or immediately after signing back in in
+  # `SessionsController#create`. Both sites have to agree on the same
+  # destination, so this is the one place that names it.
+  def restoration_target = new_restoration_path
+
   def require_setup
     redirect_to setup_path if Setting.instance.nil?
   end
 
   def record_not_found
     redirect_to root_path, alert: "Este registro não existe mais."
+  end
+
+  # Rafael is the sole inviter by decision. This raises rather than rendering a
+  # forbidden page: AC 8 asks that no way to invite *exists* for anyone else,
+  # and a 403 is a way of existing. The existing RecordNotFound handler turns
+  # this into the app's ordinary "this record is gone" message.
+  def require_admin
+    raise ActiveRecord::RecordNotFound unless Current.user&.admin?
   end
 
   def current_month

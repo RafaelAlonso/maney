@@ -54,3 +54,7 @@ gem "capybara", "~> 3.40", group: :test
 gem "selenium-webdriver", "~> 4.46", group: :test
 
 gem "kamal", "~> 2.12", group: :development
+
+# Backs Active Job so a deliver_later invitation or password-reset email
+# survives a restart between enqueue and send.
+gem "solid_queue", "~> 1.6"

@@ -25,6 +25,16 @@
   --color-money-expense: var(--red-600);
   --color-money-near: var(--amber-500);
   --color-money-over: var(--red-700);
+
+  /* Shared chart palette — the dataviz skill's validated reference categorical
+     set (order is the CVD-safety mechanism; do not reorder). Validated with
+     scripts/validate_palette.js against this surface (#ffffff): lightness
+     band, chroma floor, CVD separation and normal-vision floor all PASS
+     (worst adjacent CVD ΔE 9.1, worst adjacent normal-vision ΔE 19.6). */
+  --chart-1: #2a78d6; --chart-2: #eb6834; --chart-3: #1baf7a; --chart-4: #eda100;
+  --chart-5: #e87ba4; --chart-6: #008300; --chart-7: #4a3aa7; --chart-8: #e34948;
+  --chart-positive: #0ca30c; --chart-negative: #d03b3b; --chart-average: #52514e;
+  --chart-grid: #e1e0d9; --chart-axis: #c3c2b7; --chart-label: #898781;
 }
 
 /* Dark role mapping — authored once, applied by BOTH the manual class and the
@@ -42,6 +52,16 @@
   --color-money-expense: var(--red-400);
   --color-money-near: var(--amber-400);
   --color-money-over: var(--red-400);
+
+  /* Shared chart palette — dark categorical set, same hue order as :root,
+     stepped for the dark surface (--ink-900, #131a22). Validated with
+     scripts/validate_palette.js --mode dark --surface "#131a22": lightness
+     band, chroma floor, CVD separation, normal-vision floor and contrast
+     all PASS (worst adjacent CVD ΔE 8.4, worst adjacent normal-vision ΔE 19.3). */
+  --chart-1: #3987e5; --chart-2: #d95926; --chart-3: #199e70; --chart-4: #c98500;
+  --chart-5: #d55181; --chart-6: #008300; --chart-7: #9085e9; --chart-8: #e66767;
+  --chart-positive: #34d399; --chart-negative: #fb7185; --chart-average: #94a3b8;
+  --chart-grid: #1f2937; --chart-axis: #334155; --chart-label: #94a3b8;
 }
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
@@ -56,6 +76,13 @@
     --color-money-expense: var(--red-400);
     --color-money-near: var(--amber-400);
     --color-money-over: var(--red-400);
+
+    /* Shared chart palette — dark categorical set (see :root.dark above for
+       the validator invocation and result; values must stay identical). */
+    --chart-1: #3987e5; --chart-2: #d95926; --chart-3: #199e70; --chart-4: #c98500;
+    --chart-5: #d55181; --chart-6: #008300; --chart-7: #9085e9; --chart-8: #e66767;
+    --chart-positive: #34d399; --chart-negative: #fb7185; --chart-average: #94a3b8;
+    --chart-grid: #1f2937; --chart-axis: #334155; --chart-label: #94a3b8;
   }
 }
 

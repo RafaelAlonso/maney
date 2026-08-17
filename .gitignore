@@ -41,3 +41,6 @@
 # RAILS_MASTER_KEY, so all of them stay out of git. Only the example is tracked.
 /.kamal/secrets*
 !/.kamal/secrets.example
+
+# Claude Code local workspace (settings, worktrees, scratch)
+.claude/

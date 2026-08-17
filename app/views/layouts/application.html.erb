@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR"<%= " class=\"#{theme_html_class}\"".html_safe unless theme_html_class.blank? %>>
   <head>
     <title><%= content_for(:title) || "Maney" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">

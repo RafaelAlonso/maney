@@ -47,6 +47,14 @@ module ApplicationHelper
     "#{count} #{count == 1 ? singular : plural}"
   end
 
+  # The manual theme override, read server-side so the correct theme is in the
+  # first byte we send (and in the service-worker-cached HTML) — no pre-paint
+  # script, no flash. An absent or unknown cookie means "follow the device",
+  # which CSS handles via prefers-color-scheme, so no class is stamped.
+  def theme_html_class
+    %w[dark light].include?(cookies[:theme]) ? cookies[:theme] : ""
+  end
+
   # Single source for the payment-method labels — used by the expense form
   # (radios) and the expense row (`expenses/_row`, reused by categories#show).
   # Repeating this hash in every view is how Task 6 found the original form: the

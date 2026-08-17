@@ -11,8 +11,8 @@ RSpec.describe "PWA", type: :request do
       expect(manifest["display"]).to eq "standalone"
       expect(manifest["start_url"]).to eq "/"
       expect(manifest["scope"]).to eq "/"
-      expect(manifest["theme_color"]).to eq "#059669"
-      expect(manifest["background_color"]).to eq "#f9fafb"
+      expect(manifest["theme_color"]).to eq "#0b0f14"
+      expect(manifest["background_color"]).to eq "#0b0f14"
     end
 
     it "offers every icon size an installer needs, including a maskable one (AC 1, 3)" do

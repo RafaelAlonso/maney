@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 460">
+  <!-- "maney" wordmark drawn as stroked geometric letterforms (no external fonts), plus mint accent dot. -->
+  <g fill="none" stroke="#0b0f14" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <!-- m -->
+    <path d="M40,300 L40,140 Q85,90 130,140 L130,300 M130,140 Q175,90 220,140 L220,300"/>
+    <!-- a -->
+    <circle cx="305" cy="235" r="55"/>
+    <path d="M360,180 L360,300"/>
+    <!-- n -->
+    <path d="M390,300 L390,140 Q435,90 480,140 L480,300"/>
+    <!-- e -->
+    <circle cx="565" cy="235" r="55"/>
+    <path d="M510,235 L620,235"/>
+    <!-- y -->
+    <path d="M650,140 L705,260 M760,140 L705,260 L675,410"/>
+  </g>
+  <circle cx="800" cy="300" r="26" fill="#34d399"/>
+</svg>

@@ -94,4 +94,10 @@
   .field-label { @apply block text-sm text-muted mb-1; }
   .field-input { @apply w-full rounded border border-border bg-surface text-text px-3 py-2 text-sm; }
   .field-error { @apply block text-xs text-money-expense mt-1; }
+  .progress { @apply h-2 w-full rounded-full bg-border overflow-hidden; }
+  .progress-fill { @apply h-full rounded-full; }
+  .progress-neutral  { @apply bg-muted; }
+  .progress-on_track { @apply bg-money-positive; }
+  .progress-near     { @apply bg-money-near; }
+  .progress-over     { @apply bg-money-over; }
 }

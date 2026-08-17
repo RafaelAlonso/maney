@@ -1,0 +1,7 @@
+<%# app/views/shared/_budget_bar.html.erb — locals: spent_cents, budgeted_cents %>
+<% bar = BudgetBar.new(spent_cents:, budgeted_cents:,
+      threshold_percent: Setting.instance&.alert_threshold_percent || 80) %>
+<div class="progress" role="img"
+     aria-label="<%= brl(spent_cents) %> de <%= brl(budgeted_cents) %>">
+  <div class="progress-fill progress-<%= bar.state %>" style="width: <%= bar.fill_percent %>%"></div>
+</div>

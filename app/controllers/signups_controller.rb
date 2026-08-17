@@ -2,6 +2,12 @@ class SignupsController < ApplicationController
   # Opened by someone with no account and no Setting: both of the app's usual
   # gates have to stand aside.
   allow_unauthenticated_access
+  # `create` opens a session (`start_new_session_for`), so `Current.user` is set
+  # for the rest of that request. Opt out explicitly rather than leaning on the
+  # gate's `Current.user.nil?` shortcut: the account it just made is active, but
+  # the exemption should be a stated fact of this controller, not a side effect
+  # of when the session happens to be resumed.
+  skip_before_action :require_active_account
   skip_before_action :require_setup
 
   before_action :load_invitation

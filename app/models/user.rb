@@ -32,15 +32,28 @@ class User < ApplicationRecord
   # nightly task picks up.
   scope :purgeable, -> { where.not(deleted_at: nil).where(deleted_at: ..DELETION_GRACE.ago) }
 
+  # Reachable account: the row exists *and* the person can still use it. Deleted
+  # (restorable or purge-due) and access-revoked rows survive in the table but
+  # answer `false` here, so sign-in, password reset and the invite guard can all
+  # ask one question instead of re-deriving "is this account really gone?".
+  scope :active, -> { where(deleted_at: nil, access_revoked_at: nil) }
+
   def access_revoked? = access_revoked_at.present?
   def deleted? = deleted_at.present?
+  def active? = !deleted? && !access_revoked?
   def restorable? = deleted? && deleted_at > DELETION_GRACE.ago
   def purge_due? = deleted? && !restorable?
 
+  # Rounded *up*, so an account with any grace left never reads "0 dias": while
+  # `restorable?` is true the remaining time is > 0, so `ceil` lands on at least
+  # 1. (A day-count via `to_date` truncated that last partial day to 0 and told
+  # a still-restorable person they were already erased.) Only the restore screen
+  # reads this, and only for restorable accounts, so the purge-due case where
+  # this goes to 0 or negative never renders.
   def days_until_erasure
     return 0 unless deleted?
 
-    ((deleted_at + DELETION_GRACE).to_date - Date.current).to_i
+    ((deleted_at + DELETION_GRACE - Time.current) / 1.day).ceil
   end
 
   # Signing out every device at once is half of what deletion means: the app has

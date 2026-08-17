@@ -42,6 +42,32 @@ RSpec.describe "Password recovery", type: :request do
     }.not_to change { ActionMailer::Base.deliveries.size }
   end
 
+  # A revoked or deleted account is treated like an address with no account:
+  # the row survives, but it is not one the app will help back in.
+  it "sends nothing to an account whose access was revoked" do
+    current_user.update!(access_revoked_at: Time.current)
+
+    expect {
+      post passwords_path, params: { email_address: current_user.email_address }
+    }.not_to change { ActionMailer::Base.deliveries.size }
+  end
+
+  # A link mailed while the account was still active must not let the password
+  # be changed once the account has since been deleted — the token is still
+  # cryptographically valid (the salt is untouched), so only the active-account
+  # check stands between it and a mutation of a row that is on its way out.
+  it "refuses to complete a reset for an account deleted after the link was issued" do
+    token = current_user.generate_token_for(:password_reset)
+    current_user.update!(deleted_at: Time.current)
+
+    get edit_password_path(token)
+    expect(response).to redirect_to(new_password_path)
+
+    put password_path(token), params: { user: { password: "nova-senha-longa",
+                                                password_confirmation: "nova-senha-longa" } }
+    expect(response).to redirect_to(new_password_path)
+  end
+
   it "refuses an expired link" do
     token = current_user.generate_token_for(:password_reset)
 

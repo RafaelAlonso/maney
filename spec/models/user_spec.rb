@@ -24,6 +24,15 @@ RSpec.describe User do
     expect(current_user.days_until_erasure).to eq(30)
   end
 
+  # Regression: a day-count via `to_date` truncated the final partial day to 0
+  # and told a still-restorable account it was already "apagado em definitivo".
+  it "never reads 0 days while the account is still restorable" do
+    current_user.update!(deleted_at: (User::DELETION_GRACE - 1.hour).ago)
+
+    expect(current_user).to be_restorable
+    expect(current_user.days_until_erasure).to eq(1)
+  end
+
   it "lists only accounts past the grace period as purgeable" do
     inside = create_user!(email_address: "dentro@example.com")
     inside.update!(deleted_at: 29.days.ago)

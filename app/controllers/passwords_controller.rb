@@ -14,7 +14,7 @@ class PasswordsController < ApplicationController
   # the same status, whether or not that address has an account. Anything else
   # turns this form into a way of asking who is in the group.
   def create
-    user = User.find_by(email_address: params[:email_address].to_s.strip.downcase)
+    user = User.active.find_by(email_address: params[:email_address].to_s.strip.downcase)
     PasswordsMailer.reset(user).deliver_later if user
 
     redirect_to new_session_path,
@@ -34,8 +34,12 @@ class PasswordsController < ApplicationController
 
   private
 
+  # An inactive account is treated exactly like a bad token: a reset link that
+  # was issued while the account was still active, then followed after it was
+  # deleted or revoked, must not let the password be changed on a row the rest
+  # of the app already treats as gone.
   def load_user
     @user = User.find_by_token_for(:password_reset, params[:token])
-    redirect_to new_password_path, alert: "Peça um novo link." unless @user
+    redirect_to new_password_path, alert: "Peça um novo link." unless @user&.active?
   end
 end

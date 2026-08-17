@@ -76,7 +76,17 @@ Rails.application.configure do
   # fallback, deliberately: mail still sends successfully against a missing
   # env var, with every link pointing at an unreachable "https://localhost/…"
   # and nothing anywhere to say so. Fail loud at boot instead.
-  config.action_mailer.default_url_options = { host: ENV.fetch("MANEY_HOST"), protocol: "https" }
+  #
+  # The one exception is the image build: `assets:precompile` boots production
+  # inside `docker build`, where Kamal's env never reaches (it is passed to
+  # `docker run` only). SECRET_KEY_BASE_DUMMY marks that boot — Rails already
+  # uses it to stand in for the missing secret — so a throwaway host there
+  # keeps the deploy from dying before any container starts, while a real boot
+  # still refuses to come up without the variable.
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch("MANEY_HOST") { ENV["SECRET_KEY_BASE_DUMMY"] ? "example.com" : raise(KeyError, "MANEY_HOST is required in production") },
+    protocol: "https"
+  }
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).

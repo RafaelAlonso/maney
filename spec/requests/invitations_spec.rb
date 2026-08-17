@@ -44,6 +44,25 @@ RSpec.describe "Invitations", type: :request do
     expect(Invitation.count).to eq(1)
   end
 
+  # Neither route makes sense once the invitation has been accepted: resending
+  # would mail a fresh-but-dead link (redeemable? is already false), and
+  # cancelling would stamp a door someone has walked through. No UI offers
+  # either, but a direct POST/DELETE must be refused, not honoured.
+  it "refuses to resend or cancel an invitation that has already been accepted" do
+    invitation, _token = Invitation.issue(email_address: "irma@example.com", invited_by: current_user)
+    invitation.update!(accepted_at: Time.current)
+
+    expect {
+      post resend_invitation_path(invitation)
+    }.not_to have_enqueued_job(Invitations::DeliveryJob)
+    expect(response).to redirect_to(people_path)
+    expect(flash[:alert]).to eq("Esse convite já não está pendente.")
+
+    delete invitation_path(invitation)
+    expect(response).to redirect_to(people_path)
+    expect(invitation.reload.cancelled_at).to be_nil
+  end
+
   it "refuses an address that already has an account" do
     create_user!(email_address: "irma@example.com")
 
@@ -53,6 +72,19 @@ RSpec.describe "Invitations", type: :request do
 
     follow_redirect!
     expect(response.body).to include("Essa pessoa já faz parte do grupo.")
+  end
+
+  # The address is still blocked (the account row squats on the unique email),
+  # but the copy must not claim a revoked/deleted person "já faz parte do grupo".
+  it "tells the truth when the address belongs to an account that is no longer active" do
+    create_user!(email_address: "irma@example.com").update!(access_revoked_at: Time.current)
+
+    expect {
+      post invitations_path, params: { invitation: { email_address: "irma@example.com" } }
+    }.not_to change(Invitation, :count)
+
+    follow_redirect!
+    expect(response.body).to include("Esse email está vinculado a uma conta encerrada")
   end
 
   # Edge case from the story: two invitations to the same address.

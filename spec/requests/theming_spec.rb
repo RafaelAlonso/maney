@@ -25,4 +25,9 @@ RSpec.describe "Theme class on <html>", type: :request do
     get root_path
     expect(response.body).to include('<html lang="pt-BR">')
   end
+
+  it "renders the body on design-system tokens" do
+    get root_path
+    expect(response.body).to include('class="min-h-screen bg-bg text-text pb-24"')
+  end
 end

@@ -16,7 +16,8 @@
     <%= yield :head %>
 
     <%= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-    <meta name="theme-color" content="#059669">
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)">
     <%# Offline, a restored snapshot would present old totals as current — the one
         failure this app cannot afford. Without a snapshot, a back-navigation makes
         a real request, which fails and lands on the no-connection screen. %>
@@ -43,7 +44,7 @@
     <%= javascript_importmap_tags unless @omit_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-gray-50 text-gray-900 pb-24">
+  <body class="min-h-screen bg-bg text-text pb-24">
     <%# A deleted-but-restorable person is held on the restore screen by
         `require_active_account` — every one of these links bounces them
         straight back, so the nav is dead weight rather than navigation. %>
@@ -55,7 +56,7 @@
           scrollWidth === clientWidth there was no gesture left to reach it.
           Configurações is the only route to the alert threshold, the initial
           balance and the first month, so that made them unreachable. %>
-      <nav class="flex gap-4 px-4 py-3 border-b bg-white text-sm overflow-x-auto whitespace-nowrap">
+      <nav class="flex gap-4 px-4 py-3 border-b border-border bg-surface text-sm overflow-x-auto whitespace-nowrap">
         <%= link_to "Início", root_path, class: "shrink-0" %>
         <%= link_to "Gastos", expenses_path, class: "shrink-0" %>
         <%= link_to "Ganhos", incomes_path, class: "shrink-0" %>

@@ -1,1 +1,83 @@
+/* app/assets/tailwind/application.css */
 @import "tailwindcss";
+
+/* Manual-toggle dark variant: `dark:` utilities key off <html class="dark">,
+   not prefers-color-scheme, because the override is a class the server stamps. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Raw palette — each value defined exactly once. */
+  --mint-400: #34d399; --mint-500: #10b981; --mint-600: #059669;
+  --red-400: #fb7185;  --red-500: #f43f5e;  --red-600: #e11d48; --red-700: #be123c;
+  --amber-400: #fbbf24; --amber-500: #f59e0b; --amber-700: #b45309;
+  --neutral-0: #ffffff; --neutral-50: #f8fafc; --neutral-200: #e2e8f0;
+  --neutral-400: #94a3b8; --neutral-500: #64748b; --neutral-900: #0f172a;
+  --ink-950: #0b0f14; --ink-900: #131a22; --ink-800: #1f2937;
+
+  /* Semantic ROLES — light mapping (default). */
+  --color-bg: var(--neutral-50);
+  --color-surface: var(--neutral-0);
+  --color-text: var(--neutral-900);
+  --color-muted: var(--neutral-500);
+  --color-border: var(--neutral-200);
+  --color-accent: var(--mint-600);
+  --color-money-positive: var(--mint-600);
+  --color-money-expense: var(--red-600);
+  --color-money-near: var(--amber-500);
+  --color-money-over: var(--red-700);
+}
+
+/* Dark role mapping — authored once, applied by BOTH the manual class and the
+   device-follow media query. Only the role→raw mapping repeats; raw hex lives
+   once on :root above. */
+:root.dark {
+  color-scheme: dark;
+  --color-bg: var(--ink-950);
+  --color-surface: var(--ink-900);
+  --color-text: #e5e7eb;
+  --color-muted: var(--neutral-400);
+  --color-border: var(--ink-800);
+  --color-accent: var(--mint-400);
+  --color-money-positive: var(--mint-400);
+  --color-money-expense: var(--red-400);
+  --color-money-near: var(--amber-400);
+  --color-money-over: var(--red-400);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --color-bg: var(--ink-950);
+    --color-surface: var(--ink-900);
+    --color-text: #e5e7eb;
+    --color-muted: var(--neutral-400);
+    --color-border: var(--ink-800);
+    --color-accent: var(--mint-400);
+    --color-money-positive: var(--mint-400);
+    --color-money-expense: var(--red-400);
+    --color-money-near: var(--amber-400);
+    --color-money-over: var(--red-400);
+  }
+}
+
+/* Re-expose the roles as theme-following utilities (bg-surface, text-money-over,
+   border-border, …). `inline` makes each utility emit `var(--color-*)` so it
+   tracks the active theme instead of resolving at build time. */
+@theme inline {
+  --color-bg: var(--color-bg);
+  --color-surface: var(--color-surface);
+  --color-text: var(--color-text);
+  --color-muted: var(--color-muted);
+  --color-border: var(--color-border);
+  --color-accent: var(--color-accent);
+  --color-money-positive: var(--color-money-positive);
+  --color-money-expense: var(--color-money-expense);
+  --color-money-near: var(--color-money-near);
+  --color-money-over: var(--color-money-over);
+}
+
+/* Radius / shadow scale (type + spacing inherit Tailwind's defaults, which the
+   design keeps). */
+@theme {
+  --radius-card: 0.75rem;
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
+}

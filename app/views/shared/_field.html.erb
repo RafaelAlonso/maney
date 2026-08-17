@@ -1,0 +1,10 @@
+<%# app/views/shared/_field.html.erb
+    locals: label, name; optional: value, type, inputmode, error, id %>
+<% field_id = local_assigns.fetch(:id, name) %>
+<label class="field-label" for="<%= field_id %>"><%= label %></label>
+<%= tag.input class: "field-input", id: field_id, name: name,
+      type: local_assigns.fetch(:type, "text"), value: local_assigns[:value],
+      inputmode: local_assigns[:inputmode] %>
+<% if local_assigns[:error].present? %>
+  <span class="field-error"><%= error %></span>
+<% end %>

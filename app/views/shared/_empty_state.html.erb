@@ -1,0 +1,5 @@
+<%# app/views/shared/_empty_state.html.erb — locals: message; optional: icon %>
+<div class="empty-state">
+  <% if local_assigns[:icon].present? %><span aria-hidden="true" class="text-2xl"><%= icon %></span><% end %>
+  <p><%= message %></p>
+</div>

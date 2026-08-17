@@ -100,4 +100,5 @@
   .progress-on_track { @apply bg-money-positive; }
   .progress-near     { @apply bg-money-near; }
   .progress-over     { @apply bg-money-over; }
+  .empty-state { @apply flex flex-col items-center justify-center text-center text-sm text-muted py-10 gap-2; }
 }

@@ -8,10 +8,10 @@
     every panel on the analysis and category screens. It was written out four
     times before this partial existed, which is how a card style starts to drift.
     Rendered as a layout, so each caller supplies its own body. %>
-<section class="bg-white rounded border p-4 mb-4" <%= tag.attributes(local_assigns.fetch(:attributes, {})) %>>
-  <%= tag.h2 title, id: local_assigns[:heading_id], class: "font-medium text-sm mb-3" %>
+<section class="card" <%= tag.attributes(local_assigns.fetch(:attributes, {})) %>>
+  <%= tag.h2 title, id: local_assigns[:heading_id], class: "font-medium text-sm mb-3 text-text" %>
   <% if local_assigns[:note].present? %>
-    <p class="-mt-2 mb-3 text-xs text-gray-500"><%= note %></p>
+    <p class="-mt-2 mb-3 text-xs text-muted"><%= note %></p>
   <% end %>
   <%= yield %>
 </section>

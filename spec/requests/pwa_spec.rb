@@ -32,7 +32,7 @@ RSpec.describe "PWA", type: :request do
 
       expect(response.body).to include('rel="manifest"')
       expect(response.body).to include('name="theme-color"')
-      expect(response.body).to include("#059669")
+      expect(response.body).to include("#0b0f14")
     end
 
     # Without this meta, iOS names the home-screen icon after <title>, which

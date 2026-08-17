@@ -1,0 +1,9 @@
+<%# app/views/shared/_button.html.erb
+    locals: label; optional: href, variant (:primary|:positive|:danger), data, class %>
+<% variant = local_assigns.fetch(:variant, :primary) %>
+<% classes = "btn btn-#{variant} #{local_assigns[:class]}".strip %>
+<% if local_assigns[:href] %>
+  <%= link_to label, href, class: classes, data: local_assigns.fetch(:data, {}) %>
+<% else %>
+  <%= tag.button label, type: "button", class: classes, data: local_assigns.fetch(:data, {}) %>
+<% end %>

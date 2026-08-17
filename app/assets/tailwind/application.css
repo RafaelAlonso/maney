@@ -86,4 +86,8 @@
   .flash { @apply px-4 py-2 text-sm; }
   .flash-success { @apply bg-money-positive/10 text-money-positive; }
   .flash-error   { @apply bg-money-expense/10 text-money-expense; }
+  .btn { @apply inline-flex items-center justify-center rounded-full px-4 py-2 text-sm font-medium; }
+  .btn-primary  { @apply bg-accent text-white; }
+  .btn-positive { @apply bg-money-positive text-white; }
+  .btn-danger   { @apply bg-money-expense text-white; }
 }

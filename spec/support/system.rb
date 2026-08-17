@@ -1,4 +1,23 @@
+# CDP + computed-color helpers for the theming spec (Task 3, AC1–3). Mirrors
+# how spec/support/authentication.rb includes AuthenticationHelpers — bare
+# top-level `def`s in a support file are not in example scope.
+module ThemingHelpers
+  def set_prefers_color_scheme(scheme)
+    page.driver.browser.execute_cdp("Emulation.setEmulatedMedia",
+      features: [ { name: "prefers-color-scheme", value: scheme.to_s } ])
+  end
+
+  def background_of(selector) = evaluate_script("getComputedStyle(document.querySelector('#{selector}')).backgroundColor")
+
+  def rgb(hex)
+    r, g, b = hex.delete_prefix("#").scan(/../).map { |p| p.to_i(16) }
+    "rgb(#{r}, #{g}, #{b})"
+  end
+end
+
 RSpec.configure do |config|
+  config.include ThemingHelpers, type: :system
+
   config.before(:each, type: :system) do
     driven_by :selenium, using: :headless_chrome, screen_size: [ 390, 844 ]
     # Signing in has to follow `driven_by` — there is no browser before it. The

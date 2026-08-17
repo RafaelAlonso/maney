@@ -66,8 +66,7 @@
         <%= link_to "Config", edit_settings_path, class: "shrink-0" %>
       </nav>
     <% end %>
-    <% if notice %><p class="bg-emerald-50 text-emerald-800 px-4 py-2 text-sm"><%= notice %></p><% end %>
-    <% if alert %><p class="bg-red-50 text-red-800 px-4 py-2 text-sm"><%= alert %></p><% end %>
+    <%= render "shared/flash", notice:, alert: %>
     <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
     <%= render "shared/fab" if authenticated? && Setting.instance && !Current.user.deleted? %>
   </body>

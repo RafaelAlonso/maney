@@ -1,11 +1,11 @@
 <%# app/views/home/_alert.html.erb — locals: alert %>
 <% case alert.level %>
 <% when :red %>
-  <div class="mt-4 rounded border border-red-200 bg-red-50 text-red-800 p-3 text-sm">
+  <div class="mt-4 rounded border border-money-over/30 bg-money-over/10 text-money-over p-3 text-sm">
     As faturas do próximo mês ultrapassam o saldo atual deste mês.
   </div>
 <% when :yellow %>
-  <div class="mt-4 rounded border border-amber-200 bg-amber-50 text-gray-900 p-3 text-sm">
+  <div class="mt-4 rounded border border-money-near/30 bg-money-near/10 text-text p-3 text-sm">
     As faturas do próximo mês se aproximam do saldo atual deste mês.
   </div>
 <% end %>

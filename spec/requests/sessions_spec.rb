@@ -139,4 +139,16 @@ RSpec.describe "Sessions", type: :request do
     expect(response.body).to include("btn btn-primary")
     expect(response.body).to include("field-input")
   end
+
+  it "renders the restoration screen in the design system (AC 5)" do
+    sign_in_as_member!
+    post account_deletion_path
+    post session_path, params: { email_address: current_user.email_address,
+                                 password: AuthenticationHelpers::PASSWORD }
+
+    get new_restoration_path
+
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("btn btn-secondary")
+  end
 end

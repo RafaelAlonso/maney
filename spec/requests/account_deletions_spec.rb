@@ -115,4 +115,13 @@ RSpec.describe "Account deletion", type: :request do
 
     expect(response.body).to include(new_account_deletion_path)
   end
+
+  it "renders the deletion screen in the design system (AC 5)" do
+    sign_in_as_member!
+
+    get new_account_deletion_path
+
+    expect(response.body).to include("btn btn-danger")
+    expect(response.body).not_to include("bg-red-50")
+  end
 end

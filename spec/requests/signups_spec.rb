@@ -96,6 +96,13 @@ RSpec.describe "Signups", type: :request do
     expect(response.body).not_to include("@")
   end
 
+  it "brands the invalid-invite screen without leaking the invitee" do
+    get signup_path(token: "nao-existe")
+
+    expect(response.body).to include("coin_m")
+    expect(response.body).not_to include("@")
+  end
+
   it "is reachable while signed out and before any setup exists" do
     invitation
     sign_out_request

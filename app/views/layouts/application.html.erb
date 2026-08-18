@@ -66,6 +66,8 @@
         <%= link_to "Config", edit_settings_path, class: "shrink-0" %>
         <%= render "shared/theme_toggle" %>
       </nav>
+    <% else %>
+      <%= render "shared/auth_header" %>
     <% end %>
     <%= render "shared/flash", notice:, alert: %>
     <main class="p-4 max-w-xl mx-auto"><%= yield %></main>

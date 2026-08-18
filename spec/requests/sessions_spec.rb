@@ -114,4 +114,20 @@ RSpec.describe "Sessions", type: :request do
     expect(response.body).not_to include("Categorias")
     expect(response.body).not_to include("Lançar")
   end
+
+  it "shows the brand lockup on the signed-out sign-in screen" do
+    sign_out_request
+
+    get new_session_path
+
+    expect(response.body).to include("coin_m")
+    expect(response.body).to include("maney")
+  end
+
+  it "shows no brand lockup once the app nav is present" do
+    get root_path
+
+    expect(response.body).not_to include("coin_m")
+    expect(response.body).to include("Categorias")
+  end
 end

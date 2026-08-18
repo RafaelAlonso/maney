@@ -31,4 +31,11 @@ RSpec.describe "Privacy policy", type: :request do
 
     expect(response.body).to include(privacy_path)
   end
+
+  it "renders the privacy page in the design system (AC 7)" do
+    get privacy_path
+
+    expect(response.body).to include("text-text")
+    expect(response.body).not_to include("text-gray-700")
+  end
 end

@@ -88,4 +88,11 @@ RSpec.describe "People", type: :request do
     get edit_settings_path
     expect(response.body).not_to include(people_path)
   end
+
+  it "renders the people list in the design system (AC 6)" do
+    get people_path
+
+    expect(response.body).to include("btn btn-primary")   # convidar
+    expect(response.body).to include("field-input")       # invite email
+  end
 end

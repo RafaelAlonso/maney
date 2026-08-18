@@ -77,4 +77,12 @@ RSpec.describe "Settings", type: :request do
     get edit_settings_path
     expect(response.body).to include(new_account_deletion_path)
   end
+
+  it "renders the settings form in the design system (AC 6)" do
+    get edit_settings_path
+
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("field-input")
+    expect(response.body).not_to include("bg-blue-600")
+  end
 end

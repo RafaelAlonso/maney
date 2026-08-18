@@ -1,3 +1,6 @@
-<p>Você pediu para redefinir sua senha do Maney.</p>
-<p><%= link_to "Escolher uma nova senha", @url %></p>
-<p>Este link vale por 15 minutos. Se não foi você, ignore este email.</p>
+<p style="margin:0 0 16px;">Você pediu para redefinir sua senha do Maney.</p>
+<p style="margin:0 0 24px;">
+  <%= link_to "Escolher uma nova senha", @url,
+        style: "display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:9999px;font-weight:600;" %>
+</p>
+<p style="margin:0;color:#64748b;font-size:13px;">Este link vale por 15 minutos. Se não foi você, ignore este email.</p>

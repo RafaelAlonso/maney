@@ -111,4 +111,12 @@ RSpec.describe "Signups", type: :request do
 
     expect(response).to have_http_status(:ok)
   end
+
+  it "renders the signup form in the design system (AC 2)" do
+    get signup_path(token: token)
+
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("field-input")
+    expect(response.body).not_to include("bg-blue-600")
+  end
 end

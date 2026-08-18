@@ -106,4 +106,10 @@ RSpec.describe "Password recovery", type: :request do
     follow_redirect!
     expect(response.body).to include("Confirmação de senha não corresponde a Senha")
   end
+
+  it "renders the reset-request form in the design system (AC 3)" do
+    get new_password_path
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("field-input")
+  end
 end

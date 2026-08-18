@@ -130,4 +130,13 @@ RSpec.describe "Sessions", type: :request do
     expect(response.body).not_to include("coin_m")
     expect(response.body).to include("Categorias")
   end
+
+  it "renders the sign-in form in the design system (AC 1)" do
+    sign_out_request
+
+    get new_session_path
+
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("field-input")
+  end
 end

@@ -1,11 +1,11 @@
 <%# app/views/passwords/new.html.erb %>
-<h1 class="text-lg font-semibold mb-4">Esqueci minha senha</h1>
+<h1 class="text-lg font-semibold mb-4 text-text">Esqueci minha senha</h1>
 
 <%= form_with url: passwords_path, class: "space-y-4" do |f| %>
   <div>
-    <%= f.label :email_address, "E-mail", class: "block text-sm mb-1" %>
+    <%= f.label :email_address, "E-mail", class: "field-label" %>
     <%= f.email_field :email_address, required: true, autofocus: true, autocomplete: "username",
-          class: "border rounded p-2 w-full" %>
+          class: "field-input" %>
   </div>
-  <%= f.submit "enviar link", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+  <%= f.submit "enviar link", class: "btn btn-primary" %>
 <% end %>

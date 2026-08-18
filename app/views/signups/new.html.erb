@@ -1,29 +1,29 @@
 <%# app/views/signups/new.html.erb %>
-<h1 class="text-lg font-semibold mb-2">Criar sua conta</h1>
-<p class="text-sm text-gray-600 mb-4"><%= @invitation.email_address %></p>
+<h1 class="text-lg font-semibold mb-2 text-text">Criar sua conta</h1>
+<p class="text-sm text-muted mb-4"><%= @invitation.email_address %></p>
 
 <%= form_with url: signup_path(token: params[:token]), scope: :user, class: "space-y-4" do |f| %>
   <%= render "shared/errors", model: @user %>
 
-  <div class="border rounded p-3 max-h-64 overflow-y-auto bg-white">
+  <div class="border border-border rounded p-3 max-h-64 overflow-y-auto bg-surface">
     <%= render "privacy_policies/policy" %>
   </div>
 
-  <label class="flex items-start gap-2 text-sm">
+  <label class="flex items-start gap-2 text-sm text-text">
     <%= f.check_box :consent, class: "mt-1" %>
     <span>Li e aceito a política de privacidade.</span>
   </label>
 
   <div>
-    <%= f.label :password, "Senha", class: "block text-sm mb-1" %>
+    <%= f.label :password, "Senha", class: "field-label" %>
     <%= f.password_field :password, required: true, autocomplete: "new-password",
-          maxlength: 72, class: "border rounded p-2 w-full" %>
+          maxlength: 72, class: "field-input" %>
   </div>
   <div>
-    <%= f.label :password_confirmation, "Repita a senha", class: "block text-sm mb-1" %>
+    <%= f.label :password_confirmation, "Repita a senha", class: "field-label" %>
     <%= f.password_field :password_confirmation, required: true, autocomplete: "new-password",
-          maxlength: 72, class: "border rounded p-2 w-full" %>
+          maxlength: 72, class: "field-input" %>
   </div>
 
-  <%= f.submit "criar conta", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+  <%= f.submit "criar conta", class: "btn btn-primary" %>
 <% end %>

@@ -88,4 +88,13 @@ RSpec.describe "Setup", type: :request do
     expect(theirs.where(role: "credit_card").pluck(:name)).to eq([ "cartão de crédito" ])
     expect(theirs.where(role: "others").pluck(:id)).not_to eq(mine)
   end
+
+  it "renders the setup form in the design system (AC 4)" do
+    Setting.instance&.destroy
+
+    get setup_path
+
+    expect(response.body).to include("btn btn-primary")
+    expect(response.body).to include("field-input")
+  end
 end

@@ -9,10 +9,10 @@
 <%= form_with url: analysis_path, method: :get, class: "flex items-center justify-center gap-2 mb-4" do |form| %>
   <%= form.select :card_id, cards.map { |c| [ c.name, c.id ] },
         { include_blank: "Todos os cartões", selected: card&.id },
-        class: "border rounded px-3 py-2 text-base bg-white",
+        class: "rounded border border-border bg-surface text-text px-3 py-2 text-sm",
         data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
   <%= form.select :year, years, { selected: year },
-        class: "border rounded px-3 py-2 text-base bg-white",
+        class: "rounded border border-border bg-surface text-text px-3 py-2 text-sm",
         data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
   <%= form.submit "Ver", class: "hidden" %>
 <% end %>

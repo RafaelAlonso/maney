@@ -24,6 +24,7 @@ RSpec.describe Analysis::SpendingChart do
     expect(bars[:type]).to eq "bar"
     expect(bars[:data][2]).to eq 50.0
     expect(bars[:data][3]).to eq 25.5
+    expect(config[:data][:datasets].first[:backgroundColor]).to eq "var(--chart-1)"
   end
 
   it "leaves months outside the timeline as gaps, not zero bars (AC 9, AC 10)" do

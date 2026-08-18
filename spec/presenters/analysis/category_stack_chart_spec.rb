@@ -56,6 +56,8 @@ RSpec.describe Analysis::CategoryStackChart do
 
     colors_2026 = config[:data][:datasets].to_h { |d| [ d[:label], d[:backgroundColor] ] }
 
+    expect(colors_2026.values).to all(match(/\Avar\(--chart-\d\)\z/))
+
     # "loja" sorts right after "lazer" (and before "mercado") in
     # Category.order(:name), so its arrival shifts mercado's palette slot
     # without touching lazer's — proving the palette recomputes live from the

@@ -54,13 +54,55 @@ export default class extends Controller {
   static values = { config: Object }
 
   connect() {
-    const canvas = this.element.tagName === "CANVAS" ? this.element : this.element.querySelector("canvas")
-    this.chart = new Chart(canvas, this.withCurrencyFormatting(this.configValue))
+    this.canvas = this.element.tagName === "CANVAS" ? this.element : this.element.querySelector("canvas")
+    this.rawDatasets = this.configValue.data.datasets
+    this.recolor = this.recolor.bind(this)
+    document.addEventListener("theme:change", this.recolor)
+    this.chart = new Chart(this.canvas, this.resolvedConfig(this.rawDatasets))
   }
 
   disconnect() {
+    document.removeEventListener("theme:change", this.recolor)
     this.chart?.destroy()
     this.chart = null
+  }
+
+  // Rebuild a render-ready config from raw (token-carrying) datasets: resolve
+  // every `var(--x)` against the current theme, then layer the currency
+  // callbacks on top. Canvas cannot read CSS variables itself, so the color
+  // must be a concrete string by the time it reaches Chart.js.
+  resolvedConfig(rawDatasets) {
+    const raw = { ...this.configValue, data: { ...this.configValue.data, datasets: rawDatasets } }
+    return this.withCurrencyFormatting(this.resolveVars(raw))
+  }
+
+  // On a manual theme flip the page recolors via CSS with no reload; the canvas
+  // holds colors resolved at render time, so re-resolve from the raw datasets
+  // currently displayed (the profit chart keeps `rawDatasets` pointed at its
+  // active mode) and repaint. Reassigning `options` too keeps grid/axis/legend
+  // ink in step with the theme.
+  recolor() {
+    if (!this.chart) return
+    const config = this.resolvedConfig(this.rawDatasets)
+    this.chart.data.datasets = config.data.datasets
+    this.chart.options = config.options
+    this.chart.update()
+  }
+
+  // Deep-copy `value`, replacing any string of the exact form `var(--name)`
+  // with its computed value on <html>. Non-var strings (hex, "transparent"),
+  // numbers and null pass through untouched — so a config carrying only hex
+  // behaves exactly as before this method existed.
+  resolveVars(value) {
+    if (Array.isArray(value)) return value.map((item) => this.resolveVars(item))
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, this.resolveVars(item)]))
+    }
+    if (typeof value === "string") {
+      const match = value.match(/^var\((--[\w-]+)\)$/)
+      if (match) return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim()
+    }
+    return value
   }
 
   withCurrencyFormatting(config) {

@@ -10,7 +10,8 @@ export default class extends ChartController {
     const datasets = this.modesValue[event.params.mode]
     if (!datasets) return
 
-    this.chart.data.datasets = datasets
+    this.rawDatasets = datasets
+    this.chart.data.datasets = this.resolvedConfig(datasets).data.datasets
     this.chart.update()
     this.modeTargets.forEach((button) => {
       button.setAttribute("aria-pressed", String(button.dataset.profitChartModeParam === event.params.mode))

@@ -105,6 +105,7 @@ RSpec.describe "Analysis", type: :system do
       visit analysis_path
 
       expect(page).to have_content("Nenhum lançamento em 2026")
+      expect(page).to have_css(".card .empty-state", text: "Nenhum lançamento em 2026")
       expect(page).to have_no_css("canvas")
     end
   end

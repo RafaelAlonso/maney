@@ -11,7 +11,7 @@
   <div class="flex gap-2 mb-3 overflow-x-auto whitespace-nowrap">
     <% chart.mode_labels.each do |key, label| %>
       <button type="button"
-              class="shrink-0 border rounded px-3 py-1 text-xs aria-pressed:bg-gray-900 aria-pressed:text-white"
+              class="shrink-0 border border-border text-text rounded px-3 py-1 text-xs aria-pressed:bg-accent aria-pressed:text-white"
               aria-pressed="<%= key == Analysis::ProfitChart::DEFAULT_MODE %>"
               data-profit-chart-target="mode"
               data-action="profit-chart#select"

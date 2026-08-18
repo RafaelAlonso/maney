@@ -12,7 +12,7 @@
   <%= render "analyses/profit_chart", chart: Analysis::ProfitChart.new(@analysis, palette: @palette) %>
   <%= render "shared/chart", chart: Analysis::SpendingVsOutflowChart.new(@analysis, palette: @palette) %>
 <% else %>
-  <p class="bg-white rounded border p-6 text-center text-sm text-gray-500">
-    Nenhum lançamento em <%= @year %>.
-  </p>
+  <div class="card">
+    <%= render "shared/empty_state", message: "Nenhum lançamento em #{@year}." %>
+  </div>
 <% end %>

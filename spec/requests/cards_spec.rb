@@ -11,6 +11,14 @@ RSpec.describe "Cards", type: :request do
     expect(response.body).to include("Azul").and include("fecha dia 5").and include("vence dia 12")
   end
 
+  it "renders a styled empty state when there are no cards" do
+    Card.destroy_all
+
+    get cards_path
+
+    expect(response.body).to include("empty-state").and include("Nenhum cartão ainda.")
+  end
+
   it "creates a card with its first schedule from the first month (AC 1)" do
     post cards_path, params: { card: { name: "Azul", closing_day: 5, due_day: 12 } }
     card = Card.find_by!(name: "Azul")

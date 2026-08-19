@@ -24,8 +24,9 @@ module Analysis
   # they resolve client-side (chart_controller.js#resolveVars) against the
   # `--chart-*` custom properties defined per theme in
   # app/assets/tailwind/application.css, so a chart recolors live on the theme
-  # toggle. CATEGORY_COLORS and shades_for stay hex — the drill-down ramp
-  # (Categories story) is not themed yet.
+  # toggle. CATEGORY_COLORS/color_for stay hex (they define the categorical hues
+  # chart_var_for indexes into); shades_for now emits color-mix() tokens that
+  # resolve against --color-surface client-side, so the drill-down ramp themes too.
   class Palette
     PRIMARY = "var(--chart-1)".freeze     # categorical slot 1 — spending
     OUTFLOW = "var(--chart-2)".freeze     # categorical slot 2 — cash outflow
@@ -66,20 +67,26 @@ module Analysis
     # pie's slices are expenses, not categories, so they cannot take categorical
     # hues without a hue meaning two different things in two screens. Ordered
     # largest-first by the caller, so shade encodes rank and explains itself.
+    #
+    # Emits CSS tokens, not hex: the darkest slice is the category's own chart
+    # var, and each lighter slice mixes that var toward the current surface via
+    # color-mix(). chart_controller.js#resolveVars evaluates the mix against the
+    # live theme, so a slice recolors on the theme toggle. The base weight steps
+    # down from 100% to (1 - WHITE_MIX_CAP)*100 = 40%, capped short of the surface
+    # so even the last slice of a twenty-expense month keeps enough hue to be seen.
     def shades_for(category, count:)
       return [] if count <= 0
-      base = color_for(category)
+      base = chart_var_for(category)
       return [ base ] if count == 1
-      (0...count).map { |index| mix_with_white(base, WHITE_MIX_CAP * index / (count - 1)) }
+      (0...count).map do |index|
+        next base if index.zero?
+        weight = ((1 - WHITE_MIX_CAP * index / (count - 1)) * 100).round
+        "color-mix(in srgb, #{base} #{weight}%, var(--color-surface))"
+      end
     end
 
     private
 
     def slot_index(category) = (@order.index(category.id) || 0) % CATEGORY_COLORS.size
-
-    def mix_with_white(hex, fraction)
-      channels = hex.delete_prefix("#").scan(/../).map { |pair| pair.to_i(16) }
-      format("#%02x%02x%02x", *channels.map { |channel| (channel + (255 - channel) * fraction).round })
-    end
   end
 end

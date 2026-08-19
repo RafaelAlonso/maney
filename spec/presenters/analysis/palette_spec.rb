@@ -3,37 +3,38 @@ require "rails_helper"
 RSpec.describe Analysis::Palette do
   let(:mercado) { Category.create!(name: "mercado") }
 
-  # Relative luminance is enough to assert "gets lighter"; the exact steps are
-  # an implementation detail, the monotonic direction is the contract.
-  def brightness(hex)
-    hex.delete_prefix("#").scan(/../).sum { |pair| pair.to_i(16) }
+  # The ramp no longer mixes hex toward white in Ruby; it emits CSS tokens that
+  # resolve client-side against the current --color-surface, so a shade themes
+  # in both modes. The percent (base weight) is what encodes rank now.
+  def base_weight(token)
+    token[/ (\d+)%/, 1]&.to_i || 100 # the darkest slice is the bare var, i.e. 100%
   end
 
-  it "starts the ramp on the category's own colour" do
+  it "starts the ramp on the category's own colour token" do
     expect(described_class.new.shades_for(mercado, count: 4).first)
-      .to eq described_class.new.color_for(mercado)
+      .to eq described_class.new.chart_var_for(mercado)
   end
 
   it "returns one shade per slice" do
     expect(described_class.new.shades_for(mercado, count: 7).size).to eq 7
   end
 
-  it "gets lighter with every step, so shade encodes rank" do
-    shades = described_class.new.shades_for(mercado, count: 5)
+  it "fades toward the surface with every step, so shade encodes rank" do
+    weights = described_class.new.shades_for(mercado, count: 5).map { |token| base_weight(token) }
 
-    expect(shades.map { |hex| brightness(hex) }).to eq shades.map { |hex| brightness(hex) }.sort
-    expect(brightness(shades.last)).to be > brightness(shades.first)
+    expect(weights).to eq weights.sort.reverse # strictly descending
+    expect(weights.uniq).to eq weights
+    expect(weights.first).to eq 100
+    expect(weights.last).to eq 40 # the WHITE_MIX_CAP floor, surface-relative now
   end
 
-  it "keeps the lightest shade off the white card" do
-    # The mix is capped at 60% white, so even the last slice keeps enough of the
-    # hue to be seen against #ffffff.
-    expect(brightness(described_class.new.shades_for(mercado, count: 20).last)).to be < brightness("#ffffff")
+  it "keeps the lightest shade off the surface (never fully mixed away)" do
+    expect(base_weight(described_class.new.shades_for(mercado, count: 20).last)).to eq 40
   end
 
-  it "returns the base colour alone for a single slice" do
+  it "returns the base colour token alone for a single slice" do
     palette = described_class.new
-    expect(palette.shades_for(mercado, count: 1)).to eq [ palette.color_for(mercado) ]
+    expect(palette.shades_for(mercado, count: 1)).to eq [ palette.chart_var_for(mercado) ]
   end
 
   it "returns nothing for no slices" do
@@ -45,8 +46,11 @@ RSpec.describe Analysis::Palette do
       .to eq described_class.new.shades_for(mercado, count: 6)
   end
 
-  it "emits valid six-digit hex" do
-    expect(described_class.new.shades_for(mercado, count: 9)).to all(match(/\A#\h{6}\z/))
+  it "emits themed tokens, never hex" do
+    expect(described_class.new.shades_for(mercado, count: 9)).to all(
+      match(%r{\Avar\(--chart-\d+\)\z}).or(
+        match(%r{\Acolor-mix\(in srgb, var\(--chart-\d+\) \d+%, var\(--color-surface\)\)\z}))
+    )
   end
 
   describe "shared chart palette tokens" do

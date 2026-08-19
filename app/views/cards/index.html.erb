@@ -1,36 +1,41 @@
 <%# app/views/cards/index.html.erb %>
 <div class="flex items-center justify-between mb-4">
   <h1 class="text-lg font-semibold">Cartões</h1>
-  <%= link_to "novo cartão", new_card_path, class: "text-blue-600 text-sm" %>
+  <%= link_to "novo cartão", new_card_path, class: "text-accent text-sm" %>
 </div>
-<ul class="divide-y bg-white rounded border">
-  <% @cards.each do |card| %>
-    <% schedule = Budgeting::Schedule.for(card:, date: Date.current) %>
-    <li class="p-3 flex items-center justify-between <%= "opacity-60" if card.archived? %>">
-      <div>
-        <p class="font-medium <%= "text-gray-500" if card.archived? %>">
-          <%= card.name %>
+<% if @cards.empty? %>
+  <div class="card">
+    <%= render "shared/empty_state", message: "Nenhum cartão ainda." %>
+  </div>
+<% else %>
+  <ul class="bg-surface border border-border rounded-[var(--radius-card)] divide-y divide-border">
+    <% @cards.each do |card| %>
+      <% schedule = Budgeting::Schedule.for(card:, date: Date.current) %>
+      <li class="p-3 flex items-center justify-between <%= "opacity-60" if card.archived? %>">
+        <div>
+          <p class="font-medium <%= "text-muted" if card.archived? %>">
+            <%= card.name %>
+            <% if card.archived? %>
+              <span class="ml-2 align-middle text-xs font-normal bg-border text-muted rounded px-2 py-0.5">arquivado</span>
+            <% end %>
+          </p>
+          <p class="text-sm text-muted"><%= card_days_label(schedule) %></p>
+        </div>
+        <div class="flex gap-3 text-sm">
+          <%= link_to "faturas", card_statements_path(card), class: "text-accent" %>
           <% if card.archived? %>
-            <span class="ml-2 align-middle text-xs font-normal bg-gray-200 text-gray-600 rounded px-2 py-0.5">arquivado</span>
+            <%# No turbo_confirm on either direction: archiving is reversible and
+                changes no data, and making it feel as heavy as "excluir" would push
+                the user toward the destructive option instead. %>
+            <%= button_to "reativar", card_archival_path(card), method: :delete, class: "text-accent" %>
+          <% else %>
+            <%= link_to "editar", edit_card_path(card), class: "text-accent" %>
+            <%= button_to "arquivar", card_archival_path(card), method: :post, class: "text-accent" %>
           <% end %>
-        </p>
-        <p class="text-sm text-gray-500"><%= card_days_label(schedule) %></p>
-      </div>
-      <div class="flex gap-3 text-sm">
-        <%= link_to "faturas", card_statements_path(card), class: "text-blue-600" %>
-        <% if card.archived? %>
-          <%# No turbo_confirm on either direction: archiving is reversible and
-              changes no data, and making it feel as heavy as "excluir" would push
-              the user toward the destructive option instead. %>
-          <%= button_to "reativar", card_archival_path(card), method: :delete, class: "text-blue-600" %>
-        <% else %>
-          <%= link_to "editar", edit_card_path(card), class: "text-blue-600" %>
-          <%= button_to "arquivar", card_archival_path(card), method: :post, class: "text-blue-600" %>
-        <% end %>
-        <%= button_to "excluir", card_path(card), method: :delete, class: "text-red-600",
-              data: { turbo_confirm: "Excluir o cartão #{card.name}?" } %>
-      </div>
-    </li>
-  <% end %>
-  <% if @cards.empty? %><li class="p-3 text-sm text-gray-500">Nenhum cartão ainda.</li><% end %>
-</ul>
+          <%= button_to "excluir", card_path(card), method: :delete, class: "text-money-expense",
+                data: { turbo_confirm: "Excluir o cartão #{card.name}?" } %>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

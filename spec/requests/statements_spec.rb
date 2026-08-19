@@ -104,4 +104,28 @@ RSpec.describe "Statements", type: :request do
     get card_statement_path(card, "banana")
     expect(response).to redirect_to(root_path)
   end
+
+  it "wraps the no-statement empty state in the styled partial" do
+    get card_statements_path(card)
+
+    expect(response.body).to include("empty-state")
+    expect(response.body).to include("Nenhuma fatura ainda")
+  end
+
+  it "wraps the derived-gone statement in the styled empty partial" do
+    credit_expense(5_000, Date.new(2026, 3, 6))
+
+    get card_statement_path(card, "2026-09-05")
+
+    expect(response.body).to include("empty-state")
+    expect(response.body).to include("Esta fatura não tem mais gastos")
+  end
+
+  it "shows the statement-detail total in the expense money color (AC 4)" do
+    credit_expense(20_000, Date.new(2026, 3, 6))
+
+    get card_statement_path(card, "2026-04-05")
+
+    expect(response.body).to match(/class="[^"]*text-money-expense[^"]*"[^>]*>\s*R\$ 200,00/)
+  end
 end

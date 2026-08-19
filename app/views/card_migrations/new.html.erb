@@ -5,7 +5,7 @@
 <% expenses = pt_pluralize(@expense_count, "gasto avulso", "gastos avulsos") %>
 <% purchases = pt_pluralize(@purchase_count, "compra parcelada", "compras parceladas") %>
 <h1 class="text-lg font-semibold mb-4">Excluir <%= @card.name %></h1>
-<p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+<p class="text-sm bg-money-near/10 border border-money-near/30 text-money-near rounded p-3 mb-4">
   Este cartão tem <strong><%= expenses %></strong> e
   <strong><%= purchases %></strong>.
   Escolha o destino deles para concluir a exclusão.
@@ -14,20 +14,20 @@
 <% if @other_cards.any? %>
   <%= form_with url: card_migration_path(@card), method: :post, class: "space-y-3 mb-6" do %>
     <%= hidden_field_tag :action_kind, "migrate" %>
-    <label class="block text-sm">Migrar tudo para:</label>
+    <label class="field-label">Migrar tudo para:</label>
     <%= select_tag :target_card_id, options_from_collection_for_select(@other_cards, :id, :name),
-          include_blank: "escolha…", class: "border rounded p-2 w-full" %>
-    <p class="text-xs text-gray-600">
+          include_blank: "escolha…", class: "field-input" %>
+    <p class="text-xs text-muted">
       Os gastos migrados passam a seguir os dias de fechamento e vencimento do
       cartão de destino — as faturas podem cair em outro mês.
     </p>
-    <%= submit_tag "Migrar e excluir cartão", class: "bg-blue-600 text-white rounded px-4 py-2",
+    <%= submit_tag "Migrar e excluir cartão", class: "btn btn-primary",
           data: { turbo_confirm: "Migrar #{expenses} e #{purchases} para o cartão escolhido e excluir #{@card.name}? As faturas seguirão os dias do cartão de destino e podem cair em outro mês." } %>
   <% end %>
 <% end %>
 
 <%= form_with url: card_migration_path(@card), method: :post do %>
   <%= hidden_field_tag :action_kind, "delete" %>
-  <%= submit_tag "Excluir todos os gastos e o cartão", class: "bg-red-600 text-white rounded px-4 py-2",
+  <%= submit_tag "Excluir todos os gastos e o cartão", class: "btn btn-danger",
         data: { turbo_confirm: "Excluir #{expenses}, #{purchases} e o cartão #{@card.name}? Isso não pode ser desfeito." } %>
 <% end %>

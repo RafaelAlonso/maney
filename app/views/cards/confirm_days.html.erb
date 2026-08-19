@@ -4,7 +4,7 @@
     is a full cancel. %>
 <h1 class="text-lg font-semibold mb-4">Confirmar os novos dias de <%= @new_name %></h1>
 
-<p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+<p class="text-sm bg-money-near/10 border border-money-near/30 text-money-near rounded p-3 mb-4">
   Fechar dia <strong><%= @days[:closing_day] %></strong> e vencer dia
   <strong><%= @days[:due_day] %></strong> muda o vencimento das faturas que ainda
   estão por vir.
@@ -15,7 +15,7 @@
   <% end %>
 </p>
 
-<div class="bg-white rounded border divide-y mb-4">
+<div class="bg-surface border border-border rounded-[var(--radius-card)] divide-y divide-border mb-4">
   <div class="p-3 flex items-center justify-between text-sm font-medium">
     <span>fatura</span>
     <span>vencimento</span>
@@ -24,8 +24,8 @@
     <div class="p-3 flex items-center justify-between text-sm">
       <span><%= row.cycle.strftime("%m/%Y") %></span>
       <span>
-        <span class="text-gray-500 line-through"><%= row.before_due.strftime("%d/%m/%Y") %></span>
-        <span class="<%= "text-red-700 font-medium" if row.shifts? %>">
+        <span class="text-muted line-through"><%= row.before_due.strftime("%d/%m/%Y") %></span>
+        <span class="<%= "text-money-expense font-medium" if row.shifts? %>">
           <%= row.after_due.strftime("%d/%m/%Y") %>
         </span>
       </span>
@@ -33,7 +33,7 @@
   <% end %>
 </div>
 
-<p class="text-xs text-gray-600 mb-4">
+<p class="text-xs text-muted mb-4">
   As faturas já fechadas não mudam. Nenhum valor é perdido: a quantidade e o
   valor das parcelas continuam os mesmos.
 </p>
@@ -44,7 +44,7 @@
     <%= hidden_field_tag "card[closing_day]", @days[:closing_day] %>
     <%= hidden_field_tag "card[due_day]", @days[:due_day] %>
     <%= hidden_field_tag :confirm_days, "1" %>
-    <%= submit_tag "Confirmar mudança", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+    <%= submit_tag "Confirmar mudança", class: "btn btn-primary" %>
   <% end %>
-  <%= link_to "Cancelar", cards_path, class: "text-blue-600 text-sm" %>
+  <%= link_to "Cancelar", cards_path, class: "text-accent text-sm" %>
 </div>

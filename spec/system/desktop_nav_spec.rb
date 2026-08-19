@@ -41,6 +41,17 @@ RSpec.describe "Desktop app shell", type: :system do
     expect(body_fits?).to be true
   end
 
+  it "closes the Mais dropdown on Escape" do
+    page.driver.browser.manage.window.resize_to(770, 900)
+    visit root_path
+
+    click_button "Mais ▾"
+    within('[data-nav-target="menu"]') { expect(page).to have_link("Config") }
+
+    find("body").send_keys(:escape)
+    expect(page).to have_css('[data-nav-target="menu"]', visible: :hidden)
+  end
+
   it "hosts the month navigator on a month-scoped screen and omits it on Config" do
     page.driver.browser.manage.window.resize_to(1400, 900)
 

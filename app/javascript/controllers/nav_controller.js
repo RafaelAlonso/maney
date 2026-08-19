@@ -14,11 +14,14 @@ export default class extends Controller {
     this.reflow()
     this.closeOnOutside = (event) => { if (!this.moreTarget.contains(event.target)) this.closeMore() }
     document.addEventListener("click", this.closeOnOutside)
+    this.onKey = (event) => { if (event.key === "Escape") this.closeMore() }
+    document.addEventListener("keydown", this.onKey)
   }
 
   disconnect() {
     this.observer.disconnect()
     document.removeEventListener("click", this.closeOnOutside)
+    document.removeEventListener("keydown", this.onKey)
   }
 
   toggleMore(event) {

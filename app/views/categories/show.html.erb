@@ -15,7 +15,7 @@
   <%= render "shared/chart", chart: @year_chart %>
 <% else %>
   <%= render layout: "shared/card", locals: { title: @year_chart.title } do %>
-    <p class="text-sm text-gray-500">
+    <p class="text-sm text-muted">
       <% if @category_year.started? %>
         Nenhum gasto nesta categoria em <%= @category_year.year %>.
       <% else %>
@@ -26,16 +26,16 @@
 <% end %>
 
 <% unless covered %>
-  <p class="text-sm text-gray-500 -mt-2 mb-4">
+  <p class="text-sm text-muted -mt-2 mb-4">
     O gráfico do ano cobre só os meses já acontecidos; <%= current_month.strftime("%m/%Y") %> aparece apenas na composição abaixo.
   </p>
 <% end %>
 
 <%= render "categories/breakdown", chart: @breakdown %>
 
-<ul class="divide-y bg-white rounded border">
+<ul class="divide-y divide-border rounded border border-border bg-surface">
   <% @expenses.each do |expense| %>
     <%= render "expenses/row", expense:, show_delete: false, show_category: false, statements: @statements %>
   <% end %>
-  <% if @expenses.empty? %><li class="p-3 text-sm text-gray-500">Nenhum gasto nesta categoria no mês.</li><% end %>
+  <% if @expenses.empty? %><%= render "shared/empty_state", message: "Nenhum gasto nesta categoria no mês." %><% end %>
 </ul>

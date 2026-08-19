@@ -45,6 +45,7 @@ RSpec.describe "Category drill-down", type: :system do
       visit category_path(mercado, month: "2026-05")
 
       expect(page).to have_content("Nenhum gasto neste mês.")
+      expect(page).to have_css(".empty-state", text: "Nenhum gasto neste mês.")
       expect(page).to have_css("canvas", count: 1)
       expect(page.evaluate_script(<<~JS)).to eq 1
         Array.from(document.querySelectorAll('canvas'))

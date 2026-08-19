@@ -3,15 +3,15 @@
   <%= render "shared/errors", model: category %>
   <%= hidden_field_tag :month, current_month.strftime("%Y-%m") %>
   <div>
-    <%= f.label :name, "Nome", class: "block text-sm mb-1" %>
-    <%= f.text_field :name, class: "border rounded p-2 w-full" %>
+    <%= f.label :name, "Nome", class: "field-label" %>
+    <%= f.text_field :name, class: "field-input" %>
   </div>
   <% unless category.credit_card? %>
     <div>
-      <%= f.label :budget_amount, "Orçado do mês (R$)", class: "block text-sm mb-1" %>
-      <%= f.text_field :budget_amount, value: budget_amount, inputmode: "decimal", class: "border rounded p-2 w-full" %>
-      <p class="text-xs text-gray-500 mt-1">vale para <%= current_month.strftime("%m/%Y") %></p>
+      <%= f.label :budget_amount, "Orçado do mês (R$)", class: "field-label" %>
+      <%= f.text_field :budget_amount, value: budget_amount, inputmode: "decimal", class: "field-input" %>
+      <p class="text-xs text-muted mt-1">vale para <%= current_month.strftime("%m/%Y") %></p>
     </div>
   <% end %>
-  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
 <% end %>

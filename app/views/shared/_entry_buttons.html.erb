@@ -1,0 +1,5 @@
+<%# app/views/shared/_entry_buttons.html.erb — the two month-carrying entry
+    actions, shared by the desktop fab and the mobile bottom-bar "+" popover.
+    The month on screen travels into the form (ApplicationController#default_entry_date). %>
+<%= render "shared/button", label: "ganho", href: new_income_path(month: month_param), variant: :positive, class: "shadow" %>
+<%= render "shared/button", label: "gasto", href: new_expense_path(month: month_param), variant: :danger, class: "shadow" %>

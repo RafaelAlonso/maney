@@ -63,6 +63,8 @@ export default class extends Controller {
 
   disconnect() {
     document.removeEventListener("theme:change", this.recolor)
+    this.probe?.remove()
+    this.probe = null
     this.chart?.destroy()
     this.chart = null
   }
@@ -101,8 +103,25 @@ export default class extends Controller {
     if (typeof value === "string") {
       const match = value.match(/^var\((--[\w-]+)\)$/)
       if (match) return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim()
+      // A color-mix() carries var()s the canvas cannot read and getPropertyValue
+      // cannot evaluate; resolve it to a concrete rgb() through a hidden probe.
+      if (value.includes("color-mix(")) return this.resolveColor(value)
     }
     return value
+  }
+
+  // Evaluate a CSS color expression (e.g. color-mix()) against the live theme.
+  // The probe lives on <html> so its var()s resolve against :root; display:none
+  // does not stop getComputedStyle from resolving `color`. Reused across calls.
+  resolveColor(expression) {
+    if (!this.probe) {
+      this.probe = document.createElement("span")
+      this.probe.style.display = "none"
+      document.documentElement.appendChild(this.probe)
+    }
+    this.probe.style.color = ""
+    this.probe.style.color = expression
+    return getComputedStyle(this.probe).color
   }
 
   withCurrencyFormatting(config) {

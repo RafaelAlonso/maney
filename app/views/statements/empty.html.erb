@@ -7,8 +7,8 @@
     <%= @card.name %> · fatura que fecharia em <%= @nominal_closing.strftime("%d/%m/%Y") %>
   </h1>
 </div>
-<p class="p-3 text-sm text-gray-500 bg-white rounded border">
-  Esta fatura não tem mais gastos. As faturas são derivadas dos gastos, então ela
-  deixou de existir quando o último gasto saiu dela.
-</p>
-<p class="mt-3 text-sm"><%= link_to "todas as faturas", card_statements_path(@card), class: "text-blue-600" %></p>
+<div class="card">
+  <%= render "shared/empty_state",
+        message: "Esta fatura não tem mais gastos. As faturas são derivadas dos gastos, então ela deixou de existir quando o último gasto saiu dela." %>
+</div>
+<p class="mt-3 text-sm"><%= link_to "todas as faturas", card_statements_path(@card), class: "text-accent" %></p>

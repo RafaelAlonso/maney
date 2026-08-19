@@ -19,7 +19,7 @@ RSpec.configure do |config|
   config.include ThemingHelpers, type: :system
 
   config.before(:each, type: :system) do
-    driven_by :selenium, using: :headless_chrome, screen_size: [ 390, 844 ]
+    driven_by :selenium, using: :headless_chrome, screen_size: [ 1024, 768 ]
     # Signing in has to follow `driven_by` — there is no browser before it. The
     # app's own `before` blocks have not run yet, so this lands on /setup; every
     # system spec then `visit`s the page it is actually about.

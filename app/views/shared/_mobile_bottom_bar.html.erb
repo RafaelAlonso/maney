@@ -1,0 +1,29 @@
+<%# app/views/shared/_mobile_bottom_bar.html.erb — mobile bottom tab bar
+    (md:hidden): Início · Gastos · [+] · Análise · Cartões. The center "+"
+    reuses the fab popover, anchored above the bar. %>
+<div data-controller="fab" class="md:hidden fixed bottom-0 inset-x-0 z-20 border-t border-border bg-surface">
+  <div data-fab-target="menu" hidden
+       class="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+    <%= render "shared/entry_buttons" %>
+  </div>
+  <nav class="flex items-stretch justify-around text-xs">
+    <%= link_to root_path, aria: { current: ("page" if nav_active?("home")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("home")) do %>
+      <span>Início</span>
+    <% end %>
+    <%= link_to expenses_path, aria: { current: ("page" if nav_active?("expenses")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("expenses")) do %>
+      <span>Gastos</span>
+    <% end %>
+    <button type="button" data-action="fab#toggle" aria-label="Lançar"
+            class="btn-primary rounded-full w-12 h-12 text-2xl -mt-4 shadow-lg self-center">+</button>
+    <%= link_to analysis_path, aria: { current: ("page" if nav_active?("analyses")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("analyses")) do %>
+      <span>Análise</span>
+    <% end %>
+    <%= link_to cards_path, aria: { current: ("page" if nav_active?("cards", "statements", "card_migrations", "card_archivals")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("cards", "statements", "card_migrations", "card_archivals")) do %>
+      <span>Cartões</span>
+    <% end %>
+  </nav>
+</div>

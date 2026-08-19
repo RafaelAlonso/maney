@@ -97,4 +97,24 @@ RSpec.describe ApplicationHelper, type: :helper do
       expect(helper.month_label(Date.new(2028, 1, 1), today: Date.new(2026, 8, 10))).to eq "jan/2028"
     end
   end
+
+  describe "#nav_active?" do
+    it "is true when the current controller is one of the given names" do
+      allow(helper.controller).to receive(:controller_name).and_return("statements")
+      expect(helper.nav_active?("cards", "statements", "card_migrations", "card_archivals")).to be true
+    end
+
+    it "is false when the current controller is none of them" do
+      allow(helper.controller).to receive(:controller_name).and_return("home")
+      expect(helper.nav_active?("expenses")).to be false
+    end
+  end
+
+  describe "#nav_destinations" do
+    it "lists the seven destinations in nav order" do
+      expect(helper.nav_destinations.map { |d| d[:label] }).to eq(
+        %w[Início Gastos Ganhos Cartões Categorias Análise Config]
+      )
+    end
+  end
 end

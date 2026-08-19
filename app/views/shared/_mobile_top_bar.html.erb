@@ -1,0 +1,7 @@
+<%# app/views/shared/_mobile_top_bar.html.erb — slim mobile top bar (md:hidden)
+    carrying only the "Mais" trigger; tinted when the current screen lives under
+    "Mais" (Ganhos / Categorias / Config). %>
+<header class="md:hidden fixed top-0 inset-x-0 z-20 flex items-center justify-end px-4 py-2 border-b border-border bg-surface">
+  <button type="button" data-action="mais-panel#open" aria-label="Mais"
+          class="<%= class_names("text-accent" => nav_active?("incomes", "categories", "settings")) %>">☰ Mais</button>
+</header>

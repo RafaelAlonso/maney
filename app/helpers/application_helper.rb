@@ -86,6 +86,28 @@ module ApplicationHelper
     "#{statement_date(row.period_start, dates, today)} – #{statement_date(row.period_end, dates, today)}"
   end
 
+  # Which top-level destination the current screen belongs to — the shell marks
+  # it active in the desktop nav, the mobile bottom bar and the "Mais" panel.
+  # Matched on controller_name (every destination is a top-level controller), so
+  # the Cartões statement/migration/archival screens all light up the Cartões tab.
+  def nav_active?(*controllers)
+    controllers.flatten.map(&:to_s).include?(controller_name)
+  end
+
+  # The seven destinations, in nav order, for the desktop top nav. Same routes
+  # the app has always exposed; the overflow controller decides which fit inline.
+  def nav_destinations
+    [
+      { label: "Início",     path: root_path,          controllers: %w[home] },
+      { label: "Gastos",     path: expenses_path,      controllers: %w[expenses] },
+      { label: "Ganhos",     path: incomes_path,       controllers: %w[incomes] },
+      { label: "Cartões",    path: cards_path,         controllers: %w[cards statements card_migrations card_archivals] },
+      { label: "Categorias", path: categories_path,    controllers: %w[categories] },
+      { label: "Análise",    path: analysis_path,      controllers: %w[analyses] },
+      { label: "Config",     path: edit_settings_path, controllers: %w[settings] },
+    ]
+  end
+
   private
 
   def statement_date(date, scope, today)

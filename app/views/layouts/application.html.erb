@@ -44,33 +44,24 @@
     <%= javascript_importmap_tags unless @omit_importmap_tags %>
   </head>
 
-  <body class="min-h-screen bg-bg text-text pb-24">
-    <%# A deleted-but-restorable person is held on the restore screen by
-        `require_active_account` — every one of these links bounces them
-        straight back, so the nav is dead weight rather than navigation. %>
-    <% if authenticated? && Setting.instance && !Current.user.deleted? %>
-      <%# `shrink-0` + `whitespace-nowrap` are what make `overflow-x-auto` work.
-          Flex items shrink below their content by default, so on a 360 px phone
-          the nav silently squeezed the last items instead of overflowing —
-          "Categorias" clipped, "Config" rendered as "Co", and with
-          scrollWidth === clientWidth there was no gesture left to reach it.
-          Configurações is the only route to the alert threshold, the initial
-          balance and the first month, so that made them unreachable. %>
-      <nav class="flex gap-4 px-4 py-3 border-b border-border bg-surface text-sm overflow-x-auto whitespace-nowrap">
-        <%= link_to "Início", root_path, class: "shrink-0" %>
-        <%= link_to "Gastos", expenses_path, class: "shrink-0" %>
-        <%= link_to "Ganhos", incomes_path, class: "shrink-0" %>
-        <%= link_to "Cartões", cards_path, class: "shrink-0" %>
-        <%= link_to "Categorias", categories_path, class: "shrink-0" %>
-        <%= link_to "Análise", analysis_path, class: "shrink-0" %>
-        <%= link_to "Config", edit_settings_path, class: "shrink-0" %>
-        <%= render "shared/theme_toggle" %>
-      </nav>
+  <% chrome = authenticated? && Setting.instance && !Current.user.deleted? %>
+  <body class="min-h-screen bg-bg text-text">
+    <%# A deleted-but-restorable person is held on the restore screen, so the nav
+        would be dead weight — the gate below hides it (unchanged). %>
+    <% if chrome %>
+      <%= render "shared/desktop_nav" %>
+      <div class="md:hidden" data-controller="mais-panel">
+        <%= render "shared/mobile_top_bar" %>
+        <%= render "shared/mais_panel" %>
+      </div>
+      <%= render "shared/mobile_bottom_bar" %>
     <% else %>
       <%= render "shared/auth_header" %>
     <% end %>
-    <%= render "shared/flash", notice:, alert: %>
-    <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
-    <%= render "shared/fab" if authenticated? && Setting.instance && !Current.user.deleted? %>
+    <div class="<%= class_names("pt-16 pb-24 md:pt-6 md:pb-6" => chrome) %>">
+      <%= render "shared/flash", notice:, alert: %>
+      <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
+    </div>
+    <%= render "shared/fab" if chrome %>
   </body>
 </html>

@@ -86,11 +86,11 @@ RSpec.describe Analysis::CategoryBreakdownChart do
     expect(subject.slices).to eq []
   end
 
-  it "shades the slices from the category's own colour, darkest first" do
+  it "shades the slices from the category's own colour token, darkest first" do
     spend(9_000, name: "grande")
     spend(1_000, name: "pequeno")
 
-    expect(breakdown.slices.first.color).to eq Analysis::Palette.new.color_for(mercado)
+    expect(breakdown.slices.first.color).to eq Analysis::Palette.new.chart_var_for(mercado)
     expect(breakdown.slices.map(&:color).uniq.size).to eq 2
   end
 
@@ -102,6 +102,11 @@ RSpec.describe Analysis::CategoryBreakdownChart do
     expect(config[:type]).to eq "pie"
     expect(config[:data][:labels]).to eq [ "mercado extra", "padaria" ]
     expect(config[:data][:datasets].first[:data]).to eq [ 480.0, 220.0 ]
+    # The gap between slices is the card's surface, so it matches in both themes;
+    # the slice fills are chart tokens resolved client-side, never baked hex.
+    expect(config[:data][:datasets].first[:borderColor]).to eq "var(--color-surface)"
+    expect(config[:data][:datasets].first[:backgroundColor]).to all(
+      match(%r{\Avar\(--chart-\d+\)\z}).or(match(%r{\Acolor-mix\(.*var\(--color-surface\)\)\z})))
     # The HTML legend below the canvas carries the values, so Chart.js's own is off.
     expect(config[:options][:plugins][:legend][:display]).to be false
     # A pie has no value axis; leaving scales out keeps chart_controller from

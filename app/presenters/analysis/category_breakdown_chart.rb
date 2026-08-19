@@ -58,7 +58,7 @@ module Analysis
           datasets: [ {
             data: slices.map { |slice| reais(slice.amount_cents) },
             backgroundColor: slices.map(&:color),
-            borderColor: "#ffffff",
+            borderColor: "var(--color-surface)",
             borderWidth: 2
           } ]
         },

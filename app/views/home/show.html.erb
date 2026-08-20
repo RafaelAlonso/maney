@@ -1,8 +1,7 @@
 <%# app/views/home/show.html.erb %>
 <%= render "shared/month_nav", path_helper: ->(month:) { root_path(month:) } %>
-<%= render "home/balances", summary: @summary %>
+<%= render "home/hero", summary: @summary %>
 <%= render "home/alert", alert: @alert %>
-<%= render "home/incomes", summary: @summary %>
 <div class="bg-white rounded border divide-y mt-4">
   <% @categories.each do |category| %>
     <%= render "home/category_row", category:, summary: @summary %>

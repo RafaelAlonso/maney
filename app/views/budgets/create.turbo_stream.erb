@@ -3,7 +3,7 @@
   <%= render "home/category_row", category: @category, summary: @summary, error: @error %>
 <% end %>
 <% unless @error %>
-  <%= turbo_stream.replace "balances" do %>
-    <%= render "home/balances", summary: @summary %>
+  <%= turbo_stream.replace "hero" do %>
+    <%= render "home/hero", summary: @summary %>
   <% end %>
 <% end %>

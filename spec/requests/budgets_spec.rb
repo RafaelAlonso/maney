@@ -4,14 +4,16 @@ RSpec.describe "Budgets (inline edit)", type: :request do
   let(:march) { Date.new(2026, 3, 1) }
   before { create_setting!(first_month: march); create_reserved_categories! }
 
-  it "creates a Budget and streams the row and balances (AC 8)" do
+  it "creates a Budget and streams the row and hero (AC 8)" do
     mercado = Category.create!(name: "mercado")
     Income.create!(name: "salário", amount_cents: 500_000, date: march)
     post budgets_path, params: { category_id: mercado.id, month: "2026-03", budget_amount: "900,00" },
          as: :turbo_stream
     expect(Budget.find_by(category: mercado, month: march).amount_cents).to eq(90_000)
     expect(response.media_type).to eq Mime[:turbo_stream]
-    expect(response.body).to include("balances").and include(ActionView::RecordIdentifier.dom_id(mercado, :row))
+    # The dashboard now streams the balance hero (id="hero") in place of the old
+    # two-row "balances" panel after a budget save.
+    expect(response.body).to include("hero").and include(ActionView::RecordIdentifier.dom_id(mercado, :row))
   end
 
   it "upserts an existing Budget so the edited value prevails (AC 8)" do

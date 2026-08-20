@@ -22,34 +22,32 @@
   <% over = budgeted.positive? && spent > budgeted %>
   <% error = local_assigns[:error] %>
   <% open = error.present? %>
-  <div id="<%= dom_id(category, :row) %>" class="p-3 flex items-center justify-between"
-       data-controller="budget-edit">
-    <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
-          class: "hover:underline" %>
-    <div class="text-sm text-right">
-      <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
-        gasto <%= brl(spent) %> /
-      </span>
-<%# Visibility is carried by Tailwind's `hidden` class, not the `hidden`
-          attribute, for two independent reasons — both were breaking this row:
-          `form_with` only forwards a known set of keys (:id, :class, :data,
-          :method, …) and silently drops anything else, so a top-level
-          `hidden:` never reached the <form> at all; and even rendered, a class
-          that sets `display` (the form's `inline`) beats the user agent's
-          `[hidden] { display: none }` on specificity. The Stimulus controller
-          toggles the same class. %>
-      <span data-budget-edit-target="display" data-action="click->budget-edit#edit"
-            class="cursor-pointer <%= open ? "hidden" : "" %> <%= over ? "text-red-700 font-medium" : "text-gray-500" %>">
-        orçado <%= brl(budgeted) %>
-      </span>
-      <%= form_with url: budgets_path, method: :post, class: open ? "inline" : "hidden",
-            data: { budget_edit_target: "form" } do |f| %>
-        <%= f.hidden_field :category_id, value: category.id %>
-        <%= f.hidden_field :month, value: summary.month.strftime("%Y-%m") %>
-        <%= f.text_field :budget_amount, value: BrlMoney.format(budgeted), inputmode: "decimal",
-              class: "border rounded p-1 w-24 text-sm", data: { budget_edit_target: "input" } %>
-      <% end %>
-      <% if error %><span class="block text-xs text-red-700"><%= error %></span><% end %>
+  <div id="<%= dom_id(category, :row) %>" class="p-3" data-controller="budget-edit">
+    <div class="flex items-center justify-between gap-2">
+      <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
+            class: "text-text hover:underline truncate" %>
+      <div class="text-sm text-right shrink-0">
+        <span class="<%= over ? "text-money-over font-medium" : "text-muted" %>">
+          gasto <%= brl(spent) %> /
+        </span>
+        <%# Visibility is carried by Tailwind's `hidden` class, not the `hidden`
+            attribute: `form_with` drops a top-level `hidden:` option, and the
+            form's `inline` display beats `[hidden] { display: none }` on
+            specificity. The Stimulus controller toggles the same class. %>
+        <span data-budget-edit-target="display" data-action="click->budget-edit#edit"
+              class="cursor-pointer <%= open ? "hidden" : "" %> <%= over ? "text-money-over font-medium" : "text-muted" %>">
+          orçado <%= brl(budgeted) %>
+        </span>
+        <%= form_with url: budgets_path, method: :post, class: open ? "inline" : "hidden",
+              data: { budget_edit_target: "form" } do |f| %>
+          <%= f.hidden_field :category_id, value: category.id %>
+          <%= f.hidden_field :month, value: summary.month.strftime("%Y-%m") %>
+          <%= f.text_field :budget_amount, value: BrlMoney.format(budgeted), inputmode: "decimal",
+                class: "field-input w-24 text-sm inline", data: { budget_edit_target: "input" } %>
+        <% end %>
+        <% if error %><span class="field-error"><%= error %></span><% end %>
+      </div>
     </div>
+    <%= render "shared/budget_bar", spent_cents: spent, budgeted_cents: budgeted %>
   </div>
 <% end %>

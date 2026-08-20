@@ -54,7 +54,9 @@ RSpec.describe "Home month view", type: :request do
     Expense.create!(name: "feira", amount_cents: 150_000, date: Date.new(2026, 3, 5),
                     payment_method: "debit", category: mercado)
     get root_path(month: "2026-03")
-    expect(response.body).to match(/text-red-700[^>]*>\s*gasto R\$ 1\.500,00/)
+    row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+    expect(row.to_html).to match(/text-money-over[^>]*>\s*gasto R\$ 1\.500,00/)
+    expect(row.at("div.progress-fill.progress-over")).to be_present
   end
 
   it "opens an empty month with zeros and no error (AC 12)" do
@@ -193,7 +195,8 @@ RSpec.describe "Home month view", type: :request do
 
     row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
     expect(row.to_html).to include("orçado R$ 0,00")
-    expect(row.to_html).not_to include("text-red-700")
+    expect(row.to_html).not_to include("text-money-over")
+    expect(row.at("div.progress-fill.progress-neutral")).to be_present
   end
 
   # The month's card row expands into one line per statement due that month.

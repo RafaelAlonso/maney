@@ -1,7 +1,7 @@
 <%# app/views/expenses/edit.html.erb %>
 <h1 class="text-lg font-semibold mb-4">Editar gasto</h1>
 <% if @expense.installment? %>
-  <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+  <p class="text-sm bg-money-near/10 border border-money-near/30 rounded p-3 mb-4">
     Este gasto é uma parcela — as alterações recalculam a compra inteira.
     Para transformar em gasto avulso, exclua a compra e lance de novo.
   </p>
@@ -13,7 +13,7 @@
       the user saw "Gasto atualizado." with no conversion at all. Same rule
       already applied in the mirror direction above: lock the control and explain
       how to get what the user wanted. %>
-  <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+  <p class="text-sm bg-money-near/10 border border-money-near/30 rounded p-3 mb-4">
     Este gasto é avulso — não é possível transformá-lo em parcelado aqui.
     Para lançar como parcelado, exclua este gasto e lance de novo marcando "parcelado".
   </p>

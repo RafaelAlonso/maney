@@ -78,4 +78,35 @@ RSpec.describe "Transactions & entry styling", type: :system do
     expect(page).to have_css("html.dark")
     expect(background_of("ul")).to eq(rgb("#131a22"))
   end
+
+  it "styles the expense form inputs and submit, with no amber utilities (AC 3)" do
+    visit new_expense_path
+
+    expect(page).to have_css("input.field-input")
+    expect(page).to have_css(".btn.btn-primary")
+    expect(page).to have_no_css('[class*="amber"]')     # advisories moved to money-near tokens
+  end
+
+  it "styles the income form and shows a styled error on invalid amount (AC 3, AC 4)" do
+    visit new_income_path
+
+    expect(page).to have_css("input.field-input")
+    expect(page).to have_css(".btn.btn-primary")
+
+    fill_in "Nome", with: "salário"
+    fill_in "Valor (R$)", with: "abc"          # unparseable → Income rejects it
+    fill_in "Data", with: Date.new(2026, 3, 5)
+    click_button "Salvar"
+
+    # shared/errors renders the message list in the money-expense token block.
+    expect(page).to have_css(".text-money-expense", text: "não é um valor válido")
+  end
+
+  it "themes the standalone-expense edit notice with money-near, not amber (AC 3)" do
+    seed_expense
+    visit edit_expense_path(Expense.find_by!(name: "mercado"))
+
+    expect(page).to have_content("Este gasto é avulso")
+    expect(page).to have_no_css('[class*="amber"]')
+  end
 end

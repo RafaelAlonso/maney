@@ -13,18 +13,18 @@
 <li class="p-3 flex items-center justify-between gap-2">
   <div>
     <p class="font-medium"><%= expense.name %></p>
-    <p class="text-sm text-gray-500">
+    <p class="text-sm text-muted">
       <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
-      · <%= link_to statement_due_label(statement), card_statement_path(expense.card, statement), class: "text-blue-600" %><% end %><% if show_category %>
+      · <%= link_to statement_due_label(statement), card_statement_path(expense.card, statement), class: "text-accent" %><% end %><% if show_category %>
       · <%= expense.category.name %><% end %>
     </p>
   </div>
   <div class="flex gap-3 text-sm shrink-0">
-    <%= link_to "editar", edit_expense_path(expense), class: "text-blue-600" %>
+    <%= link_to "editar", edit_expense_path(expense), class: "text-accent" %>
     <% if show_delete %>
 <%# The month travels with the delete so the redirect comes back to the list the
           user was on, not to the current month (see ExpensesController#destroy). %>
-      <%= button_to "excluir", expense_path(expense, month: month_param), method: :delete, class: "text-red-600",
+      <%= button_to "excluir", expense_path(expense, month: month_param), method: :delete, class: "text-money-expense",
             data: { turbo_confirm: expense.installment? ?
               "Excluir remove a compra parcelada inteira (#{expense.installment_purchase.installments_count} parcelas). Confirmar?" :
               "Excluir o gasto #{expense.name}?" } %>

@@ -19,22 +19,22 @@
       data: { controller: "expense-form" } do |f| %>
   <%= render "shared/errors", model: entry %>
   <div>
-    <%= f.label :name, "Nome", class: "block text-sm mb-1" %>
-    <%= f.text_field :name, class: "border rounded p-2 w-full" %>
+    <%= f.label :name, "Nome", class: "field-label" %>
+    <%= f.text_field :name, class: "field-input" %>
   </div>
   <div>
-    <%= f.label :amount, class: "block text-sm mb-1" do %><span data-expense-form-target="amountLabel">Valor (R$)</span><% end %>
-    <%= f.text_field :amount, inputmode: "decimal", class: "border rounded p-2 w-full" %>
+    <%= f.label :amount, class: "field-label" do %><span data-expense-form-target="amountLabel">Valor (R$)</span><% end %>
+    <%= f.text_field :amount, inputmode: "decimal", class: "field-input" %>
   </div>
   <div>
-    <%= f.label :date, "Data", class: "block text-sm mb-1" %>
-    <%= f.date_field :date, value: entry.date, class: "border rounded p-2 w-full" %>
+    <%= f.label :date, "Data", class: "field-label" %>
+    <%= f.date_field :date, value: entry.date, class: "field-input" %>
   </div>
   <div>
-    <%= f.label :category_id, "Categoria", class: "block text-sm mb-1" %>
+    <%= f.label :category_id, "Categoria", class: "field-label" %>
     <%= f.select :category_id,
           Category.order(:name).map { |c| [c.name, c.id, { data: { role: c.role, expense_form_target: "categoryOption" } }] },
-          { selected: entry.selected_category_id }, class: "border rounded p-2 w-full" %>
+          { selected: entry.selected_category_id }, class: "field-input" %>
   </div>
   <fieldset>
     <legend class="text-sm mb-1">Método</legend>
@@ -51,14 +51,14 @@
         cards but none can be chosen, and the story asks for this same guidance. %>
     <% card_options = card_options_for(entry) %>
     <% if card_options.empty? %>
-      <p class="text-sm bg-amber-50 border border-amber-200 rounded p-3">
+      <p class="text-sm bg-money-near/10 border border-money-near/30 rounded p-3">
         Para lançar no crédito, cadastre um cartão antes.
-        <%= link_to "Cadastrar cartão", new_card_path, class: "text-blue-600 underline" %>
+        <%= link_to "Cadastrar cartão", new_card_path, class: "text-accent underline" %>
       </p>
     <% else %>
-      <%= f.label :card_id, "Cartão", class: "block text-sm mb-1" %>
+      <%= f.label :card_id, "Cartão", class: "field-label" %>
       <%= f.select :card_id, card_options, { include_blank: "escolha…" },
-            class: "border rounded p-2 w-full" %>
+            class: "field-input" %>
     <% end %>
   </div>
   <div data-expense-form-target="installmentSection" hidden>
@@ -67,14 +67,14 @@
     </label>
     <div data-expense-form-target="installmentFields" hidden class="flex gap-4 mt-2">
       <div>
-        <%= f.label :installments_count, "Nº de parcelas", class: "block text-sm mb-1" %>
-        <%= f.number_field :installments_count, min: 2, class: "border rounded p-2 w-28" %>
+        <%= f.label :installments_count, "Nº de parcelas", class: "field-label" %>
+        <%= f.number_field :installments_count, min: 2, class: "field-input w-28" %>
       </div>
       <div>
-        <%= f.label :first_installment, "Parcela inicial", class: "block text-sm mb-1" %>
-        <%= f.number_field :first_installment, min: 1, value: entry.first_installment || 1, class: "border rounded p-2 w-28" %>
+        <%= f.label :first_installment, "Parcela inicial", class: "field-label" %>
+        <%= f.number_field :first_installment, min: 1, value: entry.first_installment || 1, class: "field-input w-28" %>
       </div>
     </div>
   </div>
-  <%= f.submit "Salvar", class: "bg-blue-600 text-white rounded px-4 py-2" %>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
 <% end %>

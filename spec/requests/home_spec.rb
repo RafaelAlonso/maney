@@ -33,7 +33,7 @@ RSpec.describe "Home month view", type: :request do
     get root_path(month: "2026-03")
 
     expect(response.body).to include("-R$ 200,00")
-    expect(response.body).to include("text-red-700")
+    expect(response.body).to include("text-money-over")
   end
 
   it "reflects a statement payment in the current balance, not the estimate (AC 2)" do
@@ -54,7 +54,9 @@ RSpec.describe "Home month view", type: :request do
     Expense.create!(name: "feira", amount_cents: 150_000, date: Date.new(2026, 3, 5),
                     payment_method: "debit", category: mercado)
     get root_path(month: "2026-03")
-    expect(response.body).to match(/text-red-700[^>]*>\s*gasto R\$ 1\.500,00/)
+    row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+    expect(row.to_html).to match(/text-money-over[^>]*>\s*gasto R\$ 1\.500,00/)
+    expect(row.at("div.progress-fill.progress-over")).to be_present
   end
 
   it "opens an empty month with zeros and no error (AC 12)" do
@@ -152,24 +154,32 @@ RSpec.describe "Home month view", type: :request do
   # AC 1 asks the month view for "income with a total". It rendered neither, and
   # /incomes had no total either, so the month's income was displayed nowhere —
   # leaving "saldo estimado" impossible to sanity-check without adding it up by hand.
-  describe "the income block (AC 1)" do
-    it "lists the month's income with a total that includes the carried balance" do
+  # The dashboard folds income into the hero: the month's income TOTAL is the
+  # hero's "ganhos" supporting stat (and links to Ganhos), while the per-income
+  # breakdown and the carried-balance line now live only on the Ganhos screen.
+  describe "the income total on the hero" do
+    it "shows the income total (carried balance included) as a ganhos stat linking to Ganhos" do
       Setting.instance.update!(initial_balance_cents: 200_000)
       Income.create!(name: "salário", amount_cents: 500_000, date: march)
       Income.create!(name: "freela", amount_cents: 50_000, date: Date.new(2026, 3, 20))
 
       get root_path(month: "2026-03")
 
-      expect(response.body).to include("ganhos").and include("salário").and include("freela")
-      expect(response.body).to include("saldo inicial")
       # 2.000 carried + 5.000 + 500
-      expect(response.body).to include("R$ 7.500,00")
+      expect(response.body).to include("ganhos").and include("R$ 7.500,00")
+      hero = Nokogiri::HTML(response.body).at("#hero")
+      expect(hero.at("a[href='#{incomes_path(month: "2026-03")}']")).to be_present
     end
 
-    it "names the carried balance as the previous month's outside the first month" do
-      get root_path(month: "2026-04")
+    it "does not render the per-income breakdown on Início" do
+      Setting.instance.update!(initial_balance_cents: 200_000)
+      Income.create!(name: "salário", amount_cents: 500_000, date: march)
 
-      expect(response.body).to include("saldo do mês anterior")
+      get root_path(month: "2026-03")
+
+      expect(response.body).not_to include("salário")
+      expect(response.body).not_to include("saldo inicial")
+      expect(response.body).not_to include("saldo do mês anterior")
     end
   end
 
@@ -185,7 +195,8 @@ RSpec.describe "Home month view", type: :request do
 
     row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
     expect(row.to_html).to include("orçado R$ 0,00")
-    expect(row.to_html).not_to include("text-red-700")
+    expect(row.to_html).not_to include("text-money-over")
+    expect(row.at("div.progress-fill.progress-neutral")).to be_present
   end
 
   # The month's card row expands into one line per statement due that month.
@@ -245,6 +256,15 @@ RSpec.describe "Home month view", type: :request do
       ]
     end
 
+    it "styles the breakdown links with the accent token, not raw blue" do
+      azul = create_card!(name: "Azul", closing_day: 3, due_day: 10)
+      credit_expense(210_000, Date.new(2026, 3, 2), on: azul)
+      get root_path(month: "2026-03")
+      row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(credit_card_category, :row)}")
+      expect(row.to_html).to include("text-accent")
+      expect(row.to_html).not_to include("text-blue-600")
+    end
+
     it "resolves a breakdown link to that card's statement for the month (AC 2)" do
       azul, = three_cards
       get root_path(month: "2026-03")
@@ -302,7 +322,7 @@ RSpec.describe "Home month view", type: :request do
 
       get root_path(month: "2026-03")
 
-      expect(card_row.to_html).to match(/text-red-700[^>]*>\s*gasto R\$ 1\.500,00/)
+      expect(card_row.to_html).to match(/text-money-over[^>]*>\s*gasto R\$ 1\.500,00/)
     end
 
     it "does not highlight the card row when statement payments stay within the statements due" do

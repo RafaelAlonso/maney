@@ -1,0 +1,26 @@
+<%# app/views/home/_hero.html.erb — locals: summary
+    The balance hero: saldo estimado is the primary figure; saldo atual and the
+    income total are supporting stats. Its wrapper keeps id="hero" so a budget
+    save (budgets/create.turbo_stream.erb) can re-render the moved estimate. The
+    income breakdown that used to sit below lives on Ganhos now — only the total
+    is here, linking there. %>
+<div id="hero" class="card">
+  <p class="text-sm text-muted mb-1">saldo estimado</p>
+  <p class="text-3xl font-semibold tabular-nums <%= "text-money-over" if summary.estimated_balance_cents.negative? %>">
+    <%= brl(summary.estimated_balance_cents) %>
+  </p>
+  <div class="mt-4 flex items-center gap-6 text-sm">
+    <div>
+      <span class="block text-muted">saldo atual</span>
+      <span class="tabular-nums <%= "text-money-over" if summary.current_balance_cents.negative? %>">
+        <%= brl(summary.current_balance_cents) %>
+      </span>
+    </div>
+    <%= link_to incomes_path(month: summary.month.strftime("%Y-%m")), class: "text-accent" do %>
+      <span class="block text-muted">ganhos</span>
+      <span class="tabular-nums <%= "text-money-over" if summary.incomes_total_cents.negative? %>">
+        <%= brl(summary.incomes_total_cents) %> ›
+      </span>
+    <% end %>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 <h1 class="text-lg font-semibold mb-2">Gastos</h1>
 <%= render "shared/month_nav", path_helper: ->(month:) { expenses_path(month:) } %>
-<ul class="divide-y bg-white rounded border">
+<ul class="divide-y divide-border rounded border border-border bg-surface">
   <%= render partial: "row", collection: @expenses, as: :expense,
         locals: { show_delete: true, statements: @statements } %>
-  <% if @expenses.empty? %><li class="p-3 text-sm text-gray-500">Nenhum gasto neste mês.</li><% end %>
+  <% if @expenses.empty? %><%= render "shared/empty_state", message: "Nenhum gasto neste mês." %><% end %>
 </ul>

@@ -256,6 +256,15 @@ RSpec.describe "Home month view", type: :request do
       ]
     end
 
+    it "styles the breakdown links with the accent token, not raw blue" do
+      azul = create_card!(name: "Azul", closing_day: 3, due_day: 10)
+      credit_expense(210_000, Date.new(2026, 3, 2), on: azul)
+      get root_path(month: "2026-03")
+      row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(credit_card_category, :row)}")
+      expect(row.to_html).to include("text-accent")
+      expect(row.to_html).not_to include("text-blue-600")
+    end
+
     it "resolves a breakdown link to that card's statement for the month (AC 2)" do
       azul, = three_cards
       get root_path(month: "2026-03")
@@ -313,7 +322,7 @@ RSpec.describe "Home month view", type: :request do
 
       get root_path(month: "2026-03")
 
-      expect(card_row.to_html).to match(/text-red-700[^>]*>\s*gasto R\$ 1\.500,00/)
+      expect(card_row.to_html).to match(/text-money-over[^>]*>\s*gasto R\$ 1\.500,00/)
     end
 
     it "does not highlight the card row when statement payments stay within the statements due" do

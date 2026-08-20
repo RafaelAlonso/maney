@@ -24,8 +24,8 @@
         <li class="py-1 flex items-center justify-between gap-2">
           <%= link_to row.statement.card.name,
                 card_statement_path(row.statement.card, row.statement),
-                class: "text-blue-600 hover:underline" %>
-          <span class="text-gray-500"><%= statement_due_label(row.statement) %></span>
+                class: "text-accent hover:underline" %>
+          <span class="text-muted"><%= statement_due_label(row.statement) %></span>
           <span class="shrink-0"><%= brl(row.amount_cents) %></span>
         </li>
       <% end %>

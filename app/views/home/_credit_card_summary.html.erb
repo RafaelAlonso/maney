@@ -12,8 +12,8 @@
     statements demand, e.g. settling an overdue statement from before. %>
 <% over = budgeted.positive? && spent > budgeted %>
 <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
-      class: "hover:underline" %>
+      class: "text-text hover:underline" %>
 <span class="text-sm text-right block">
-  <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">gasto <%= brl(spent) %> /</span>
-  <span class="<%= over ? "text-red-700 font-medium" : "text-gray-500" %>">orçado <%= brl(budgeted) %></span>
+  <span class="<%= over ? "text-money-over font-medium" : "text-muted" %>">gasto <%= brl(spent) %> /</span>
+  <span class="<%= over ? "text-money-over font-medium" : "text-muted" %>">orçado <%= brl(budgeted) %></span>
 </span>

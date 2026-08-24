@@ -1,10 +1,10 @@
 service: maney
 
-image: <gh-user>/maney
+image: rafaelalonso/maney
 
 servers:
   web:
-    - <instance-ip>
+    - 157.245.90.120
 
   # Runs Solid Queue. Without it nothing performs an enqueued job, and a
   # `deliver_later` invitation or password-reset email is never sent — silently,
@@ -18,7 +18,7 @@ servers:
   # restart until they do. That settles itself; it is not a failed deploy.
   job:
     hosts:
-      - <instance-ip>
+      - 157.245.90.120
     cmd: ./bin/jobs
     env:
       clear:
@@ -27,26 +27,26 @@ servers:
         # Matches the backup accessory below.
         TZ: America/Sao_Paulo
 
-# Kamal would otherwise connect as root, which Oracle Cloud's Ubuntu images
-# refuse: `kamal setup` dies on authentication before it does anything at all.
+# DigitalOcean's Ubuntu droplets enable root login over the SSH key by default,
+# so Kamal connects as root directly.
 ssh:
-  user: ubuntu
+  user: root
 
 proxy:
   ssl: true
-  host: <domain>
+  host: maney.net
   app_port: 80
   healthcheck:
     path: /up
 
 registry:
   server: ghcr.io
-  username: <gh-user>
+  username: RafaelAlonso
   password:
     - KAMAL_REGISTRY_PASSWORD
 
 builder:
-  arch: arm64
+  arch: amd64
 
 env:
   clear:
@@ -55,10 +55,10 @@ env:
     # built from. Deliberately has no fallback in production.rb: a default
     # would send perfectly deliverable mail carrying links to localhost, with
     # nothing anywhere reporting a failure. Unset, the app refuses to boot.
-    MANEY_HOST: <domain>
+    MANEY_HOST: maney.net
     # The sender address verified in Brevo. Both roles need these — the job
     # container is what actually renders and sends the mail.
-    MANEY_MAIL_FROM: <verified brevo sender address>
+    MANEY_MAIL_FROM: rafael.p.alonso@gmail.com
   secret:
     - RAILS_MASTER_KEY
     - MANEY_DATABASE_PASSWORD
@@ -66,7 +66,7 @@ env:
 accessories:
   db:
     image: postgres:17
-    host: <instance-ip>
+    host: 157.245.90.120
     # Published to loopback only. Postgres is never reachable from the internet.
     port: "127.0.0.1:5432:5432"
     env:
@@ -80,21 +80,26 @@ accessories:
       # makes an expense survive a deploy.
       - data:/var/lib/postgresql/data
 
-  backup:
-    image: ghcr.io/<gh-user>/maney-backup:latest
-    host: <instance-ip>
-    env:
-      clear:
-        TZ: America/Sao_Paulo
-        PGHOST: maney-db
-        PGUSER: maney
-        PGDATABASE: maney_production
-        AGE_RECIPIENT: <age public key>
-        R2_BUCKET: maney-backups
-        R2_ENDPOINT: <r2 endpoint url>
-        BACKUP_PREFIX: nightly
-      secret:
-        - POSTGRES_PASSWORD
-        - R2_ACCESS_KEY_ID
-        - R2_SECRET_ACCESS_KEY
-        - HEALTHCHECK_URL
+  # TEMPORARILY DISABLED (2026-08-24): the maney-backup image was never built —
+  # Dockerfile.backup + bin/backup.sh + bin/backup-entrypoint.sh + bin/backup-image-push
+  # are specified in the plan (project/pm/.../plans/w2-live-on-the-internet.md) but do
+  # not exist in the repo. Build + push that image, then uncomment this block and run
+  # `bin/kamal accessory boot backup`. Until then the app deploys without nightly backups.
+  # backup:
+  #   image: ghcr.io/rafaelalonso/maney-backup:latest
+  #   host: 157.245.90.120
+  #   env:
+  #     clear:
+  #       TZ: America/Sao_Paulo
+  #       PGHOST: maney-db
+  #       PGUSER: maney
+  #       PGDATABASE: maney_production
+  #       AGE_RECIPIENT: age1ycwx2u66yxtyjjd4fpyy39w0p25967ru33x8qj0hjsmdwmkqmftqt9m8r6
+  #       R2_BUCKET: maney-backups
+  #       R2_ENDPOINT: https://01c38df21a638681506e2d2e6838e528.r2.cloudflarestorage.com
+  #       BACKUP_PREFIX: nightly
+  #     secret:
+  #       - POSTGRES_PASSWORD
+  #       - R2_ACCESS_KEY_ID
+  #       - R2_SECRET_ACCESS_KEY
+  #       - HEALTHCHECK_URL

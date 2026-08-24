@@ -1,9 +1,9 @@
 require "rails_helper"
 
-# The mobile chrome: a five-slot bottom tab bar (Início · Gastos · [+] · Análise
-# · Cartões) and a slim top-bar "Mais" trigger opening a slide-in panel holding
-# the overflow destinations, the theme toggle and the brand. Replaces the old
-# scrollable top-strip nav.
+# The mobile chrome: a five-slot bottom tab bar (Início · Análise · [+] · Ganhos
+# · Gastos) and a slim top-bar "Mais" trigger opening a slide-in panel holding
+# the overflow destinations (Cartões · Categorias · Config), the theme toggle
+# and the brand. Replaces the old scrollable top-strip nav.
 RSpec.describe "Mobile app shell", type: :system do
   before { create_setting!(first_month: Date.new(2026, 3, 1)); create_reserved_categories! }
 
@@ -26,10 +26,11 @@ RSpec.describe "Mobile app shell", type: :system do
 
     within find("nav", text: "Início") do
       expect(page).to have_link("Início")
-      expect(page).to have_link("Gastos")
-      expect(page).to have_button("Lançar")
       expect(page).to have_link("Análise")
-      expect(page).to have_link("Cartões")
+      expect(page).to have_button("Lançar")
+      expect(page).to have_link("Ganhos")
+      expect(page).to have_link("Gastos")
+      expect(page).not_to have_link("Cartões")
     end
     expect(find_link("Início")["aria-current"]).to eq "page"
   end
@@ -43,18 +44,18 @@ RSpec.describe "Mobile app shell", type: :system do
     expect(page).to have_link("ganho", href: new_income_path(month: "2026-05"))
   end
 
-  it "reaches Ganhos, Categorias, Config, the theme toggle and the brand through Mais" do
+  it "reaches Cartões, Categorias, Config, the theme toggle and the brand through Mais" do
     visit root_path
     emulate_phone
 
     click_button "Mais"
     expect(page).to have_css("[data-mais-panel-target='scrim']", visible: true)  # panel opened
     within "aside" do
-      expect(page).to have_link("Ganhos")
+      expect(page).to have_link("Cartões")
       expect(page).to have_link("Categorias")
       expect(page).to have_link("Config")
-      expect(page).to have_button("Tema")
-      expect(page).to have_css("img[alt='maney']")
+      expect(page).to have_css("button[aria-label='Alternar tema']")
+      expect(page).to have_css("svg[aria-label='maney']")
     end
 
     click_link "Categorias"

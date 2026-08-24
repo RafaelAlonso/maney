@@ -1,0 +1,10 @@
+<%# app/views/shared/_coinmark.html.erb — the coin "M" monogram, inlined so its
+    ring/monogram follow the theme (currentColor), leaving only the mint dot
+    fixed. locals: class (sizing utilities). Decorative on the auth header, so
+    aria-hidden. See shared/_wordmark for why this is inline and not an <img>. %>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" aria-hidden="true"
+     class="<%= local_assigns[:class] %>">
+  <circle cx="256" cy="256" r="190" fill="none" stroke="currentColor" stroke-width="22"/>
+  <path d="M186,336 L186,196 L256,286 L326,196 L326,336" fill="none" stroke="currentColor" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="390" cy="122" r="30" fill="#34d399"/>
+</svg>

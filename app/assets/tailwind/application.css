@@ -109,6 +109,15 @@
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.04), 0 1px 3px rgb(0 0 0 / 0.06);
 }
 
+/* Tailwind v4's Preflight resets interactive controls to `cursor: default`;
+   restore the pointer the whole app expects on clickable chrome (buttons,
+   submits, the "Mais"/theme toggles, disclosure summaries). */
+@layer base {
+  button:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  summary { cursor: pointer; }
+}
+
 @layer components {
   .card { @apply bg-surface border border-border rounded-[var(--radius-card)] shadow-[var(--shadow-card)] p-4 mb-4; }
   .flash { @apply px-4 py-2 text-sm; }

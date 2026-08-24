@@ -1,6 +1,8 @@
 <%# app/views/shared/_mobile_bottom_bar.html.erb — mobile bottom tab bar
-    (md:hidden): Início · Gastos · [+] · Análise · Cartões. The center "+"
-    reuses the fab popover, anchored above the bar. %>
+    (md:hidden): Início · Análise · [+] · Ganhos · Gastos. Each tab carries a
+    small icon above its label so the target is easier to hit. The center "+"
+    reuses the fab popover, anchored above the bar. Cartões is not here — it
+    lives in the "Mais" panel (shared/_mais_panel). %>
 <div data-controller="fab" class="md:hidden fixed bottom-0 inset-x-0 z-20 border-t border-border bg-surface">
   <div data-fab-target="menu" hidden
        class="absolute bottom-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
@@ -9,21 +11,33 @@
   <nav class="flex items-stretch justify-around text-xs">
     <%= link_to root_path, aria: { current: ("page" if nav_active?("home")) },
           class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("home")) do %>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+        <path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>
+      </svg>
       <span>Início</span>
     <% end %>
-    <%= link_to expenses_path, aria: { current: ("page" if nav_active?("expenses")) },
-          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("expenses")) do %>
-      <span>Gastos</span>
+    <%= link_to analysis_path, aria: { current: ("page" if nav_active?("analyses")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("analyses")) do %>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+        <path d="M3 21h18"/><path d="M6 21V11M12 21V4M18 21v-7"/>
+      </svg>
+      <span>Análise</span>
     <% end %>
     <button type="button" data-action="fab#toggle" aria-label="Lançar"
             class="btn-primary rounded-full w-12 h-12 text-2xl -mt-4 shadow-lg self-center">+</button>
-    <%= link_to analysis_path, aria: { current: ("page" if nav_active?("analyses")) },
-          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("analyses")) do %>
-      <span>Análise</span>
+    <%= link_to incomes_path, aria: { current: ("page" if nav_active?("incomes")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("incomes")) do %>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+        <polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/>
+      </svg>
+      <span>Ganhos</span>
     <% end %>
-    <%= link_to cards_path, aria: { current: ("page" if nav_active?("cards", "statements", "card_migrations", "card_archivals")) },
-          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("cards", "statements", "card_migrations", "card_archivals")) do %>
-      <span>Cartões</span>
+    <%= link_to expenses_path, aria: { current: ("page" if nav_active?("expenses")) },
+          class: class_names("flex-1 flex flex-col items-center gap-1 py-2", "text-accent" => nav_active?("expenses")) do %>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="h-5 w-5">
+        <polyline points="3 7 9 13 13 9 21 17"/><polyline points="15 17 21 17 21 11"/>
+      </svg>
+      <span>Gastos</span>
     <% end %>
   </nav>
 </div>

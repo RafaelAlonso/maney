@@ -35,7 +35,7 @@ RSpec.describe "Category drill-down chart theming", type: :system do
       # "color-mix(...)"/"var(...)" source string.
       expect(light).to match(/\A(rgba?|color)\(/)
 
-      click_button "Tema"                  # flip to dark
+      find("button[aria-label='Alternar tema']").click                  # flip to dark
       expect(page).to have_css("html.dark") # sync point: CSS + theme:change fired
 
       expect(pie_slice_color).not_to eq light # recolored live against the dark surface

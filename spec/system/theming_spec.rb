@@ -19,7 +19,7 @@ RSpec.describe "Theming", type: :system do
   it "honors the persisted manual override on a later visit (AC3)" do
     set_prefers_color_scheme(:light)
     visit root_path
-    click_button "Tema"                 # flip to dark
+    find("button[aria-label='Alternar tema']").click                 # flip to dark
     expect(page).to have_css("html.dark")
     visit root_path                     # revisit
     expect(page).to have_css("html.dark") # server read the cookie, no flash

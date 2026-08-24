@@ -15,7 +15,7 @@ RSpec.describe "Cards & statements styling", type: :system do
     visit cards_path
     expect(background_of("ul")).to eq(rgb("#ffffff"))   # --color-surface, light
 
-    click_button "Tema"                                  # flip to dark
+    find("button[aria-label='Alternar tema']").click                                  # flip to dark
     expect(page).to have_css("html.dark")
     expect(background_of("ul")).to eq(rgb("#131a22"))    # --color-surface, dark (--ink-900)
   end

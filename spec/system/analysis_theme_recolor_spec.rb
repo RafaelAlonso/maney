@@ -31,7 +31,7 @@ RSpec.describe "Analysis chart theming", type: :system do
       click_button "Ganhos − saídas"
       expect(find_button("Ganhos − saídas")["aria-pressed"]).to eq "true"
 
-      click_button "Tema"                                  # flip to dark
+      find("button[aria-label='Alternar tema']").click                                  # flip to dark
       expect(page).to have_css("html.dark")                # sync point: CSS + theme:change fired
 
       expect(spending_bar_color).to eq "#3987e5"           # --chart-1, dark — recolored live

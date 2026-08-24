@@ -22,18 +22,7 @@
   <%= f.submit "Salvar", class: "btn btn-primary" %>
 <% end %>
 
-<h2 class="font-medium mb-2 text-text">Categorias reservadas</h2>
-<p class="text-sm text-muted mb-3">Renomeáveis; não podem ser excluídas.</p>
-<div class="space-y-3">
-  <% @reserved.each do |category| %>
-    <%= form_with model: category, url: category_path(category), class: "flex gap-2" do |f| %>
-      <%= f.text_field :name, class: "field-input flex-1" %>
-      <%= f.submit "Renomear", class: "btn btn-secondary" %>
-    <% end %>
-  <% end %>
-</div>
-
-<h2 class="font-medium mt-8 mb-2 text-text">Conta</h2>
+<h2 class="font-medium mb-2 text-text">Conta</h2>
 <div class="space-y-3">
   <% if Current.user.admin? %>
     <p><%= link_to "Pessoas", people_path, class: "text-accent text-sm" %></p>

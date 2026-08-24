@@ -3,10 +3,12 @@ require "rails_helper"
 RSpec.describe "Settings", type: :request do
   before { create_setting!(initial_balance_cents: 10_000); create_reserved_categories! }
 
-  it "shows current values and the reserved category rename forms (AC 12/18)" do
+  it "shows the current settings values (AC 12/18)" do
     get edit_settings_path
     expect(response.body).to include("2026-03").and include("100,00")
-    expect(response.body).to include("outros").and include("cartão de crédito")
+    # The reserved-category section was removed entirely — no list, no forms.
+    expect(response.body).not_to include("Categorias reservadas")
+    expect(response.body).not_to include("Renomear")
   end
 
   it "updates first month and initial balance (AC 18)" do

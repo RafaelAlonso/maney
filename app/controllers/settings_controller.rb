@@ -1,7 +1,6 @@
 class SettingsController < ApplicationController
   def edit
     @setting = Setting.instance
-    @reserved = Category.where.not(role: nil).order(:role)
     @first_month_input = @setting.first_month.strftime("%Y-%m")
     @initial_balance_input = BrlMoney.format(@setting.initial_balance_cents)
     @alert_threshold_input = @setting.alert_threshold_percent
@@ -21,7 +20,6 @@ class SettingsController < ApplicationController
     balance_cents = BrlMoney.parse(@initial_balance_input)
     if balance_cents.nil?
       @setting.errors.add(:initial_balance, "não é um valor válido")
-      @reserved = Category.where.not(role: nil).order(:role)
       return render :edit, status: :unprocessable_entity
     end
 
@@ -31,7 +29,6 @@ class SettingsController < ApplicationController
     if @setting.save
       redirect_to edit_settings_path, notice: "Configurações salvas."
     else
-      @reserved = Category.where.not(role: nil).order(:role)
       render :edit, status: :unprocessable_entity
     end
   end

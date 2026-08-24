@@ -21,7 +21,10 @@ RSpec.describe "Desktop app shell", type: :system do
     page.driver.browser.manage.window.resize_to(1400, 900)
     visit root_path
 
-    expect(inline_labels).to include("Início", "Gastos", "Ganhos", "Cartões", "Categorias", "Análise", "Config")
+    expect(inline_labels).to include("Início", "Gastos", "Ganhos", "Cartões", "Categorias", "Análise")
+    # Config is pinned to the right of the bar, outside the foldable list.
+    expect(page).to have_link("Config")
+    expect(inline_labels).not_to include("Config")
     expect(page).to have_css('[data-nav-target="more"]', visible: :hidden)
     expect(body_fits?).to be true
   end
@@ -34,10 +37,13 @@ RSpec.describe "Desktop app shell", type: :system do
     visit root_path
 
     expect(page).to have_css('[data-nav-target="more"]', visible: true)
-    expect(inline_labels.length).to be < 7
+    expect(inline_labels.length).to be < 6
+
+    # Config stays pinned on the right even when the primary list overflows.
+    expect(page).to have_link("Config")
 
     click_button "Mais ▾"
-    within('[data-nav-target="menu"]') { expect(page).to have_link("Config") }
+    within('[data-nav-target="menu"]') { expect(page).to have_link("Análise") }
     expect(body_fits?).to be true
   end
 
@@ -46,7 +52,7 @@ RSpec.describe "Desktop app shell", type: :system do
     visit root_path
 
     click_button "Mais ▾"
-    within('[data-nav-target="menu"]') { expect(page).to have_link("Config") }
+    within('[data-nav-target="menu"]') { expect(page).to have_link("Análise") }
 
     find("body").send_keys(:escape)
     expect(page).to have_css('[data-nav-target="menu"]', visible: :hidden)

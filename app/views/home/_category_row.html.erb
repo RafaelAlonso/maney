@@ -26,8 +26,11 @@
     <div class="flex items-center justify-between gap-2">
       <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
             class: "text-text hover:underline truncate" %>
+      <%# Each segment is whitespace-nowrap so the line can only ever break at the
+          single space between them — never inside an amount — giving the fixed
+          "gasto [amount] /" ⏎ "orçado [amount]" split when it has to wrap. %>
       <div class="text-sm text-right shrink-0">
-        <span class="<%= over ? "text-money-over font-medium" : "text-muted" %>">
+        <span class="whitespace-nowrap <%= over ? "text-money-over font-medium" : "text-muted" %>">
           gasto <%= brl(spent) %> /
         </span>
         <%# Visibility is carried by Tailwind's `hidden` class, not the `hidden`
@@ -35,7 +38,7 @@
             form's `inline` display beats `[hidden] { display: none }` on
             specificity. The Stimulus controller toggles the same class. %>
         <span data-budget-edit-target="display" data-action="click->budget-edit#edit"
-              class="cursor-pointer <%= open ? "hidden" : "" %> <%= over ? "text-money-over font-medium" : "text-muted" %>">
+              class="whitespace-nowrap cursor-pointer <%= open ? "hidden" : "" %> <%= over ? "text-money-over font-medium" : "text-muted" %>">
           orçado <%= brl(budgeted) %>
         </span>
         <%= form_with url: budgets_path, method: :post, class: open ? "inline" : "hidden",

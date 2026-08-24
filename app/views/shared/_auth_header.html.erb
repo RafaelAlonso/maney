@@ -1,8 +1,9 @@
 <%# app/views/shared/_auth_header.html.erb — brand presence on logged-out
     auth/onboarding screens. Rendered by the layout when the app nav is hidden.
-    Plain image_tags only, so it is safe on the invalid-invite screen (which
-    omits the import map and must reveal nothing about whose invitation it was). %>
+    Inline SVG marks only (no external asset request, no script), so it stays
+    safe on the invalid-invite screen (which omits the import map and must
+    reveal nothing about whose invitation it was). %>
 <header class="flex flex-col items-center gap-2 pt-8 pb-4">
-  <%= image_tag "coin_m.svg", alt: "", aria: { hidden: true }, class: "h-10 w-auto" %>
-  <%= image_tag "wordmark.svg", alt: "maney", class: "h-6 w-auto" %>
+  <%= render "shared/coinmark", class: "h-10 w-auto text-text" %>
+  <%= render "shared/wordmark", class: "h-6 w-auto text-text" %>
 </header>

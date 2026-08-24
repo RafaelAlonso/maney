@@ -94,8 +94,10 @@ module ApplicationHelper
     controllers.flatten.map(&:to_s).include?(controller_name)
   end
 
-  # The seven destinations, in nav order, for the desktop top nav. Same routes
-  # the app has always exposed; the overflow controller decides which fit inline.
+  # The primary destinations, in nav order, for the desktop top nav's left group;
+  # the overflow controller decides which fit inline. Config is deliberately NOT
+  # here — the shell pins it to the right of the bar (shared/_desktop_nav), so it
+  # never folds into "Mais".
   def nav_destinations
     [
       { label: "Início",     path: root_path,          controllers: %w[home] },
@@ -104,7 +106,6 @@ module ApplicationHelper
       { label: "Cartões",    path: cards_path,         controllers: %w[cards statements card_migrations card_archivals] },
       { label: "Categorias", path: categories_path,    controllers: %w[categories] },
       { label: "Análise",    path: analysis_path,      controllers: %w[analyses] },
-      { label: "Config",     path: edit_settings_path, controllers: %w[settings] },
     ]
   end
 

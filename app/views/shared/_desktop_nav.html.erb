@@ -1,31 +1,42 @@
 <%# app/views/shared/_desktop_nav.html.erb — desktop top navigation (md+).
-    The `nav` controller measures the row and folds destinations that don't fit
-    into the "Mais" dropdown, re-running on resize. The month navigator is
-    yielded from content_for and so appears only on month-scoped screens. %>
-<nav class="hidden md:flex items-center gap-4 px-6 py-3 border-b border-border bg-surface text-sm sticky top-0 z-20"
+    Three columns: the brand + primary destinations (which the `nav` controller
+    folds into "Mais" when they don't fit) on the left, the month navigator dead
+    center, and Config + the theme toggle on the right. The 1fr/auto/1fr grid
+    keeps the center column at the exact horizontal center of the bar; the month
+    navigator is yielded from content_for and so appears only on month-scoped
+    screens (leaving the center column empty elsewhere). %>
+<nav class="hidden md:grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3 border-b border-border bg-surface text-sm sticky top-0 z-20"
      data-controller="nav">
-  <%= link_to root_path, class: "shrink-0", aria: { label: "maney" } do %><%= render "shared/lockup" %><% end %>
+  <div class="flex items-center gap-4 min-w-0">
+    <%= link_to root_path, class: "shrink-0", aria: { label: "maney" } do %><%= render "shared/lockup" %><% end %>
 
-  <%# No overflow-hidden here: the `nav` controller keeps this row's own
-      content within its box via the fold loop, but the "Mais" dropdown is an
-      absolutely-positioned descendant that must be free to extend below it —
-      an ancestor overflow-hidden would clip the open dropdown. %>
-  <div class="flex items-center gap-4 flex-1 min-w-0" data-nav-target="list">
-    <% nav_destinations.each do |dest| %>
-      <%= link_to dest[:label], dest[:path], data: { nav_target: "item" },
-            aria: { current: ("page" if nav_active?(*dest[:controllers])) },
-            class: class_names("shrink-0 whitespace-nowrap", "text-accent" => nav_active?(*dest[:controllers])) %>
-    <% end %>
-    <div class="relative shrink-0" data-nav-target="more" hidden>
-      <button type="button" data-action="nav#toggleMore" aria-haspopup="true" aria-expanded="false"
-              class="whitespace-nowrap">Mais ▾</button>
-      <div data-nav-target="menu" hidden
-           class="absolute right-0 mt-2 min-w-40 flex flex-col gap-2 rounded border border-border bg-surface p-2 shadow-lg z-30"></div>
+    <%# No overflow-hidden here: the `nav` controller keeps this row's own
+        content within its box via the fold loop, but the "Mais" dropdown is an
+        absolutely-positioned descendant that must be free to extend below it —
+        an ancestor overflow-hidden would clip the open dropdown. %>
+    <div class="flex items-center gap-4 flex-1 min-w-0" data-nav-target="list">
+      <% nav_destinations.each do |dest| %>
+        <%= link_to dest[:label], dest[:path], data: { nav_target: "item" },
+              aria: { current: ("page" if nav_active?(*dest[:controllers])) },
+              class: class_names("shrink-0 whitespace-nowrap", "text-accent" => nav_active?(*dest[:controllers])) %>
+      <% end %>
+      <div class="relative shrink-0" data-nav-target="more" hidden>
+        <button type="button" data-action="nav#toggleMore" aria-haspopup="true" aria-expanded="false"
+                class="whitespace-nowrap">Mais ▾</button>
+        <div data-nav-target="menu" hidden
+             class="absolute right-0 mt-2 min-w-40 flex flex-col gap-2 rounded border border-border bg-surface p-2 shadow-lg z-30"></div>
+      </div>
     </div>
   </div>
 
-  <div class="flex items-center gap-4 shrink-0">
+  <div class="justify-self-center">
     <%= yield :desktop_month_nav %>
+  </div>
+
+  <div class="flex items-center gap-4 justify-self-end">
+    <%= link_to "Config", edit_settings_path,
+          aria: { current: ("page" if nav_active?("settings")) },
+          class: class_names("shrink-0 whitespace-nowrap", "text-accent" => nav_active?("settings")) %>
     <%= render "shared/theme_toggle" %>
   </div>
 </nav>

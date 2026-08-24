@@ -58,8 +58,12 @@
     <% else %>
       <%= render "shared/auth_header" %>
     <% end %>
-    <div class="<%= class_names("pt-16 pb-24 md:pt-6 md:pb-6" => chrome) %>">
+    <%# The flash sits flush under the nav — no top padding on desktop (the nav
+        is in-flow/sticky), only the clearance the fixed mobile top bar needs. %>
+    <div class="<%= class_names("pt-16 md:pt-0" => chrome) %>">
       <%= render "shared/flash", notice:, alert: %>
+    </div>
+    <div class="<%= class_names("pb-24 md:pb-6" => chrome) %>">
       <main class="p-4 max-w-xl mx-auto"><%= yield %></main>
     </div>
     <%= render "shared/fab" if chrome %>

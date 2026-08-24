@@ -1,0 +1,19 @@
+<%# app/views/shared/_wordmark.html.erb — the "maney" wordmark, inlined so its
+    strokes can follow the theme. locals: class (sizing utilities).
+    The letterforms use currentColor (inherits text-text, so light on dark and
+    dark on light); only the mint accent dot is a fixed hue. An <img> could not
+    do this — an SVG loaded via <img> is an isolated document where currentColor
+    resolves to its own black, hence the inline markup. %>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 460" role="img"
+     aria-label="maney" class="<%= local_assigns[:class] %>">
+  <g fill="none" stroke="currentColor" stroke-width="26" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40,300 L40,140 Q85,90 130,140 L130,300 M130,140 Q175,90 220,140 L220,300"/>
+    <circle cx="305" cy="235" r="55"/>
+    <path d="M360,180 L360,300"/>
+    <path d="M390,300 L390,140 Q435,90 480,140 L480,300"/>
+    <circle cx="565" cy="235" r="55"/>
+    <path d="M510,235 L620,235"/>
+    <path d="M650,140 L705,260 M760,140 L705,260 L675,410"/>
+  </g>
+  <circle cx="800" cy="300" r="26" fill="#34d399"/>
+</svg>

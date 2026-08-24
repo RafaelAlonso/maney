@@ -1,6 +1,7 @@
 <%# app/views/shared/_mais_panel.html.erb — mobile "Mais" slide-in + scrim
-    (md:hidden). Overflow destinations, theme toggle and brand; a settings
-    surface. Selecting a destination or toggling the theme closes it. %>
+    (md:hidden). The secondary destinations (Cartões / Categorias / Config), the
+    theme toggle and the brand; a settings surface. Selecting a destination or
+    toggling the theme closes it. %>
 <div data-mais-panel-target="scrim" hidden
      data-action="click->mais-panel#close"
      class="fixed inset-0 z-30 bg-black/50"></div>
@@ -8,9 +9,9 @@
        class="fixed inset-y-0 right-0 z-40 w-72 max-w-[80%] translate-x-full transition-transform duration-200 bg-surface border-l border-border p-6 flex flex-col gap-6">
   <%= render "shared/lockup" %>
   <nav class="flex flex-col gap-4 text-base">
-    <%= link_to "Ganhos", incomes_path, data: { action: "mais-panel#close" },
-          aria: { current: ("page" if nav_active?("incomes")) },
-          class: class_names("text-accent" => nav_active?("incomes")) %>
+    <%= link_to "Cartões", cards_path, data: { action: "mais-panel#close" },
+          aria: { current: ("page" if nav_active?("cards", "statements", "card_migrations", "card_archivals")) },
+          class: class_names("text-accent" => nav_active?("cards", "statements", "card_migrations", "card_archivals")) %>
     <%= link_to "Categorias", categories_path, data: { action: "mais-panel#close" },
           aria: { current: ("page" if nav_active?("categories")) },
           class: class_names("text-accent" => nav_active?("categories")) %>

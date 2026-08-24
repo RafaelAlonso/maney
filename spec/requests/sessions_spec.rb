@@ -120,14 +120,18 @@ RSpec.describe "Sessions", type: :request do
 
     get new_session_path
 
-    expect(response.body).to include("coin_m")
-    expect(response.body).to include("maney")
+    # The brand lockup is now inlined SVG: the coin mark (its own viewBox) and
+    # the wordmark (labelled "maney").
+    expect(response.body).to include('viewBox="0 0 512 512"')
+    expect(response.body).to include('aria-label="maney"')
   end
 
   it "shows no brand lockup once the app nav is present" do
     get root_path
 
-    expect(response.body).not_to include("coin_m")
+    # The auth-only coin mark (its own viewBox) must not appear on app-nav
+    # screens; the in-nav lockup is the wordmark, not the coin mark.
+    expect(response.body).not_to include('viewBox="0 0 512 512"')
     expect(response.body).to include("Categorias")
   end
 

@@ -99,7 +99,8 @@ RSpec.describe "Signups", type: :request do
   it "brands the invalid-invite screen without leaking the invitee" do
     get signup_path(token: "nao-existe")
 
-    expect(response.body).to include("coin_m")
+    # The brand is inlined SVG now; the coin mark's viewBox is a stable marker.
+    expect(response.body).to include('viewBox="0 0 512 512"')
     expect(response.body).not_to include("@")
   end
 

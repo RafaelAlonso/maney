@@ -105,7 +105,7 @@ module ApplicationHelper
       { label: "Ganhos",     path: incomes_path,       controllers: %w[incomes] },
       { label: "Cartões",    path: cards_path,         controllers: %w[cards statements card_migrations card_archivals] },
       { label: "Categorias", path: categories_path,    controllers: %w[categories] },
-      { label: "Análise",    path: analysis_path,      controllers: %w[analyses] },
+      { label: "Análise",    path: analysis_path,      controllers: %w[analyses] }
     ]
   end
 

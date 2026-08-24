@@ -1,0 +1,14 @@
+# The nightly backup accessory. Kamal does not build accessory images —
+# bin/backup-image-push does.
+FROM alpine:3.21
+
+RUN apk add --no-cache bash postgresql17-client age aws-cli curl tzdata
+
+COPY bin/backup.sh /usr/local/bin/backup.sh
+COPY bin/backup-entrypoint.sh /usr/local/bin/backup-entrypoint.sh
+
+RUN chmod +x /usr/local/bin/backup.sh /usr/local/bin/backup-entrypoint.sh && \
+    echo "0 3 * * * /usr/local/bin/backup.sh >> /var/log/backup.log 2>&1" \
+      > /etc/crontabs/root
+
+ENTRYPOINT ["/usr/local/bin/backup-entrypoint.sh"]

@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+# Kamal builds the app image but not accessory images. Run this whenever
+# Dockerfile.backup or bin/backup.sh changes, then:
+#   bin/kamal accessory reboot backup
+#
+# Platform is linux/amd64: the production host is a DigitalOcean x86 droplet
+# (the original Oracle ARM plan is superseded — see project/pending_manual_actions.md).
+: "${GHCR_USER:?set GHCR_USER to your GitHub username (lowercase, e.g. rafaelalonso)}"
+
+docker buildx build \
+  --platform linux/amd64 \
+  --file Dockerfile.backup \
+  --tag "ghcr.io/${GHCR_USER}/maney-backup:latest" \
+  --push .

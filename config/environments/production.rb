@@ -66,7 +66,10 @@ Rails.application.configure do
   config.action_mailer.raise_delivery_errors = true
   config.action_mailer.smtp_settings = {
     address: "smtp-relay.brevo.com",
-    port: 587,
+    # Port 2525 (Brevo's alternate submission port), not 587: DigitalOcean blocks
+    # outbound 25/465/587 on droplets to fight spam, so 587 times out with
+    # Net::OpenTimeout. 2525 is open and speaks the same STARTTLS submission.
+    port: 2525,
     user_name: Rails.application.credentials.dig(:brevo, :user_name),
     password: Rails.application.credentials.dig(:brevo, :password),
     authentication: :plain,

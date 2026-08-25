@@ -11,6 +11,8 @@ class CategoriesController < ApplicationController
   # picker). The breakdown is handed the very collection the list renders, so
   # the pie and the list can never disagree about what the month contains.
   def show
+    @summary = Budgeting::MonthSummary.new(month: current_month)
+    @siblings = Category.order(:name).to_a
     @expenses = Budgeting::MonthEntries.expenses(month: current_month, category: @category)
     @statements = Budgeting::StatementSet.labels_for(@expenses)
     @category_year = Budgeting::CategoryYear.new(category: @category, year: current_month.year)

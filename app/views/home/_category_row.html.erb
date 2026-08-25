@@ -1,56 +1,50 @@
-<%# app/views/home/_category_row.html.erb — locals: category, summary; optional: error
-    A two-branch delegator. The wrapper element lives INSIDE each branch,
-    because the two rows are now different elements: the card row is a
-    <details>, an ordinary row a <div data-controller="budget-edit">.
-
-    This partial stays the single entry point — home/show must not choose
-    between the two. budgets/create.turbo_stream.erb re-renders THIS partial for
-    whatever category was posted, and posting a budget against the credit-card
-    category is reachable (Budget#not_on_credit_card_category rejects it with a
-    422), so this branch must not blow up or render a budget form for a
-    category that cannot have one. The card row deliberately renders no error —
-    it has no budget form to correct, so there's nowhere on the row to show one. %>
+<%# app/views/home/_category_row.html.erb — locals: category, summary, percent_mode,
+    expenses_total_cents. A two-branch delegator: the reserved credit-card
+    category keeps its own disclosure row; every ordinary category is now a single
+    link covering the whole card (the drill-down is reached by tapping anywhere on
+    it), with its budget shown READ-ONLY. Editing a budget moved to the category's
+    own dashboard, so there is no form, no budget-edit controller and no error
+    branch here any more. The card keeps id=dom_id(category, :row) so tests and any
+    future row-scoped stream can still find it. %>
 <% if category.credit_card? %>
   <%= render "home/credit_card_row", category:, summary: %>
 <% else %>
   <% spent = summary.spent_cents(category) %>
   <% budgeted = summary.budgeted_cents(category) %>
-  <%# An unbudgeted category (budgeted 0) is not an overrun — it's a category the
-      user hasn't got to yet. Painting it red drowns out the real overruns
-      precisely in the months where they matter most: the first one, and any month
-      with a new category (w3 AC3 asks the line to highlight THE overrun). %>
+  <%# An unbudgeted category (budgeted 0) is not an overrun — it's one the user
+      hasn't got to yet — so it is not painted red (w3 AC3 highlights THE overrun). %>
   <% over = budgeted.positive? && spent > budgeted %>
-  <% error = local_assigns[:error] %>
-  <% open = error.present? %>
-  <div id="<%= dom_id(category, :row) %>" class="p-3" data-controller="budget-edit">
+  <% earnings_pct = share_percent(spent, summary.incomes_total_cents) %>
+  <% expenses_pct = share_percent(spent, expenses_total_cents) %>
+  <%= link_to category_path(category, month: summary.month.strftime("%Y-%m")),
+        id: dom_id(category, :row),
+        class: "block p-4 hover:bg-bg/60 transition-colors" do %>
     <div class="flex items-center justify-between gap-2">
-      <%= link_to category.name, category_path(category, month: summary.month.strftime("%Y-%m")),
-            class: "text-text hover:underline truncate" %>
+      <span class="text-text font-medium truncate"><%= category.name %></span>
       <%# Each segment is whitespace-nowrap so the line can only ever break at the
-          single space between them — never inside an amount — giving the fixed
-          "gasto [amount] /" ⏎ "orçado [amount]" split when it has to wrap. %>
+          single space between them — never inside an amount. %>
       <div class="text-sm text-right shrink-0">
         <span class="whitespace-nowrap <%= over ? "text-money-over font-medium" : "text-muted" %>">
           gasto <%= brl(spent) %> /
         </span>
-        <%# Visibility is carried by Tailwind's `hidden` class, not the `hidden`
-            attribute: `form_with` drops a top-level `hidden:` option, and the
-            form's `inline` display beats `[hidden] { display: none }` on
-            specificity. The Stimulus controller toggles the same class. %>
-        <span data-budget-edit-target="display" data-action="click->budget-edit#edit"
-              class="whitespace-nowrap cursor-pointer <%= open ? "hidden" : "" %> <%= over ? "text-money-over font-medium" : "text-muted" %>">
+        <span class="whitespace-nowrap <%= over ? "text-money-over font-medium" : "text-muted" %>">
           orçado <%= brl(budgeted) %>
         </span>
-        <%= form_with url: budgets_path, method: :post, class: open ? "inline" : "hidden",
-              data: { budget_edit_target: "form" } do |f| %>
-          <%= f.hidden_field :category_id, value: category.id %>
-          <%= f.hidden_field :month, value: summary.month.strftime("%Y-%m") %>
-          <%= f.text_field :budget_amount, value: BrlMoney.format(budgeted), inputmode: "decimal",
-                class: "field-input w-24 text-sm inline", data: { budget_edit_target: "input" } %>
-        <% end %>
-        <% if error %><span class="field-error"><%= error %></span><% end %>
       </div>
     </div>
-    <%= render "shared/budget_bar", spent_cents: spent, budgeted_cents: budgeted %>
-  </div>
+    <%# Both readings are rendered; the percent switch above the list shows one and
+        hides the other client-side (and the server hides the inactive one up front,
+        from the cookie, so there is no flash on load). %>
+    <div class="mt-1 text-xs text-muted">
+      <span data-percent-target="earnings" class="<%= "hidden" unless percent_mode == "earnings" %>">
+        <%= earnings_pct ? "#{earnings_pct}% dos ganhos" : "— dos ganhos" %>
+      </span>
+      <span data-percent-target="expenses" class="<%= "hidden" unless percent_mode == "expenses" %>">
+        <%= expenses_pct ? "#{expenses_pct}% dos gastos" : "— dos gastos" %>
+      </span>
+    </div>
+    <div class="mt-2">
+      <%= render "shared/budget_bar", spent_cents: spent, budgeted_cents: budgeted %>
+    </div>
+  <% end %>
 <% end %>

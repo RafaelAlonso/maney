@@ -1,0 +1,12 @@
+<%# app/views/home/_category_chart.html.erb — locals: chart (Analysis::CategoryMonthChart).
+    This month's spending, one bar per category, sorted most-expensive first. Same
+    server-built-config / dumb-canvas contract as every other chart, so it recolors
+    on the theme toggle through chart_controller. Rendered only when there is
+    something to plot (home/show gates on chart.any?). %>
+<%= render layout: "shared/card", locals: { title: chart.title, heading_id: "category-month-title" } do %>
+  <div class="h-48">
+    <canvas data-controller="chart"
+            data-chart-config-value="<%= chart.to_config.to_json %>"
+            aria-labelledby="category-month-title"></canvas>
+  </div>
+<% end %>

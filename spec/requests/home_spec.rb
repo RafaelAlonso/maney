@@ -199,6 +199,63 @@ RSpec.describe "Home month view", type: :request do
     expect(row.at("div.progress-fill.progress-neutral")).to be_present
   end
 
+  describe "ordering, percentages and the category chart" do
+    def row_order(body)
+      Nokogiri::HTML(body).css("a[id^='row_category']").map { |a| a["id"] }
+    end
+
+    def spend(cents, on:, date: Date.new(2026, 3, 5))
+      Expense.create!(name: "gasto", amount_cents: cents, date:, payment_method: "debit", category: on)
+    end
+
+    it "orders the list by spending descending when asked, and remembers it" do
+      casa = Category.create!(name: "casa")
+      mercado = Category.create!(name: "mercado")
+      spend(20_000, on: casa)
+      spend(90_000, on: mercado)
+
+      get root_path(month: "2026-03", sort: "expenses", dir: "desc")
+
+      order = row_order(response.body)
+      expect(order.index(ActionView::RecordIdentifier.dom_id(mercado, :row)))
+        .to be < order.index(ActionView::RecordIdentifier.dom_id(casa, :row))
+
+      # The choice is remembered: a later plain visit keeps the same order.
+      get root_path(month: "2026-03")
+      order = row_order(response.body)
+      expect(order.index(ActionView::RecordIdentifier.dom_id(mercado, :row)))
+        .to be < order.index(ActionView::RecordIdentifier.dom_id(casa, :row))
+    end
+
+    it "renders both percentage readings, painting the one the cookie selects" do
+      mercado = Category.create!(name: "mercado")
+      Income.create!(name: "salário", amount_cents: 200_000, date: march)
+      spend(50_000, on: mercado) # 25% of income, 100% of the month's spending
+
+      get root_path(month: "2026-03", percent: "earnings")
+
+      row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+      earnings = row.at("[data-percent-target='earnings']")
+      expenses = row.at("[data-percent-target='expenses']")
+      expect(earnings.text).to include("25% dos ganhos")
+      expect(expenses.text).to include("100% dos gastos")
+      expect(earnings["class"]).not_to include("hidden")
+      expect(expenses["class"]).to include("hidden")
+    end
+
+    it "shows the per-category spending chart when the month has spending" do
+      spend(50_000, on: Category.create!(name: "mercado"))
+      get root_path(month: "2026-03")
+      expect(response.body).to include("Gastos por categoria em 03/2026")
+    end
+
+    it "omits the chart when nothing was spent" do
+      Category.create!(name: "mercado")
+      get root_path(month: "2026-03")
+      expect(response.body).not_to include("Gastos por categoria")
+    end
+  end
+
   # The month's card row expands into one line per statement due that month.
   # Three cards on three closing days, all due in March 2026:
   #   Azul  closes  3 / due 10 — purchase 02/03 -> statement due 10/03

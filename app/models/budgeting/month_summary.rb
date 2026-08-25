@@ -96,17 +96,24 @@ module Budgeting
     end
 
     # Inherited budget: with no explicit Budget for the month, a category's
-    # budget is what it spent the previous month (including zero), held until the
-    # user sets one. The first month has nothing before it, so it inherits zero.
-    # `spent_cents` already counts projected installments, so future months chain
-    # naturally (June inherits May's projected spending) with no recursion —
-    # inheritance reads spending, never another month's budget.
+    # budget defaults to max(previous month's EFFECTIVE budget, previous month's
+    # spending), held until the user sets one. Taking the max means an
+    # under-spent month never ratchets the budget down, while an overrun raises
+    # it — the number tracks the higher of intent and reality.
+    #
+    # "Effective budget" is the previous month's own `budgeted_cents`, which is
+    # itself an explicit Budget or, absent one, this same inheritance — so a
+    # budget set once carries forward across empty months instead of decaying to
+    # zero the moment nothing is spent. The recursion is bounded: it stops at the
+    # first month, which has nothing before it and inherits zero. `spent_cents`
+    # already counts projected installments, so future months chain naturally.
     def inherited_budget_cents(category)
       previous = month << 1
       first = Setting.instance&.first_month
       return 0 if first.nil? || previous < first
 
-      MonthSummary.new(month: previous, today: @today).spent_cents(category)
+      previous_summary = MonthSummary.new(month: previous, today: @today)
+      [ previous_summary.budgeted_cents(category), previous_summary.spent_cents(category) ].max
     end
   end
 end

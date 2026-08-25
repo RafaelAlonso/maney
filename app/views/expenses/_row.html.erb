@@ -14,7 +14,7 @@
   <div>
     <p class="font-medium"><%= expense.name %></p>
     <p class="text-sm text-muted">
-      <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
+      <%= expense_date_label(expense) %> · <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
       · <%= link_to statement_due_label(statement), card_statement_path(expense.card, statement), class: "text-accent" %><% end %><% if show_category %>
       · <%= expense.category.name %><% end %>
     </p>

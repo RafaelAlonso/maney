@@ -1,0 +1,28 @@
+<%# app/views/home/_controls.html.erb — locals: summary, sort, direction, percent_mode.
+    The bar sitting above the category list: on the left the ordering (which field,
+    which direction, both GET-submitting so each keeps the other and the month), on
+    the right the percentage switch. The switch is driven by the `percent`
+    controller declared on the wrapper in home/show, which also scopes the per-card
+    spans it toggles. %>
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3 text-sm">
+  <%= form_with url: root_path, method: :get, class: "flex items-center gap-2" do |form| %>
+    <%= form.hidden_field :month, value: summary.month.strftime("%Y-%m") %>
+    <span class="text-muted">ordenar</span>
+    <%= form.select :sort, [ [ "nome", "name" ], [ "orçado", "budget" ], [ "gasto", "expenses" ] ],
+          { selected: sort },
+          class: "rounded border border-border bg-surface text-text px-2 py-1 text-sm",
+          data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
+    <%= form.select :dir, [ [ "↑", "asc" ], [ "↓", "desc" ] ], { selected: direction },
+          "aria-label": "Direção da ordenação",
+          class: "rounded border border-border bg-surface text-text px-2 py-1 text-sm",
+          data: { controller: "auto-submit", action: "change->auto-submit#submit" } %>
+    <%= form.submit "Ver", class: "hidden" %>
+  <% end %>
+
+  <div class="inline-flex items-center rounded-full border border-border bg-bg p-0.5" role="group" aria-label="Percentual exibido">
+    <button type="button" data-percent-target="option" data-mode="expenses" data-action="percent#select"
+            class="rounded-full px-3 py-1 text-xs">% gastos</button>
+    <button type="button" data-percent-target="option" data-mode="earnings" data-action="percent#select"
+            class="rounded-full px-3 py-1 text-xs">% ganhos</button>
+  </div>
+</div>

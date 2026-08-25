@@ -1,9 +1,8 @@
 class BudgetsController < ApplicationController
-  # Inline budget edit from the month view. The client never holds a Budget id
-  # (a month may have no row yet), so this is a single upsert keyed by category +
-  # month (read from params[:month] through current_month). It renders a Turbo
-  # Stream replacing the category row and the balances block, because changing a
-  # budget moves max(budgeted, spent) and therefore the estimate.
+  # Inline budget edit from the category dashboard. The client never holds a
+  # Budget id (a month may have no row yet), so this is a single upsert keyed by
+  # category + month (read from params[:month] through current_month). It renders
+  # a Turbo Stream replacing the dashboard's budget editor with the new figure.
   def create
     @category = Category.find(params[:category_id])
     @summary = Budgeting::MonthSummary.new(month: current_month)

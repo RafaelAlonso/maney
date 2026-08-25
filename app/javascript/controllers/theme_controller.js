@@ -9,9 +9,12 @@ export default class extends Controller {
   static targets = ["knob"]
 
   // Device-follow stamps no class on <html>, so the knob's starting side has to
-  // come from the theme actually on screen, not the (possibly absent) class.
+  // come from the theme actually on screen, not the (possibly absent) class. The
+  // server already renders the knob on the right side for an explicit theme, so
+  // this is a no-op there; only device-follow needs to move it, and it does so
+  // with the slide suppressed so a page switch never animates the knob (the flicker).
   connect() {
-    this.render(this.currentTheme())
+    this.render(this.currentTheme(), { animate: false })
   }
 
   toggle() {
@@ -34,13 +37,22 @@ export default class extends Controller {
     return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   }
 
-  // Slide the knob to the side of the active theme (moon/right = dark).
-  render(theme) {
+  // Slide the knob to the side of the active theme (moon/right = dark). With
+  // `animate: false` the move is applied with the CSS transition suppressed for
+  // that frame, so positioning the knob on connect can never read as a slide.
+  render(theme, { animate = true } = {}) {
     if (!this.hasKnobTarget) return
     const dark = theme === "dark"
+    if (!animate) this.knobTarget.classList.add("transition-none")
     this.knobTarget.classList.toggle("translate-x-5", dark)
     this.knobTarget.classList.toggle("translate-x-0.5", !dark)
     this.element.setAttribute("aria-checked", dark ? "true" : "false")
+    if (!animate) {
+      // Force the position to take effect this frame, then restore the transition
+      // so a later user toggle still animates.
+      void this.knobTarget.offsetWidth
+      this.knobTarget.classList.remove("transition-none")
+    }
   }
 
   // Keep the address-bar / status-bar chrome in step with the manual choice;

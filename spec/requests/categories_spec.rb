@@ -36,6 +36,21 @@ RSpec.describe "Categories", type: :request do
     expect(response.body).to include("feira").and include("compra grande")
   end
 
+  it "offers a budget editor and category navigation on the dashboard" do
+    casa = Category.create!(name: "casa")
+    mercado = Category.create!(name: "mercado")
+    Budget.create!(category: mercado, month: Date.new(2026, 3, 1), amount_cents: 90_000)
+
+    get category_path(mercado, month: "2026-03")
+
+    # The budget editor (moved off the Início card) shows the orçado and posts to budgets.
+    editor = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :budget)}")
+    expect(editor.to_html).to include("orçado R$ 900,00")
+    expect(editor.at("form[action='#{budgets_path}']")).to be_present
+    # Navigation to the neighbouring category keeps the month.
+    expect(response.body).to include(category_path(casa, month: "2026-03"))
+  end
+
   it "deleting a category with expenses moves them to the default (AC 15)" do
     card = create_card!
     category = Category.create!(name: "padaria")

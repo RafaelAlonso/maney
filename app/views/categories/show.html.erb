@@ -4,7 +4,9 @@
     editing) and show_category: false (every row is of this category — the <h1>
     already says which). %>
 <h1 class="text-lg font-semibold mb-2"><%= @category.name %></h1>
+<%= render "categories/dashboard_nav", category: @category, siblings: @siblings, month: current_month.strftime("%Y-%m") %>
 <%= render "shared/month_nav", path_helper: ->(month:) { category_path(@category, month:) } %>
+<%= render "categories/budget_editor", category: @category, summary: @summary %>
 
 <%# The month nav has no forward bound, so the user can stand on a month the
     year chart deliberately does not plot — it stops at the current month, while

@@ -55,6 +55,35 @@ module ApplicationHelper
     %w[dark light].include?(cookies[:theme]) ? cookies[:theme] : ""
   end
 
+  # The toggle knob's starting side, decided server-side from the same cookie, so
+  # it is already on the right side in the first byte of every navigation. Without
+  # this the knob rendered on the left every time and the Stimulus `connect` slid
+  # it across on each page switch — the flicker. Device-follow (no cookie) has no
+  # server-known side, so it starts left and the controller positions it on
+  # connect with the transition suppressed (theme_controller), which is instant.
+  def theme_knob_translate_class
+    cookies[:theme] == "dark" ? "translate-x-5" : "translate-x-0.5"
+  end
+
+  # The date a gasto row shows. A dated expense shows its day/month; an
+  # installment parcel has no date of its own (its month comes from the schedule),
+  # so it shows which parcel of the purchase it is instead of a fabricated date.
+  def expense_date_label(expense)
+    if expense.installment?
+      "parcela #{expense.installment_number}/#{expense.installment_purchase.installments_count}"
+    else
+      expense.date.strftime("%d/%m")
+    end
+  end
+
+  # A category's spending as a whole-number percentage of some total (its month's
+  # income, or the month's total spending). Returns nil — rendered as "—" — when
+  # the total is zero or absent, so an empty month never prints a fabricated 0%.
+  def share_percent(part_cents, whole_cents)
+    return nil if whole_cents.nil? || whole_cents <= 0
+    (part_cents * 100.0 / whole_cents).round
+  end
+
   # Single source for the payment-method labels — used by the expense form
   # (radios) and the expense row (`expenses/_row`, reused by categories#show).
   # Repeating this hash in every view is how Task 6 found the original form: the

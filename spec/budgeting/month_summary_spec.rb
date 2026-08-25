@@ -146,6 +146,19 @@ RSpec.describe Budgeting::MonthSummary do
     expect(summary(Date.new(2026, 4, 1)).budgeted_cents(mercado)).to eq(0)
   end
 
+  it "defaults to max(previous budget, previous spending) so an under-spent month does not ratchet the budget down" do
+    Budget.create!(category: mercado, month: march, amount_cents: 100_000)
+    debit(50_000, Date.new(2026, 3, 10), cat: mercado)
+    expect(summary(Date.new(2026, 4, 1)).budgeted_cents(mercado)).to eq(100_000)
+  end
+
+  it "carries the previous EFFECTIVE (inherited) budget forward across empty months, not just literal spending" do
+    # March budgets 80.000 and spends nothing; April inherits March's 80.000, and
+    # May inherits April's *effective* 80.000 rather than April's zero spend.
+    Budget.create!(category: mercado, month: march, amount_cents: 80_000)
+    expect(summary(Date.new(2026, 5, 1)).budgeted_cents(mercado)).to eq(80_000)
+  end
+
   it "inherits zero in the first month (nothing precedes it)" do
     expect(summary.budgeted_cents(mercado)).to eq(0)
   end

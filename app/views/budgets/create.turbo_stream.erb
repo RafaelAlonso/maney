@@ -1,9 +1,7 @@
-<%# app/views/budgets/create.turbo_stream.erb %>
-<%= turbo_stream.replace dom_id(@category, :row) do %>
-  <%= render "home/category_row", category: @category, summary: @summary, error: @error %>
-<% end %>
-<% unless @error %>
-  <%= turbo_stream.replace "hero" do %>
-    <%= render "home/hero", summary: @summary %>
-  <% end %>
+<%# app/views/budgets/create.turbo_stream.erb — the inline budget edit now lives on
+    the category dashboard, so a save streams that dashboard's budget editor back in
+    place (with the new figure, or with the error). Nothing else on that screen moves:
+    the year chart and the month breakdown plot spending, which a budget never changes. %>
+<%= turbo_stream.replace dom_id(@category, :budget) do %>
+  <%= render "categories/budget_editor", category: @category, summary: @summary, error: @error %>
 <% end %>

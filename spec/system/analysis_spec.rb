@@ -162,15 +162,21 @@ RSpec.describe "Analysis", type: :system do
 
         select "2027", from: "year"
 
-        # The card_id guard above reads the same "Azul" before and after this
-        # visit lands, so it cannot detect whether the year change has
-        # actually arrived — wait on the field that this action changes
-        # instead.
+        # Same trap the card change above documents: `have_select(selected:)`
+        # reads the DOM `selected` flag that `select` sets on the pre-navigation
+        # document, so it passes before the Turbo visit lands — and `february_bar`
+        # (a raw JS read with no retry) then reads the *old* chart. Under load
+        # that race is what makes this example flaky. Wait on the URL the landed
+        # visit rewrites, the only post-visit signal, before reading the chart.
+        expect(page).to have_current_path(/year=2027/)
         expect(page).to have_select("year", selected: "2027")
         expect(page).to have_select("card_id", selected: "Azul")
         expect(february_bar).to eq 700.0
 
         select "Todos os cartões", from: "card_id"
+        # The blank card submit drops this card_id from the URL; wait for that to
+        # land before asserting the year carried across, for the same reason.
+        expect(page).to have_no_current_path(/card_id=#{azul.id}/)
         expect(page).to have_select("year", selected: "2027")
       end
     end

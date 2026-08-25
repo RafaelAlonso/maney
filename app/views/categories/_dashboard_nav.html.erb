@@ -1,0 +1,31 @@
+<%# app/views/categories/_dashboard_nav.html.erb — locals: category, siblings (all
+    categories by name), month (String "%Y-%m"). Moves between category dashboards
+    without going back to Início: a previous/next arrow to the neighbouring category
+    and a select to jump straight to any of them. Bounded, not wrapping — the arrow
+    is inert text at each end. The month travels with every link so the drill-down
+    stays on the month the user was reading. %>
+<% index = siblings.index(category) %>
+<% previous_category = index && index.positive? ? siblings[index - 1] : nil %>
+<% next_category = index && index < siblings.size - 1 ? siblings[index + 1] : nil %>
+<div class="flex items-center justify-between gap-2 mb-3 text-sm" data-controller="category-nav">
+  <% if previous_category %>
+    <%= link_to "‹ #{previous_category.name}", category_path(previous_category, month:),
+          class: "text-accent hover:underline truncate" %>
+  <% else %>
+    <span class="text-muted truncate">‹</span>
+  <% end %>
+
+  <%= select_tag :category_jump,
+        options_for_select(siblings.map { |sibling| [ sibling.name, category_path(sibling, month:) ] },
+                           category_path(category, month:)),
+        "aria-label": "Ir para categoria",
+        class: "rounded border border-border bg-surface text-text px-2 py-1 text-sm max-w-[45%] truncate",
+        data: { action: "change->category-nav#navigate" } %>
+
+  <% if next_category %>
+    <%= link_to "#{next_category.name} ›", category_path(next_category, month:),
+          class: "text-accent hover:underline truncate text-right" %>
+  <% else %>
+    <span class="text-muted truncate text-right">›</span>
+  <% end %>
+</div>

@@ -2,8 +2,14 @@
     Renders the mobile in-content month navigator (md:hidden), and pushes a
     compact desktop variant into content_for(:desktop_month_nav) for the desktop
     top nav to host — so the nav shows a month navigator exactly on the screens
-    that render this partial (the month-scoped ones). %>
+    that render this partial (the month-scoped ones).
+
+    The month label between the arrows is a jump-to-month picker (shared/_month_picker):
+    the arrows still step one month, tapping the label opens a picker for any month.
+    The URL template hands the picker this screen's own path with "__MONTH__" as the
+    placeholder, so the same partial works for Início, Gastos and each category. %>
 <% first = Setting.instance.first_month %>
+<% template = path_helper.call(month: "__MONTH__") %>
 
 <div class="flex items-center justify-between mb-4 md:hidden">
   <% if current_month > first %>
@@ -11,7 +17,7 @@
   <% else %>
     <span class="px-3 py-1 text-lg text-muted">‹</span>
   <% end %>
-  <h2 class="font-medium"><%= current_month.strftime("%m/%Y") %></h2>
+  <%= render "shared/month_picker", current_month:, first:, template:, label_class: "font-medium text-base" %>
   <%= link_to "›", path_helper.call(month: (current_month >> 1).strftime("%Y-%m")), class: "px-3 py-1 text-lg" %>
 </div>
 
@@ -22,7 +28,7 @@
     <% else %>
       <span class="px-2 text-lg text-muted">‹</span>
     <% end %>
-    <span class="font-medium tabular-nums"><%= current_month.strftime("%m/%Y") %></span>
+    <%= render "shared/month_picker", current_month:, first:, template: %>
     <%= link_to "›", path_helper.call(month: (current_month >> 1).strftime("%Y-%m")), class: "px-2 text-lg" %>
   </div>
 <% end %>

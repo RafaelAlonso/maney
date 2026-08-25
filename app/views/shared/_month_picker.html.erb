@@ -1,0 +1,20 @@
+<%# app/views/shared/_month_picker.html.erb — locals: current_month (Date), first
+    (Date, the earliest selectable month), template (String, the target URL with
+    "__MONTH__" where the chosen "%Y-%m" goes), label_class (String, optional).
+    The clickable month label: it looks like the text it replaces, but opens a
+    native month picker that jumps straight to the chosen month. %>
+<div class="relative inline-flex" data-controller="month-picker"
+     data-month-picker-template-value="<%= template %>">
+  <button type="button" data-action="month-picker#open"
+          class="tabular-nums <%= local_assigns.fetch(:label_class, "font-medium") %>"
+          aria-label="Escolher mês">
+    <%= current_month.strftime("%m/%Y") %> ▾
+  </button>
+  <%# Overlays the label, invisible and non-interactive, so the button takes the
+      click and the controller opens the picker programmatically from that gesture. %>
+  <input type="month" data-month-picker-target="input"
+         data-action="change->month-picker#navigate"
+         value="<%= current_month.strftime("%Y-%m") %>" min="<%= first.strftime("%Y-%m") %>"
+         tabindex="-1" aria-hidden="true"
+         class="absolute inset-0 w-full h-full opacity-0 pointer-events-none">
+</div>

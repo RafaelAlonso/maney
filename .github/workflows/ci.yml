@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. new push to an open PR).
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    runs-on: ubuntu-latest
+
+    env:
+      RAILS_ENV: test
+      # Test config omits host/user/password, so pg falls back to these libpq
+      # vars and connects to the Postgres service below over TCP. The database
+      # name (maney_test) still comes from config/database.yml.
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: maney
+      PGPASSWORD: maney
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: maney
+          POSTGRES_PASSWORD: maney
+          POSTGRES_DB: maney_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U maney"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # Reads .ruby-version (3.3.8) and runs `bundle install` with caching.
+          bundler-cache: true
+
+      # Tailwind output lives in app/assets/builds/, which is gitignored, so a
+      # fresh checkout has no compiled CSS. Propshaft raises on the missing
+      # asset during view rendering, failing ~all system/request specs unless
+      # we build it first.
+      - name: Build Tailwind CSS
+        run: bin/rails tailwindcss:build
+
+      - name: Prepare test database
+        run: bin/rails db:test:prepare
+
+      - name: Tests
+        run: bin/rspec
+
+      - name: Style - Ruby
+        run: bin/rubocop
+
+      - name: Security - Gem audit
+        run: bin/bundler-audit
+
+      - name: Security - Importmap vulnerability audit
+        run: bin/importmap audit
+
+      - name: Security - Brakeman code analysis
+        run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error

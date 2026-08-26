@@ -1,0 +1,57 @@
+name: Deploy
+
+# Runs only after code lands on main (i.e. a merged PR). Branch protection
+# blocks direct pushes and requires CI to be green before a PR can merge, so
+# by the time this fires the change has already passed the CI workflow.
+on:
+  push:
+    branches: [main]
+
+# Never run two deploys at once, and never cancel one mid-flight.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to production
+    runs-on: ubuntu-latest
+    # The runner is amd64 and config/deploy.yml builds for amd64, so Kamal
+    # builds the image natively here (no QEMU/buildx emulation needed).
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          # Installs the bundle (incl. the kamal gem) at the version in the lock
+          # file, so the deploy uses the same Kamal as local.
+          bundler-cache: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Restore Kamal secrets
+        # KAMAL_SECRETS holds the full contents of the local, gitignored
+        # .kamal/secrets file (registry password, RAILS_MASTER_KEY, DB and R2
+        # credentials). GitHub masks the secret in logs.
+        env:
+          KAMAL_SECRETS: ${{ secrets.KAMAL_SECRETS }}
+        run: |
+          mkdir -p .kamal
+          printf '%s' "$KAMAL_SECRETS" > .kamal/secrets
+          chmod 600 .kamal/secrets
+
+      - name: Configure SSH access to the droplet
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H 157.245.90.120 >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy with Kamal
+        run: bin/kamal deploy

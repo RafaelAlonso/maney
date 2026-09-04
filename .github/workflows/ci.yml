@@ -69,7 +69,10 @@ jobs:
         run: bin/bundler-audit
 
       - name: Security - Importmap vulnerability audit
-        run: bin/importmap audit
+        # Wrapper, not `bin/importmap audit` directly: it passes with a warning
+        # when npm's advisory API is unreachable, so an outage on their side
+        # doesn't red out every run. Real findings still fail.
+        run: bin/importmap-audit
 
       - name: Security - Brakeman code analysis
         run: bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error

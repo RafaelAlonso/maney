@@ -54,4 +54,8 @@ jobs:
           ssh-keyscan -H 157.245.90.120 >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy with Kamal
-        run: bin/kamal deploy
+        # --skip-hooks: .kamal/hooks/pre-deploy runs bin/ci as a guard for
+        # deploys from an operator's machine. Here CI is a required status
+        # check on main, so the suite has already passed; re-running it on the
+        # deploy runner only fails (no Postgres service) and burns minutes.
+        run: bin/kamal deploy --skip-hooks

@@ -1,0 +1,29 @@
+#!/bin/bash
+# Runs `bin/importmap audit`, but does not fail the build when npm's advisory
+# API is unreachable.
+#
+# The audit POSTs to registry.npmjs.org's bulk advisories endpoint. When that
+# endpoint times out or errors, importmap-rails raises Importmap::Npm::HTTPError
+# and exits 1 — indistinguishable, by exit code alone, from "vulnerabilities
+# found". Treating npm's uptime as a merge gate means an outage on their side
+# reds out every run here.
+#
+# So: an HTTPError is reported as a warning and passes. Any other failure —
+# including an actual vulnerability report — still fails.
+
+set -uo pipefail
+
+cd "$(dirname "$0")/.."
+
+output=$(bin/importmap audit 2>&1)
+status=$?
+
+echo "$output"
+
+if [ $status -ne 0 ] && echo "$output" | grep -q "Importmap::Npm::HTTPError"; then
+  echo
+  echo "::warning title=Importmap audit skipped::Could not reach npm's advisory API; dependencies were not audited."
+  exit 0
+fi
+
+exit $status

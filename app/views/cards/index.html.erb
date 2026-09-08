@@ -10,7 +10,9 @@
 <% else %>
   <ul class="bg-surface border border-border rounded-[var(--radius-card)] divide-y divide-border">
     <% @cards.each do |card| %>
-      <% schedule = Budgeting::Schedule.for(card:, date: Date.current) %>
+      <%# for_or_nil, not for: a card without a schedule degrades to one row
+          reading "sem datas definidas" instead of 500ing the whole list. %>
+      <% schedule = Budgeting::Schedule.for_or_nil(card:, date: Date.current) %>
       <li class="p-3 flex items-center justify-between <%= "opacity-60" if card.archived? %>">
         <div>
           <p class="font-medium <%= "text-muted" if card.archived? %>">

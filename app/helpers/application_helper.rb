@@ -15,7 +15,12 @@ module ApplicationHelper
   # vence dia 12" reads as a typo, and nothing distinguished a deliberate
   # next-month due date from a slip of the keyboard. The tail says which one the
   # user is looking at.
+  # A nil schedule is the degraded case: the card has no validity window at all,
+  # which the app cannot produce but the data can hold. It gets a plain label so
+  # the row still renders instead of taking the list down with it.
   def card_days_label(schedule)
+    return "sem datas definidas" if schedule.nil?
+
     days = "fecha dia #{schedule.closing_day} · vence dia #{schedule.due_day}"
     schedule.due_day > schedule.closing_day ? days : "#{days} (vence no mês seguinte)"
   end

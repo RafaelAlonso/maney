@@ -19,6 +19,23 @@ RSpec.describe "Cards", type: :request do
     expect(response.body).to include("empty-state").and include("Nenhum cartão ainda.")
   end
 
+  # A card should always have a schedule — the "novo cartão" form creates one —
+  # but nothing in the database enforces it, and the list used to ask every card
+  # for its days as it rendered. One schedule-less row (an import, a console fix,
+  # some future code path) raised and took the whole screen down with it, hiding
+  # the healthy cards and the way through to their faturas.
+  it "keeps listing the other cards when one has no schedule" do
+    create_card!(name: "Azul", closing_day: 5, due_day: 12)
+    broken = create_card!(name: "Roxo", closing_day: 8, due_day: 15)
+    broken.card_schedules.delete_all
+
+    get cards_path
+
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("Azul").and include("fecha dia 5")
+    expect(response.body).to include("Roxo").and include("sem datas definidas")
+  end
+
   it "creates a card with its first schedule from the first month (AC 1)" do
     post cards_path, params: { card: { name: "Azul", closing_day: 5, due_day: 12 } }
     card = Card.find_by!(name: "Azul")

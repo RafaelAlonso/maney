@@ -51,6 +51,18 @@ RSpec.describe "Categories", type: :request do
     expect(response.body).to include(category_path(casa, month: "2026-03"))
   end
 
+  # Same distinction the Início rows and the Categorias list draw: an em dash for
+  # a budget that was never set, money only for a figure that exists.
+  it "shows an em dash on the dashboard when no budget is in effect" do
+    mercado = Category.create!(name: "mercado")
+
+    get category_path(mercado, month: "2026-03")
+
+    editor = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :budget)}")
+    expect(editor.text).to include("orçado —")
+    expect(editor.text).not_to include("orçado R$ 0,00")
+  end
+
   it "deleting a category with expenses moves them to the default (AC 15)" do
     card = create_card!
     category = Category.create!(name: "padaria")

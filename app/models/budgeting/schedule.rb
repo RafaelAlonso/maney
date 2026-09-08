@@ -21,6 +21,17 @@ module Budgeting
       new(closing_day: row.closing_day, due_day: row.due_day, valid_from: row.valid_from)
     end
 
+    # Same lookup, but nil instead of a raise when the card has no window at all.
+    # Nothing in the schema stops a card from reaching that state (only the
+    # "novo cartão" form guarantees a first window), and a list rendering many
+    # cards must not let one malformed row take the whole screen down. Callers
+    # that genuinely cannot proceed without days keep using `for`.
+    def self.for_or_nil(card:, date:, memo: nil)
+      return nil if windows(card:, memo:).empty?
+
+      self.for(card:, date:, memo:)
+    end
+
     # The card's validity windows, oldest first.
     def self.windows(card:, memo: nil)
       memo ? memo.windows_for(card) : card.card_schedules.order(:valid_from).to_a

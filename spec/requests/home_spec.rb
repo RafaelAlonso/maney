@@ -66,6 +66,30 @@ RSpec.describe "Home month view", type: :request do
     expect(response.body).to include("orçado R$ 0,00")
   end
 
+  # Início used to format the derived budget as money whatever it was, so a
+  # category nobody had budgeted read `orçado R$ 0,00` while Categorias, which
+  # checks for the record, read `orçado: —` for the very same category and month.
+  # An em dash means "not set"; `R$ 0,00` is reserved for a deliberate zero.
+  it "shows an em dash for a category with no budget set" do
+    mercado = Category.create!(name: "mercado")
+
+    get root_path(month: "2026-03")
+
+    row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+    expect(row.text).to include("orçado —")
+    expect(row.text).not_to include("orçado R$ 0,00")
+  end
+
+  it "shows R$ 0,00 for a budget deliberately set to zero" do
+    mercado = Category.create!(name: "mercado")
+    Budget.create!(category: mercado, month: march, amount_cents: 0)
+
+    get root_path(month: "2026-03")
+
+    row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
+    expect(row.text).to include("orçado R$ 0,00")
+  end
+
   it "carries the previous month's closing balance into the next, live (AC 6/7)" do
     Income.create!(name: "salário", amount_cents: 500_000, date: march) # March closes at 5000
     get root_path(month: "2026-04")
@@ -194,7 +218,7 @@ RSpec.describe "Home month view", type: :request do
     get root_path(month: "2026-03")
 
     row = Nokogiri::HTML(response.body).at("##{ActionView::RecordIdentifier.dom_id(mercado, :row)}")
-    expect(row.to_html).to include("orçado R$ 0,00")
+    expect(row.text).to include("orçado —") # no budget set, so no figure to show
     expect(row.to_html).not_to include("text-money-over")
     expect(row.at("div.progress-fill.progress-neutral")).to be_present
   end

@@ -20,7 +20,7 @@ jobs:
     # builds the image natively here (no QEMU/buildx emulation needed).
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -30,7 +30,7 @@ jobs:
           bundler-cache: true
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Restore Kamal secrets
         # KAMAL_SECRETS holds the full contents of the local, gitignored

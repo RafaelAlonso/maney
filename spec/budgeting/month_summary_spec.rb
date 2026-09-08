@@ -171,4 +171,32 @@ RSpec.describe Budgeting::MonthSummary do
     # casa spends 10.000 every month Mar–Dec; May inherits April's 10.000
     expect(summary(Date.new(2026, 5, 1)).budgeted_cents(category("casa"))).to eq(10_000)
   end
+
+  # A budget of zero and no budget at all are different states, and the screens
+  # render them differently (`R$ 0,00` vs an em dash). `budgeted_cents` collapses
+  # both to 0, so the distinction needs its own question.
+  describe "#budget_set?" do
+    it "is false for a category with no budget of its own and nothing to inherit" do
+      expect(summary.budget_set?(mercado)).to be false
+    end
+
+    it "is true for a budget explicitly set to zero" do
+      Budget.create!(category: mercado, month: march, amount_cents: 0)
+      expect(summary.budget_set?(mercado)).to be true
+    end
+
+    it "is true for an ordinary explicit budget" do
+      Budget.create!(category: mercado, month: march, amount_cents: 100_000)
+      expect(summary.budget_set?(mercado)).to be true
+    end
+
+    it "is true when the month inherits a budget from an earlier one" do
+      Budget.create!(category: mercado, month: march, amount_cents: 80_000)
+      expect(summary(Date.new(2026, 4, 1)).budget_set?(mercado)).to be true
+    end
+
+    it "is true for the reserved credit-card category, whose orçado is derived and always a real figure" do
+      expect(summary.budget_set?(credit_card_category)).to be true
+    end
+  end
 end

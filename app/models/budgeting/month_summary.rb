@@ -70,6 +70,20 @@ module Budgeting
                .sum(:amount_cents)
     end
 
+    # Whether a budget is in effect at all. `budgeted_cents` answers 0 both for a
+    # budget the user deliberately set to zero and for one that was never set, and
+    # the screens must tell those apart: `R$ 0,00` is an explicit zero, an em dash
+    # is "not set". A month with no Budget row of its own still counts as budgeted
+    # when it inherits a figure from an earlier month — that number is real and is
+    # what the row displays. The reserved credit-card category is always budgeted:
+    # its orçado is derived from the statements due, so zero there means "nothing
+    # falls due", not "unset".
+    def budget_set?(category)
+      return true if category.credit_card?
+
+      Budget.exists?(category:, month:) || budgeted_cents(category).positive?
+    end
+
     def budgeted_cents(category)
       return statements_due_cents if category.credit_card?
 

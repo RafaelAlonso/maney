@@ -22,7 +22,7 @@ RSpec.describe "Inline budget edit", type: :system do
     visit category_path(mercado, month: "2026-03")
 
     within "##{ActionView::RecordIdentifier.dom_id(mercado, :budget)}" do
-      expect(page).to have_content("orçado R$ 0,00")
+      expect(page).to have_content("orçado —") # nothing budgeted yet
       expect(page).to have_no_field("budget_amount")
 
       find("[data-budget-edit-target='display']").click

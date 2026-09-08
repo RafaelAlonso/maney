@@ -28,7 +28,9 @@
           gasto <%= brl(spent) %> /
         </span>
         <span class="whitespace-nowrap <%= over ? "text-money-over font-medium" : "text-muted" %>">
-          orçado <%= brl(budgeted) %>
+          <%# An em dash, not R$ 0,00, when no budget is in effect — the same
+              distinction Categorias draws. See MonthSummary#budget_set?. %>
+          orçado <%= summary.budget_set?(category) ? brl(budgeted) : "—" %>
         </span>
       </div>
     </div>

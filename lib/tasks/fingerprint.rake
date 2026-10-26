@@ -46,6 +46,7 @@ namespace :db do
       "categories" => %w[user_id name role],
       "budgets" => %w[user_id category_id],
       "settings" => %w[user_id],
+      "transfers" => %w[user_id from_account_id to_account_id note],
       "incomes" => %w[user_id name account_id],
       "expenses" => %w[user_id name payment_method category_id card_id installment_purchase_id account_id],
       "installment_purchases" => %w[user_id name card_id category_id],

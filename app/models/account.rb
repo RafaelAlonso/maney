@@ -13,6 +13,8 @@ class Account < ApplicationRecord
 
   has_many :expenses, dependent: :restrict_with_error
   has_many :incomes, dependent: :restrict_with_error
+  has_many :transfers_out, class_name: "Transfer", foreign_key: :from_account_id, dependent: :restrict_with_error
+  has_many :transfers_in, class_name: "Transfer", foreign_key: :to_account_id, dependent: :restrict_with_error
 
   # Same uniqueness caveat as Category: the validator queries `unscoped`, so the
   # scope on user_id is what keeps one person's roles from blocking another's.

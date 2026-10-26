@@ -37,6 +37,16 @@ module ApplicationHelper
     cards.sort_by(&:name).map { |c| [ c.archived? ? "#{c.name} (arquivado)" : c.name, c.id ] }
   end
 
+  # Accounts offered for an entry: the active ones of `scope`, plus the entry's
+  # own account when it has since been archived — same rule, same reason as
+  # card_options_for: without it the edit could not be saved.
+  def account_options_for(current_id, scope: Account.banks)
+    accounts = scope.active.ordered.to_a
+    current = scope.find_by(id: current_id)
+    accounts << current if current&.archived? && accounts.exclude?(current)
+    accounts.map { |a| [ a.archived? ? "#{a.name} (arquivada)" : a.name, a.id ] }
+  end
+
   # Rails' `pluralize` inflects only the last word of the phrase, which is right
   # for English ("3 loose expenses") and wrong for Portuguese, where the plural
   # agrees across the whole noun phrase: `pluralize(3, "gasto avulso")` gives

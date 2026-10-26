@@ -15,8 +15,13 @@
     would make the browser stop sending the field (a disabled input doesn't
     submit), and `ExpenseEntry#update` would hit a missing `payment_method`,
     breaking every standalone expense edit. %>
+<%# The reserved "cartão de crédito" category is closed to new entries — bills
+    are paid through "pagar" on the statement. Only an edit of an expense that
+    is already in it (a payment entered before "pagar" existed) keeps it
+    selectable. %>
+<% allow_reserved = method == :patch && Category.find_by(id: entry.category_id)&.credit_card? %>
 <%= form_with model: entry, url: url, method: method, scope: :expense_entry, class: "space-y-4",
-      data: { controller: "expense-form" } do |f| %>
+      data: { controller: "expense-form", expense_form_allow_reserved_value: allow_reserved.to_s } do |f| %>
   <%= render "shared/errors", model: entry %>
   <div>
     <%= f.label :name, "Nome", class: "field-label" %>
@@ -46,6 +51,12 @@
       <% end %>
     </div>
   </fieldset>
+  <div data-expense-form-target="accountSection" hidden>
+    <%= f.label :account_id, "Conta", class: "field-label" %>
+    <%= f.select :account_id, account_options_for(entry.account_id),
+          { selected: entry.account_id || Account.last_used_id(Expense.where(payment_method: "debit")) },
+          class: "field-input" %>
+  </div>
   <div data-expense-form-target="cardSection" hidden>
     <%# Empty rather than `Card.none?`: with every card archived the user does own
         cards but none can be chosen, and the story asks for this same guidance. %>

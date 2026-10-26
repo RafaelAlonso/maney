@@ -13,19 +13,23 @@ RSpec.describe "Expenses", type: :request do
     Expense.create!(name: "padaria", amount_cents: 5_000, payment_method: "debit",
                     category: others, date: Date.new(2026, 3, 10))
     get expenses_path(month: "2026-03")
-    expect(response.body).to include("padaria").and include("débito")
+    expect(response.body).to include("padaria").and include("débito · Conta principal")
   end
 
   it "creates a debit expense (AC 4)" do
     post expenses_path, params: { expense_entry: { name: "padaria", amount: "50,00", date: "2026-03-10",
-                                                   category_id: others.id, payment_method: "debit" } }
+                                                   category_id: others.id, payment_method: "debit",
+                                                   account_id: Account.primary.id } }
     expect(Expense.find_by(name: "padaria").payment_method).to eq "debit"
   end
 
-  it "accepts a debit expense in the credit-card category — statement payment (AC 11)" do
+  it "refuses a new debit expense in the credit-card category — bills are paid through pagar" do
     post expenses_path, params: { expense_entry: { name: "fatura azul", amount: "800,00", date: "2026-03-12",
-                                                   category_id: credit_card_cat.id, payment_method: "debit" } }
-    expect(Expense.find_by(name: "fatura azul").category).to eq credit_card_cat
+                                                   category_id: credit_card_cat.id, payment_method: "debit",
+                                                   account_id: Account.primary.id } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("use o botão pagar")
+    expect(Expense.find_by(name: "fatura azul")).to be_nil
   end
 
   it "rejects a credit expense in the credit-card category (AC 11, server side)" do
@@ -454,6 +458,49 @@ RSpec.describe "Expenses", type: :request do
       get new_expense_path
 
       expect(response.body).to include("Para lançar no crédito, cadastre um cartão antes.")
+    end
+  end
+
+  describe "the Conta field" do
+    def selected_account_id
+      Nokogiri::HTML(response.body)
+        .at("select[name='expense_entry[account_id]'] option[selected]")
+        &.attr("value")
+    end
+
+    it "pre-selects the last débito account used" do
+      itau = Account.create!(name: "Itaú")
+      Expense.create!(name: "feira", amount_cents: 5_000, payment_method: "debit", category: others,
+                      date: Date.new(2026, 3, 10), account: itau)
+      Expense.create!(name: "pão", amount_cents: 500, payment_method: "cash", category: others,
+                      date: Date.new(2026, 3, 11))
+
+      get new_expense_path
+
+      expect(selected_account_id).to eq(itau.id.to_s)
+      expect(response.body).not_to include(">Carteira<")
+    end
+
+    it "lists an archived account only on the edit of an expense that uses it" do
+      itau = Account.create!(name: "Itaú")
+      expense = Expense.create!(name: "feira", amount_cents: 5_000, payment_method: "debit", category: others,
+                                date: Date.new(2026, 3, 10), account: itau)
+      itau.archive!
+
+      get new_expense_path
+      expect(response.body).not_to include("Itaú")
+
+      get edit_expense_path(expense)
+      expect(response.body).to include("Itaú (arquivada)")
+      expect(selected_account_id).to eq(itau.id.to_s)
+    end
+
+    it "saves a débito expense in the chosen account" do
+      itau = Account.create!(name: "Itaú")
+      post expenses_path, params: { expense_entry: { name: "feira", amount: "50,00", date: "2026-03-10",
+                                                     category_id: others.id, payment_method: "debit",
+                                                     account_id: itau.id } }
+      expect(Expense.find_by(name: "feira").account).to eq(itau)
     end
   end
 end

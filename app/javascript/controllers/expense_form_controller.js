@@ -1,13 +1,18 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["cardSection", "installmentSection", "installmentFields", "amountLabel", "categoryOption"]
+  static targets = ["cardSection", "accountSection", "installmentSection", "installmentFields", "amountLabel", "categoryOption"]
+  static values = { allowReserved: Boolean }
 
   connect() { this.refresh() }
 
   refresh() {
     const credit = this.method === "credit"
     this.cardSectionTarget.hidden = !credit
+    // Débito picks a bank account; dinheiro always goes to the carteira and
+    // crédito touches no account, so neither shows the picker (the server
+    // ignores the field for both).
+    this.accountSectionTarget.hidden = this.method !== "debit"
     this.installmentSectionTarget.hidden = !credit
     // Leaving credit must clear both the installment box and the card choice
     // right here — not just hide their sections. `hidden` does not disable an
@@ -22,7 +27,10 @@ export default class extends Controller {
       if (cardSelect) cardSelect.value = ""
     }
     this.categoryOptionTargets.forEach(option => {
-      const blocked = credit && option.dataset.role === "credit_card"
+      // The reserved category is closed for every method on a new expense — a
+      // bill is paid through "pagar" on the statement. Only an edit of an
+      // expense already in it (allowReserved) keeps it for débito/dinheiro.
+      const blocked = option.dataset.role === "credit_card" && (credit || !this.allowReservedValue)
       option.disabled = blocked
       option.hidden = blocked
       // This <select> has no `multiple`: if the blocked option is the only one

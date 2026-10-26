@@ -36,6 +36,13 @@ class Account < ApplicationRecord
   def self.primary = find_by!(role: "primary")
   def self.wallet = find_by!(role: "wallet")
 
+  # The account a new entry's picker pre-selects: the one the most recent record
+  # in `scope` used, while it's still active; Conta principal otherwise.
+  def self.last_used_id(scope)
+    scope.where(account_id: active.select(:id)).order(created_at: :desc, id: :desc).pick(:account_id) ||
+      primary.id
+  end
+
   def primary? = role == "primary"
   def wallet? = role == "wallet"
   def reserved? = role.present?

@@ -8,7 +8,8 @@ RSpec.describe ExpenseEntry do
 
   def entry(overrides = {})
     described_class.new({ name: "padaria", amount: "50,00", date: "2026-03-10",
-                          category_id: others.id.to_s, payment_method: "debit" }.merge(overrides))
+                          category_id: others.id.to_s, payment_method: "debit",
+                          account_id: Account.primary.id.to_s }.merge(overrides))
   end
 
   describe "#save (standalone)" do
@@ -229,6 +230,77 @@ RSpec.describe ExpenseEntry do
       prefilled = described_class.from(e.record)
       expect(prefilled.amount).to eq "1.000,00"
       expect(prefilled.installment?).to be true
+    end
+  end
+
+  describe "accounts" do
+    let(:itau) { Account.create!(name: "Itaú") }
+    let(:credit_card) { Category.find_by!(role: "credit_card") }
+
+    it "débito requires a bank account" do
+      [ "", Account.wallet.id.to_s ].each do |account_id|
+        e = entry(account_id:)
+        expect(e.save).to be false
+        expect(e.errors[:account_id]).to include("escolha a conta do débito")
+      end
+    end
+
+    it "débito saves the chosen account" do
+      e = entry(account_id: itau.id.to_s)
+      expect(e.save).to be true
+      expect(e.record.account).to eq itau
+    end
+
+    it "dinheiro on a new entry always goes to the carteira, whatever account_id says" do
+      e = entry(payment_method: "cash", account_id: itau.id.to_s)
+      expect(e.save).to be true
+      expect(e.record.account).to eq Account.wallet
+    end
+
+    it "crédito carries no account" do
+      e = entry(payment_method: "credit", card_id: card.id.to_s)
+      expect(e.save).to be true
+      expect(e.record.account).to be_nil
+    end
+
+    it "editing a migrated dinheiro expense keeps its account" do
+      expense = Expense.create!(name: "pão", amount_cents: 500, date: Date.new(2026, 3, 10), payment_method: "cash",
+                                category: others, account: Account.primary)
+      e = described_class.from(expense)
+      e.name = "pão de queijo"
+      expect(e.update(expense)).to be true
+      expect(expense.reload.account).to eq Account.primary
+    end
+
+    it "switching an existing débito expense to dinheiro moves it to the carteira" do
+      expense = Expense.create!(name: "feira", amount_cents: 500, date: Date.new(2026, 3, 10), payment_method: "debit",
+                                category: others, account: itau)
+      expect(entry(payment_method: "cash", account_id: itau.id.to_s).update(expense)).to be true
+      expect(expense.reload.account).to eq Account.wallet
+    end
+
+    it "refuses a new débito/dinheiro entry in the reserved credit-card category" do
+      %w[debit cash].each do |payment_method|
+        e = entry(payment_method:, category_id: credit_card.id.to_s)
+        expect(e.save).to be false
+        expect(e.errors[:base]).to include("Pagamento de fatura se lança pela fatura do cartão — use o botão pagar.")
+      end
+    end
+
+    it "still lets an old unlinked payment be edited in the reserved category" do
+      payment = Expense.create!(name: "fatura", amount_cents: 500, date: Date.new(2026, 3, 12), payment_method: "debit",
+                                category: credit_card, account: Account.primary)
+      e = described_class.from(payment)
+      e.amount = "600,00"
+      expect(e.update(payment)).to be true
+      expect(payment.reload.amount_cents).to eq 60_000
+    end
+
+    it "an account id from another person is not found and is refused" do
+      foreign = as(create_user!(email_address: "irma@example.com")) { create_setting!; Account.primary }
+      e = entry(account_id: foreign.id.to_s)
+      expect(e.save).to be false
+      expect(e.errors[:account_id]).to include("escolha a conta do débito")
     end
   end
 end

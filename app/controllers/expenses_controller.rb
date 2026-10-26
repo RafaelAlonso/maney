@@ -88,6 +88,6 @@ class ExpensesController < ApplicationController
   def entry_params
     params.require(:expense_entry)
           .permit(:name, :amount, :date, :category_id, :payment_method,
-                  :card_id, :installment, :installments_count, :first_installment)
+                  :card_id, :account_id, :installment, :installments_count, :first_installment)
   end
 end

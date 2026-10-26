@@ -7,12 +7,11 @@ class InstallmentPurchase < ApplicationRecord
 
   validates :name, presence: true
   validates :total_cents, numericality: { only_integer: true, greater_than: 0 }
-  # 120 = ten years of monthly installments — well beyond the 12x/24x that
-  # Brazilian cards actually offer, but enough to catch a stray extra digit
-  # (1200 instead of 120) without getting in anyone's way.
+  # No upper limit: a former 120 cap (ten years) got in the way of a real
+  # 200-installment purchase, so the only rule left is that a single payment is
+  # not an installment purchase.
   validates :installments_count, numericality: {
-    only_integer: true, greater_than_or_equal_to: 2, less_than_or_equal_to: 120,
-    message: "deve ter entre 2 e 120 parcelas"
+    only_integer: true, greater_than_or_equal_to: 2, message: "deve ter no mínimo 2 parcelas"
   }
   validates :first_installment, numericality: { only_integer: true, greater_than_or_equal_to: 1 }
   validates :date, presence: true

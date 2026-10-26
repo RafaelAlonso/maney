@@ -6,6 +6,7 @@ class StatementsController < ApplicationController
 
   def index
     @card_statements = Budgeting::CardStatements.new(card: @card)
+    @payments = Budgeting::StatementPayments.new
     @schedule = Budgeting::Schedule.for(card: @card, date: Date.current)
   end
 
@@ -19,7 +20,12 @@ class StatementsController < ApplicationController
   def show
     @nominal_closing = nominal_closing
     @row = Budgeting::CardStatements.new(card: @card).find(@nominal_closing)
-    render :empty if @row.nil?
+    return render :empty if @row.nil?
+
+    @payments = Budgeting::StatementPayments.new
+    @paid_with = Expense.where(statement_card: @card, statement_closing_on: @nominal_closing)
+                        .includes(:account).order(:date, :id)
+                        .select { |payment| @payments.statement_for(payment) == @row.statement }
   end
 
   private

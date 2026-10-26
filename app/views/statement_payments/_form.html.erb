@@ -1,0 +1,18 @@
+<%# app/views/statement_payments/_form.html.erb — locals: entry:, url:, method: %>
+<%= form_with model: entry, url: url, method: method, scope: :statement_payment_entry, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: entry %>
+  <div>
+    <%= f.label :account_id, "Conta", class: "field-label" %>
+    <%= f.select :account_id, account_options_for(entry.account_id, scope: Account.all),
+          { selected: entry.account_id }, class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :amount, "Valor (R$)", class: "field-label" %>
+    <%= f.text_field :amount, inputmode: "decimal", class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :date, "Data", class: "field-label" %>
+    <%= f.date_field :date, value: entry.date, class: "field-input" %>
+  </div>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
+<% end %>

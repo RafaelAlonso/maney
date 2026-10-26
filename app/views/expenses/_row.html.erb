@@ -25,7 +25,8 @@
   </div>
   </div>
   <div class="flex gap-3 text-sm shrink-0">
-    <%= link_to "editar", edit_expense_path(expense), class: "text-accent" %>
+    <%= link_to "editar", expense.statement_payment? ? edit_statement_payment_path(expense) : edit_expense_path(expense),
+          class: "text-accent" %>
     <% if show_delete %>
 <%# The month travels with the delete so the redirect comes back to the list the
           user was on, not to the current month (see ExpensesController#destroy). %>

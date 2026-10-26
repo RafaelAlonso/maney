@@ -51,7 +51,8 @@ module ApplicationHelper
   def movement_edit_path(movement)
     case movement.record
     when Income then edit_income_path(movement.record)
-    when Expense then edit_expense_path(movement.record)
+    when Expense
+      movement.record.statement_payment? ? edit_statement_payment_path(movement.record) : edit_expense_path(movement.record)
     when Transfer then edit_transfer_path(movement.record)
     end
   end

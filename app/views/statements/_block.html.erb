@@ -1,4 +1,4 @@
-<%# app/views/statements/_block.html.erb — locals: title:, rows:, card:
+<%# app/views/statements/_block.html.erb — locals: title:, rows:, card:, payments:
     A block with no rows renders nothing at all: a card whose statements are all
     closed must not show an empty "Em aberto" heading. %>
 <% if rows.any? %>
@@ -13,7 +13,10 @@
           </p>
           <p class="text-sm text-muted">compras de <%= statement_period_label(row) %></p>
         </div>
-        <p class="font-medium text-text shrink-0"><%= brl(row.total_cents) %></p>
+        <div class="text-right shrink-0">
+          <p class="font-medium text-text"><%= brl(row.total_cents) %></p>
+          <%= render "statements/status", card:, statement: row.statement, amount_cents: row.total_cents, payments: %>
+        </div>
       </li>
     <% end %>
   </ul>

@@ -8,6 +8,6 @@
     <%= render "shared/empty_state", message: "Nenhuma fatura ainda — lance um gasto no crédito neste cartão." %>
   </div>
 <% else %>
-  <%= render "statements/block", title: "Em aberto", rows: @card_statements.open, card: @card %>
-  <%= render "statements/block", title: "Fechadas", rows: @card_statements.closed, card: @card %>
+  <%= render "statements/block", title: "Em aberto", rows: @card_statements.open, card: @card, payments: @payments %>
+  <%= render "statements/block", title: "Fechadas", rows: @card_statements.closed, card: @card, payments: @payments %>
 <% end %>

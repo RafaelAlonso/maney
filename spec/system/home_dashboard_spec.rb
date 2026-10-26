@@ -46,4 +46,17 @@ RSpec.describe "Início dashboard", type: :system do
       end
     end
   end
+
+  it "the breakdown is folded until saldo atual is tapped" do
+    visit root_path
+
+    expect(page).to have_no_content("Conta principal")
+    toggle = find_button("saldo atual")
+    expect(toggle["aria-expanded"]).to eq("false")
+
+    toggle.click
+
+    expect(page).to have_content("Conta principal")
+    expect(find_button("saldo atual")["aria-expanded"]).to eq("true")
+  end
 end

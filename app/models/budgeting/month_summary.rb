@@ -76,6 +76,16 @@ module Budgeting
                .sum(:amount_cents)
     end
 
+    # Each account's balance for the month — the "contas" under "saldo atual".
+    def account_balances
+      @account_balances ||= AccountBalances.new(month:)
+    end
+
+    # The month's card bills and any overdue ones — "faturas do mês".
+    def bills
+      @bills ||= MonthBills.new(month:, today: @today, by_due_month:)
+    end
+
     def budgeted_cents(category)
       return statements_due_cents if category.credit_card?
 

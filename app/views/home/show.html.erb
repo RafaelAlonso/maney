@@ -11,7 +11,7 @@
     can toggle the per-card percentage spans without a server round-trip. %>
 <%= render "shared/month_nav", path_helper: ->(month:) { root_path(month:) } %>
 
-<div data-controller="percent" data-percent-mode-value="<%= @percent_mode %>">
+<div data-controller="percent selection-total" data-percent-mode-value="<%= @percent_mode %>">
   <div class="sticky top-16 z-10 bg-bg">
     <div class="flex md:grid md:grid-cols-2 gap-4 overflow-x-auto snap-x snap-mandatory
                 md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0">
@@ -35,4 +35,5 @@
             percent_mode: @percent_mode, expenses_total_cents: @expenses_total_cents %>
     <% end %>
   </div>
+  <%= render "shared/selection_bar" %>
 </div>

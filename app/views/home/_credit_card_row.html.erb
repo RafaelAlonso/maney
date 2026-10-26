@@ -14,8 +14,12 @@
     the page navigates. If it reads badly, move the toggle to its own element. %>
 <% due = summary.statements_due %>
 <% row_id = dom_id(category, :row) %>
+<%# The selection tick stays outside the <details>/<summary>, so ticking it can
+    never toggle the disclosure. %>
+<div class="flex items-start">
+<div class="pl-3 pt-4"><%= render "shared/selection_checkbox", cents: summary.spent_cents(category), label: category.name %></div>
 <% if due.any? %>
-  <details id="<%= row_id %>" class="p-3">
+  <details id="<%= row_id %>" class="flex-1 min-w-0 p-3">
     <summary class="flex items-center justify-between cursor-pointer">
       <%= render "home/credit_card_summary", category:, summary: %>
     </summary>
@@ -32,7 +36,8 @@
     </ul>
   </details>
 <% else %>
-  <div id="<%= row_id %>" class="p-3 flex items-center justify-between">
+  <div id="<%= row_id %>" class="flex-1 min-w-0 p-3 flex items-center justify-between">
     <%= render "home/credit_card_summary", category:, summary: %>
   </div>
 <% end %>
+</div>

@@ -1,0 +1,12 @@
+<%# app/views/shared/_selection_bar.html.erb — the floating total for the
+    `selection-total` controller; render it inside the element that carries
+    data-controller="selection-total". Sits above the mobile bottom bar (h-16)
+    and, on desktop, centred at the bottom, clear of the FAB on the right. %>
+<div data-selection-total-target="bar" hidden role="status" aria-live="polite"
+     class="fixed z-30 inset-x-4 bottom-20 md:bottom-6 md:inset-x-auto md:left-1/2 md:-translate-x-1/2
+            flex items-center justify-between gap-4 rounded-[var(--radius-card)] border border-border
+            bg-surface px-4 py-3 shadow-lg">
+  <span class="text-sm text-muted" data-selection-total-target="count"></span>
+  <span class="font-semibold tabular-nums" data-selection-total-target="total"></span>
+  <button type="button" data-action="selection-total#clear" class="text-sm text-accent">limpar seleção</button>
+</div>

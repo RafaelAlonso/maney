@@ -16,9 +16,13 @@
   <% over = budgeted.positive? && spent > budgeted %>
   <% earnings_pct = share_percent(spent, summary.incomes_total_cents) %>
   <% expenses_pct = share_percent(spent, expenses_total_cents) %>
+  <%# The selection tick sits beside the link, not inside it: a checkbox inside an
+      <a> is invalid HTML and ticking it would also navigate. %>
+  <div class="flex items-start hover:bg-bg/60 transition-colors">
+  <div class="pl-4 pt-5"><%= render "shared/selection_checkbox", cents: spent, label: category.name %></div>
   <%= link_to category_path(category, month: summary.month.strftime("%Y-%m")),
         id: dom_id(category, :row),
-        class: "block p-4 hover:bg-bg/60 transition-colors" do %>
+        class: "block flex-1 min-w-0 p-4" do %>
     <div class="flex items-center justify-between gap-2">
       <span class="text-text font-medium truncate"><%= category.name %></span>
       <%# Each segment is whitespace-nowrap so the line can only ever break at the
@@ -47,4 +51,5 @@
       <%= render "shared/budget_bar", spent_cents: spent, budgeted_cents: budgeted %>
     </div>
   <% end %>
+  </div>
 <% end %>

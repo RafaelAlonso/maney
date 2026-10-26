@@ -52,4 +52,21 @@ RSpec.describe Budgeting::StatementAlert do
     march_income(100_000)
     expect(alert.level).to eq(:none)
   end
+
+  it "a statement already paid raises no alert" do
+    march_income(100_000)
+    april_statement(120_000)
+    Expense.create!(name: "fatura", amount_cents: 120_000, date: Date.new(2026, 3, 10), payment_method: "debit",
+                    category: credit_card_category, statement_card: card,
+                    statement_closing_on: Date.new(2026, 4, 5))
+    expect(alert.level).to eq(:none)
+  end
+
+  it "is unchanged when no payment is linked" do
+    march_income(100_000)
+    april_statement(120_000)
+    Expense.create!(name: "fatura", amount_cents: 10_000, date: Date.new(2026, 3, 10), payment_method: "debit",
+                    category: credit_card_category)
+    expect(alert.level).to eq(:red)
+  end
 end

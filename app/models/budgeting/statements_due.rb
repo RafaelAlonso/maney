@@ -17,15 +17,18 @@ module Budgeting
 
     attr_reader :month
 
-    def initialize(month:)
+    # `by_due_month:` lets a caller that already derived StatementSet.by_due_month
+    # share it instead of deriving every card's history again.
+    def initialize(month:, by_due_month: nil)
       @month = month.beginning_of_month
+      @by_due_month = by_due_month
     end
 
     # Ordered by due date first — the order the statements are paid — then card
     # name to break a same-day tie, then card id so two cards sharing a name
     # still have a stable order.
     def rows
-      @rows ||= StatementSet.due_in(month:)
+      @rows ||= (@by_due_month ? @by_due_month.fetch(month, {}) : StatementSet.due_in(month:))
                             .map { |statement, expenses| Row.new(statement:, amount_cents: expenses.sum(&:amount_cents)) }
                             .sort_by { |row| [ row.statement.effective_due, row.statement.card.name, row.statement.card.id ] }
     end

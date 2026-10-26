@@ -99,8 +99,8 @@ module Budgeting
     def committed_cents(month) = committed_by_month[month]
 
     # Floored at zero: a month cannot owe a negative amount, and the surplus of
-    # an overpayment is not carried anywhere. See the plan's recorded limitation
-    # on paying ahead.
+    # an overpayment is not carried anywhere. Paying ahead is covered by linked
+    # payments, which land in their statement's due month (see paid_by_month).
     def committed_by_month
       @committed_by_month ||= Hash.new do |cache, month|
         committed = due_cents(month) - paid_cents(month)
@@ -112,25 +112,25 @@ module Budgeting
     def due_cents(month) = due_by_month.fetch(month, 0)
 
     def due_by_month
-      @due_by_month ||= StatementSet.by_due_month.transform_values do |statements|
+      @due_by_month ||= by_due_month.transform_values do |statements|
         statements.values.flatten.sum(&:amount_cents)
       end
     end
 
+    # Derived once and shared by what is due and what settled it.
+    def by_due_month
+      @by_due_month ||= StatementSet.by_due_month
+    end
+
     def paid_cents(month) = paid_by_month.fetch(month, 0)
 
-    # Payments are ordinary debit/cash expenses in the reserved category, with no
-    # link to the statement they settle — the same filter
-    # MonthSummary#statement_payments_cents uses, read for every month at once.
-    # Filtered by `role`, never by a Category record: that row is renamable.
+    # Payments are débito/dinheiro expenses in the reserved category
+    # (Expense.statement_payments). One linked to its statement settles debt in
+    # that statement's due month, so paying early never leaves the same bill
+    # owed again; an unlinked one (or one whose statement no longer resolves)
+    # counts by its own date, as every payment did before the link existed.
     def paid_by_month
-      @paid_by_month ||=
-        Expense.joins(:category)
-               .where(categories: { role: "credit_card" }, payment_method: %w[debit cash])
-               .group(:date).sum(:amount_cents)
-               .each_with_object(Hash.new(0)) do |(date, cents), totals|
-                 totals[date.beginning_of_month] += cents
-               end
+      @paid_by_month ||= StatementPayments.new(by_due_month:).settled_by_month
     end
 
     # Only months that actually saw a statement or a payment — the timeline's

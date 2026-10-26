@@ -34,12 +34,21 @@ module Budgeting
       [ [ summary.budgeted_cents(category) - credit, 0 ].max, cash ].max
     end
 
-    # A statement due in a PAST month that was never paid contributes nothing here:
-    # payments are ordinary debit expenses in the reserved category, with no link to
-    # a statement, so carrying one forward needs matching the schema doesn't have.
-    # Deliberate — the solvency story owns it.
+    # Cash the cards take out this month. A linked payment is cash out in the
+    # month it is made; a statement due this month still needs cash only for
+    # what hasn't been paid yet. Unlinked payments keep the old max(due, paid).
+    # With nothing linked this is exactly max(statements due, payments) — and
+    # reading linked payments by due month alone would double-count an early
+    # one: it is already out of the carried balance.
+    #
+    # A statement due in a PAST month that was never paid contributes nothing
+    # here — the solvency block owns arrears.
     def card_committed(summary)
-      [ summary.statements_due_cents, summary.statement_payments_cents ].max
+      payments = summary.statement_payments
+      remaining_due = summary.statements_due.rows.sum do |row|
+        payments.remaining_cents(row.statement, row.amount_cents)
+      end
+      payments.linked_paid_in(summary.month) + [ remaining_due, payments.unlinked_paid_in(summary.month) ].max
     end
   end
 end

@@ -187,4 +187,30 @@ RSpec.describe Budgeting::Solvency do
       expect(solvency.shortfall_cents).to eq 170_000
     end
   end
+
+  describe "payments linked to their statement" do
+    def pay_linked(cents, on:, closing:)
+      Expense.create!(name: "fatura", amount_cents: cents, payment_method: "debit",
+                      category: credit_card_category, date: on,
+                      statement_card: azul, statement_closing_on: closing)
+    end
+
+    it "a bill paid early through pagar is not owed again in its due month" do
+      credit(50_000, on: Date.new(2026, 3, 6)) # statement closing 05/04, due 13/04
+      pay_linked(50_000, on: Date.new(2026, 3, 28), closing: Date.new(2026, 4, 5))
+
+      result = solvency(today: Date.new(2026, 3, 28))
+      expect(result).to be_covered
+      expect(result.rows.find { |row| row.month == Date.new(2026, 4, 1) }&.committed_cents || 0).to eq 0
+      expect(result.rows.sum(&:committed_cents)).to eq 0
+    end
+
+    it "is unchanged when no payment is linked" do
+      credit(50_000, on: Date.new(2026, 3, 6))
+      pay(50_000, on: Date.new(2026, 3, 28))
+
+      rows = solvency(today: Date.new(2026, 3, 28)).rows
+      expect(rows.map { |row| [ row.month, row.committed_cents ] }).to eq [ [ Date.new(2026, 3, 1), 0 ], [ Date.new(2026, 4, 1), 50_000 ] ]
+    end
+  end
 end

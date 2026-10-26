@@ -133,4 +133,40 @@ RSpec.describe Budgeting::CashForecast do
     budget(120_000)
     expect(estimate).to eq(-20_000)
   end
+
+  describe "payments linked to their statement" do
+    let(:april) { Date.new(2026, 4, 1) }
+
+    def pay_linked(cents, date)
+      Expense.create!(name: "fatura", amount_cents: cents, date:, payment_method: "debit",
+                      category: credit_card_category, statement_card: card,
+                      statement_closing_on: Date.new(2026, 4, 5))
+    end
+
+    it "an early linked payment lowers this month's estimate and not the due month's" do
+      salary
+      credit(50_000)
+      pay_linked(50_000, Date.new(2026, 3, 28))
+
+      expect(described_class.card_committed(summary)).to eq(50_000)
+      expect(described_class.card_committed(summary(april))).to eq(0)
+    end
+
+    it "a partial linked payment leaves only the rest due" do
+      credit(50_000)
+      pay_linked(20_000, Date.new(2026, 3, 28))
+
+      expect(described_class.card_committed(summary)).to eq(20_000)
+      expect(described_class.card_committed(summary(april))).to eq(30_000)
+    end
+
+    it "is unchanged when no payment is linked" do
+      credit(50_000)
+      Expense.create!(name: "fatura", amount_cents: 20_000, date: Date.new(2026, 3, 28), payment_method: "debit",
+                      category: credit_card_category)
+
+      expect(described_class.card_committed(summary)).to eq(20_000)
+      expect(described_class.card_committed(summary(april))).to eq(50_000)
+    end
+  end
 end

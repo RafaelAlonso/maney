@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_26_000003) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_000004) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -80,14 +80,18 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000003) do
     t.bigint "installment_purchase_id"
     t.string "name", null: false
     t.string "payment_method", null: false
+    t.bigint "statement_card_id"
+    t.date "statement_closing_on"
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["account_id"], name: "index_expenses_on_account_id"
     t.index ["card_id"], name: "index_expenses_on_card_id"
     t.index ["category_id"], name: "index_expenses_on_category_id"
     t.index ["installment_purchase_id"], name: "index_expenses_on_installment_purchase_id"
+    t.index ["statement_card_id"], name: "index_expenses_on_statement_card_id"
     t.index ["user_id"], name: "index_expenses_on_user_id"
     t.check_constraint "(payment_method::text = 'credit'::text) = (account_id IS NULL)", name: "expenses_account_matches_method"
+    t.check_constraint "(statement_card_id IS NULL) = (statement_closing_on IS NULL)", name: "expenses_statement_link_complete"
   end
 
   create_table "incomes", force: :cascade do |t|
@@ -147,6 +151,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000003) do
     t.datetime "created_at", null: false
     t.date "first_month", null: false
     t.integer "initial_balance_cents", default: 0, null: false
+    t.date "statements_tracked_from", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_settings_on_user_id"
@@ -311,6 +316,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000003) do
   add_foreign_key "categories", "users"
   add_foreign_key "expenses", "accounts"
   add_foreign_key "expenses", "cards"
+  add_foreign_key "expenses", "cards", column: "statement_card_id"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "installment_purchases"
   add_foreign_key "expenses", "users"

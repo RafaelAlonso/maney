@@ -19,12 +19,12 @@ module Users
     # taken this way, which is the only reason it can be trusted to compare a
     # before and an after that sit on opposite sides of the backfill.
     FINGERPRINT = {
-      "settings" => { numeric: %w[initial_balance_cents alert_threshold_percent], dates: %w[first_month] },
+      "settings" => { numeric: %w[initial_balance_cents alert_threshold_percent], dates: %w[first_month statements_tracked_from] },
       "categories" => { numeric: [], dates: [] },
       "cards" => { numeric: [], dates: [] },
       "card_schedules" => { numeric: %w[closing_day due_day], dates: %w[valid_from] },
       "incomes" => { numeric: %w[amount_cents], dates: %w[date] },
-      "expenses" => { numeric: %w[amount_cents installment_number], dates: %w[date] },
+      "expenses" => { numeric: %w[amount_cents installment_number], dates: %w[date statement_closing_on] },
       "installment_purchases" => { numeric: %w[total_cents installments_count first_installment], dates: %w[date] },
       "budgets" => { numeric: %w[amount_cents], dates: %w[month] },
       "accounts" => { numeric: [], dates: [] },

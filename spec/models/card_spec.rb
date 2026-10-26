@@ -214,4 +214,24 @@ RSpec.describe Card do
       expect(card.archived_at).to be_nil
     end
   end
+
+  it "destroying a card keeps its bill payments and drops their link" do
+    create_setting!
+    create_reserved_categories!
+    card = create_card!(name: "Azul")
+    other = create_card!(name: "Preto")
+    purchase = Expense.create!(name: "tv", amount_cents: 50_000, date: Date.new(2026, 3, 6), payment_method: "credit",
+                               card:, category: category("mercado"))
+    payment = Expense.create!(name: "fatura", amount_cents: 50_000, date: Date.new(2026, 4, 10),
+                              payment_method: "debit", category: credit_card_category,
+                              statement_card: card, statement_closing_on: Date.new(2026, 4, 5))
+
+    purchase.update_columns(card_id: other.id)
+    expect(card.reload.destroy).to be_truthy
+
+    payment.reload
+    expect(payment.statement_card_id).to be_nil
+    expect(payment.statement_closing_on).to be_nil
+    expect(payment.amount_cents).to eq(50_000)
+  end
 end

@@ -2,6 +2,9 @@ class Setting < ApplicationRecord
   include OwnedByUser
 
   before_validation { self.first_month = first_month&.beginning_of_month }
+  # A new person's statements are tracked from the start of their timeline;
+  # people who predate payment links start at the release (see the migration).
+  before_validation(on: :create) { self.statements_tracked_from ||= first_month }
 
   validates :first_month, presence: true
   validates :initial_balance_cents, numericality: { only_integer: true }

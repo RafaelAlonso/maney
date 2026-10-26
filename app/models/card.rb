@@ -4,6 +4,12 @@ class Card < ApplicationRecord
   has_many :card_schedules, dependent: :destroy
   has_many :expenses, dependent: :restrict_with_error
   has_many :installment_purchases, dependent: :restrict_with_error
+  has_many :statement_payments, class_name: "Expense", foreign_key: :statement_card_id
+
+  # Declared after the restrictions above, so it only runs once they pass. A
+  # bill payment is real money that left an account: deleting or migrating the
+  # card keeps it, and only the statement link goes (both columns, together).
+  before_destroy { statement_payments.update_all(statement_card_id: nil, statement_closing_on: nil) }
 
   validates :name, presence: true
 

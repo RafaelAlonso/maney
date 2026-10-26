@@ -89,4 +89,28 @@ RSpec.describe Expense do
       expect(cash.reload.account).to eq(Account.primary)
     end
   end
+
+  describe "statement link" do
+    let(:link) { { statement_card: card, statement_closing_on: Date.new(2026, 4, 5) } }
+
+    it "a statement link needs both the card and the closing date" do
+      only_card = expense(category: credit_card_category, statement_card: card)
+      expect(only_card).not_to be_valid
+      expect(only_card.errors[:statement_closing_on]).to be_present
+      only_date = expense(category: credit_card_category, statement_closing_on: Date.new(2026, 4, 5))
+      expect(only_date).not_to be_valid
+      both = expense(category: credit_card_category, **link)
+      expect(both).to be_valid
+      expect(both).to be_statement_payment
+      expect(expense(category: credit_card_category)).not_to be_statement_payment
+    end
+
+    it "only a débito/dinheiro expense in the reserved category can carry a statement link" do
+      expect(expense(payment_method: "cash", category: credit_card_category, **link)).to be_valid
+      expect(expense(category: mercado, **link)).not_to be_valid
+      credit = expense(payment_method: "credit", card:, category: mercado, **link)
+      expect(credit).not_to be_valid
+      expect(credit.errors[:statement_card]).to include("só se aplica a pagamentos de fatura")
+    end
+  end
 end

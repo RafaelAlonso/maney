@@ -13,6 +13,13 @@ RSpec.describe "Setup", type: :request do
     expect(Setting.instance.initial_balance_cents).to eq 123_456
     expect(Category.find_by(role: "others").name).to eq "outros"
     expect(Category.find_by(role: "credit_card").name).to eq "cartão de crédito"
+    expect(Account.primary.name).to eq "Conta principal"
+    expect(Account.wallet.name).to eq "Carteira"
+  end
+
+  it "says saldo inicial is the Conta principal's balance" do
+    get setup_path
+    expect(response.body).to include("saldo da Conta principal no primeiro mês")
   end
 
   it "re-renders with errors on invalid input" do

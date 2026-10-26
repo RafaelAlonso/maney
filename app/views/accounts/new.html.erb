@@ -1,0 +1,20 @@
+<%# app/views/accounts/new.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Nova conta</h1>
+<%= form_with model: @opening, url: accounts_path, scope: :account_opening, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: @opening %>
+  <div>
+    <%= f.label :name, "Nome", class: "field-label" %>
+    <%= f.text_field :name, class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :amount, "Quanto tem nela hoje (R$)", class: "field-label" %>
+    <%= f.text_field :amount, inputmode: "decimal", placeholder: "0,00", class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :source_account_id, "Vindo de", class: "field-label" %>
+    <%= f.select :source_account_id, account_options_for(nil, scope: Account.all),
+          { selected: @opening.source_account_id }, class: "field-input" %>
+    <p class="text-xs text-muted mt-1">O valor entra como uma transferência de hoje — o saldo atual não muda.</p>
+  </div>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
+<% end %>

@@ -22,6 +22,9 @@ Rails.application.routes.draw do
   post "setup", to: "setup#create"
   resource :settings, only: %i[edit update]
   resource :analysis, only: :show
+  resources :accounts do
+    resource :archival, only: %i[create destroy], controller: "account_archivals"
+  end
   resources :cards, except: :show do
     resource :archival, only: %i[create destroy], controller: "card_archivals"
     resource :migration, only: %i[new create], controller: "card_migrations"

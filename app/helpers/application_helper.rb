@@ -47,6 +47,15 @@ module ApplicationHelper
     accounts.map { |a| [ a.archived? ? "#{a.name} (arquivada)" : a.name, a.id ] }
   end
 
+  # Where a movement on an account page goes to be edited. Transfers have no
+  # screen of their own yet.
+  def movement_edit_path(movement)
+    case movement.record
+    when Income then edit_income_path(movement.record)
+    when Expense then edit_expense_path(movement.record)
+    end
+  end
+
   # Rails' `pluralize` inflects only the last word of the phrase, which is right
   # for English ("3 loose expenses") and wrong for Portuguese, where the plural
   # agrees across the whole noun phrase: `pluralize(3, "gasto avulso")` gives
@@ -142,6 +151,7 @@ module ApplicationHelper
       { label: "Início",     path: root_path,          controllers: %w[home] },
       { label: "Gastos",     path: expenses_path,      controllers: %w[expenses] },
       { label: "Ganhos",     path: incomes_path,       controllers: %w[incomes] },
+      { label: "Contas",     path: accounts_path,      controllers: %w[accounts account_archivals] },
       { label: "Cartões",    path: cards_path,         controllers: %w[cards statements card_migrations card_archivals] },
       { label: "Categorias", path: categories_path,    controllers: %w[categories] },
       { label: "Análise",    path: analysis_path,      controllers: %w[analyses] }

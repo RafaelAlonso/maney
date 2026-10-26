@@ -10,6 +10,7 @@
   <p class="mt-1 font-medium tabular-nums <%= "text-money-over" if closing.negative? %>"><%= brl(closing) %></p>
 </div>
 <div class="flex gap-4 text-sm mb-4">
+  <%= link_to "transferir", new_transfer_path(from_account_id: @account.id), class: "text-accent" %>
   <%= link_to "editar conta", edit_account_path(@account), class: "text-accent" %>
   <% unless @account.reserved? || @account.archived? %>
     <%= button_to "arquivar", account_archival_path(@account), method: :post, class: "text-accent" %>

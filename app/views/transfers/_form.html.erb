@@ -1,0 +1,30 @@
+<%# app/views/transfers/_form.html.erb — locals: transfer:, url:
+    Never spending and never income: it moves money between two of the
+    person's own accounts, so "saldo atual" doesn't change. %>
+<%= form_with model: transfer, url: url, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: transfer %>
+  <div>
+    <%= f.label :from_account_id, "De", class: "field-label" %>
+    <%= f.select :from_account_id, account_options_for(transfer.from_account_id, scope: Account.all),
+          { selected: transfer.from_account_id }, class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :to_account_id, "Para", class: "field-label" %>
+    <%= f.select :to_account_id, account_options_for(transfer.to_account_id, scope: Account.all),
+          { selected: transfer.to_account_id, include_blank: "escolha…" }, class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :amount, "Valor (R$)", class: "field-label" %>
+    <%= f.text_field :amount, value: transfer.amount.presence || (transfer.amount_cents && BrlMoney.format(transfer.amount_cents)),
+          inputmode: "decimal", class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :date, "Data", class: "field-label" %>
+    <%= f.date_field :date, value: transfer.date, class: "field-input" %>
+  </div>
+  <div>
+    <%= f.label :note, "Observação", class: "field-label" %>
+    <%= f.text_field :note, placeholder: "ex.: saque", class: "field-input" %>
+  </div>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
+<% end %>

@@ -25,6 +25,7 @@ Rails.application.routes.draw do
   resources :accounts do
     resource :archival, only: %i[create destroy], controller: "account_archivals"
   end
+  resources :transfers, only: %i[new create edit update destroy]
   resources :cards, except: :show do
     resource :archival, only: %i[create destroy], controller: "card_archivals"
     resource :migration, only: %i[new create], controller: "card_migrations"

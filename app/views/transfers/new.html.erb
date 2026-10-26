@@ -1,0 +1,4 @@
+<%# app/views/transfers/new.html.erb %>
+<h1 class="text-lg font-semibold mb-1">Transferir</h1>
+<p class="text-sm text-muted mb-4">Para um saque, transfira para a <%= Account.wallet.name %>.</p>
+<%= render "form", transfer: @transfer, url: transfers_path %>

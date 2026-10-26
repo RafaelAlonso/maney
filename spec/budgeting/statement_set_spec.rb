@@ -4,6 +4,9 @@ RSpec.describe "Competence and StatementSet" do
   let(:card) { create_card }
   let(:mercado) { category("mercado") }
 
+  # Débito and dinheiro belong to an account; no Setting is built here.
+  before { create_reserved_accounts! }
+
   def credit_expense(amount, date, cat: mercado, on: card)
     Expense.create!(name: "compra", amount_cents: amount, date:, payment_method: "credit",
                     card: on, category: cat)

@@ -11,6 +11,9 @@ class Account < ApplicationRecord
 
   ROLES = %w[primary wallet].freeze
 
+  has_many :expenses, dependent: :restrict_with_error
+  has_many :incomes, dependent: :restrict_with_error
+
   # Same uniqueness caveat as Category: the validator queries `unscoped`, so the
   # scope on user_id is what keeps one person's roles from blocking another's.
   validates :name, presence: true

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_000002) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -70,6 +70,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
   end
 
   create_table "expenses", force: :cascade do |t|
+    t.bigint "account_id"
     t.integer "amount_cents", null: false
     t.bigint "card_id"
     t.bigint "category_id", null: false
@@ -81,19 +82,23 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
     t.string "payment_method", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["account_id"], name: "index_expenses_on_account_id"
     t.index ["card_id"], name: "index_expenses_on_card_id"
     t.index ["category_id"], name: "index_expenses_on_category_id"
     t.index ["installment_purchase_id"], name: "index_expenses_on_installment_purchase_id"
     t.index ["user_id"], name: "index_expenses_on_user_id"
+    t.check_constraint "(payment_method::text = 'credit'::text) = (account_id IS NULL)", name: "expenses_account_matches_method"
   end
 
   create_table "incomes", force: :cascade do |t|
+    t.bigint "account_id", null: false
     t.integer "amount_cents", null: false
     t.datetime "created_at", null: false
     t.date "date", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
+    t.index ["account_id"], name: "index_incomes_on_account_id"
     t.index ["user_id"], name: "index_incomes_on_user_id"
   end
 
@@ -288,10 +293,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
   add_foreign_key "card_schedules", "users"
   add_foreign_key "cards", "users"
   add_foreign_key "categories", "users"
+  add_foreign_key "expenses", "accounts"
   add_foreign_key "expenses", "cards"
   add_foreign_key "expenses", "categories"
   add_foreign_key "expenses", "installment_purchases"
   add_foreign_key "expenses", "users"
+  add_foreign_key "incomes", "accounts"
   add_foreign_key "incomes", "users"
   add_foreign_key "installment_purchases", "cards"
   add_foreign_key "installment_purchases", "categories"

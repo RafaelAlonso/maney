@@ -15,7 +15,7 @@
     <li class="p-3 flex items-center justify-between">
       <div>
         <p class="font-medium"><%= income.name %></p>
-        <p class="text-sm text-muted"><span class="text-money-positive"><%= brl(income.amount_cents) %></span> · <%= income.date.strftime("%d/%m/%Y") %></p>
+        <p class="text-sm text-muted"><span class="text-money-positive"><%= brl(income.amount_cents) %></span> · <%= income.date.strftime("%d/%m/%Y") %> · <%= income.account.name %></p>
       </div>
       <div class="flex gap-3 text-sm">
         <%= link_to "editar", edit_income_path(income), class: "text-accent" %>

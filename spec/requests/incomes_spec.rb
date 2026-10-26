@@ -6,7 +6,8 @@ RSpec.describe "Incomes", type: :request do
   before { create_setting!(initial_balance_cents: 10_000); create_reserved_categories! }
 
   it "creates an income (AC 3)" do
-    post incomes_path, params: { income: { name: "salário", amount: "5.000,00", date: "2026-03-01" } }
+    post incomes_path, params: { income: { name: "salário", amount: "5.000,00", date: "2026-03-01",
+                                           account_id: Account.primary.id } }
     expect(Income.find_by(name: "salário").amount_cents).to eq 500_000
   end
 
@@ -94,7 +95,8 @@ RSpec.describe "Incomes", type: :request do
 
   it "updates and destroys a real income" do
     income = Income.create!(name: "salário", amount_cents: 500_000, date: Date.new(2026, 3, 1))
-    patch income_path(income), params: { income: { name: "salário líquido", amount: "4.800,00", date: "2026-03-01" } }
+    patch income_path(income), params: { income: { name: "salário líquido", amount: "4.800,00", date: "2026-03-01",
+                                                   account_id: Account.primary.id } }
     expect(income.reload.amount_cents).to eq 480_000
     delete income_path(income)
     expect(Income.exists?(income.id)).to be false
@@ -126,6 +128,43 @@ RSpec.describe "Incomes", type: :request do
       get new_income_path(month: "2026-03")
 
       expect(response.body).to include('value="2026-03-01"')
+    end
+  end
+
+  describe "the account an income lands in" do
+    def selected_account_id
+      Nokogiri::HTML(response.body).at("select[name='income[account_id]'] option[selected]")&.attr("value")
+    end
+
+    it "lands an income in the chosen account, the carteira included" do
+      itau = Account.create!(name: "Itaú")
+      post incomes_path, params: { income: { name: "salário", amount: "5.000,00", date: "2026-03-01", account_id: itau.id } }
+      post incomes_path, params: { income: { name: "troco", amount: "20,00", date: "2026-03-02",
+                                             account_id: Account.wallet.id } }
+
+      expect(Income.find_by(name: "salário").account).to eq(itau)
+      expect(Income.find_by(name: "troco").account).to eq(Account.wallet)
+      get incomes_path(month: "2026-03")
+      expect(response.body).to include("Itaú").and include("Carteira")
+    end
+
+    it "pre-selects the last account an income went to" do
+      Income.create!(name: "troco", amount_cents: 2_000, date: Date.new(2026, 3, 2), account: Account.wallet)
+
+      get new_income_path
+
+      expect(selected_account_id).to eq(Account.wallet.id.to_s)
+    end
+
+    it "refuses another person's account id" do
+      foreign = as(create_user!(email_address: "irma@example.com")) { create_setting!; Account.primary }
+
+      post incomes_path, params: { income: { name: "salário", amount: "5.000,00", date: "2026-03-01",
+                                             account_id: foreign.id } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Conta escolha a conta")
+      expect(Income.find_by(name: "salário")).to be_nil
     end
   end
 end

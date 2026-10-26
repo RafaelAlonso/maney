@@ -70,6 +70,7 @@ pt-BR:
         category_id: "Categoria"
         payment_method: "Método"
         card_id: "Cartão"
+        account_id: "Conta"
         installment: "Parcelado"
         installments_count: "Nº de parcelas"
         first_installment: "Parcela inicial"
@@ -101,6 +102,8 @@ pt-BR:
       setting: "Configuração"
       user: "Pessoa"
       invitation: "Convite"
+      account: "Conta"
+      transfer: "Transferência"
     attributes:
       card:
         name: "Nome"
@@ -128,11 +131,26 @@ pt-BR:
         card: "Cartão"
         payment_method: "Método"
         installment_number: "Parcela"
+        account: "Conta"
+        statement_card: "Fatura"
+        statement_closing_on: "Fatura"
       income:
         name: "Nome"
         amount: "Valor"
         amount_cents: "Valor"
         date: "Data"
+        account: "Conta"
+        account_id: "Conta"
+      account:
+        name: "Nome"
+        amount: "Valor"
+      transfer:
+        from_account: "De"
+        to_account: "Para"
+        amount: "Valor"
+        amount_cents: "Valor"
+        date: "Data"
+        note: "Observação"
       installment_purchase:
         name: "Nome"
         amount: "Valor total"

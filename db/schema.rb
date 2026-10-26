@@ -10,9 +10,20 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_08_11_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_26_000001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "accounts", force: :cascade do |t|
+    t.datetime "archived_at"
+    t.datetime "created_at", null: false
+    t.string "name", null: false
+    t.string "role"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id", "role"], name: "index_accounts_on_user_id_and_role", unique: true, where: "(role IS NOT NULL)"
+    t.index ["user_id"], name: "index_accounts_on_user_id"
+  end
 
   create_table "budgets", force: :cascade do |t|
     t.integer "amount_cents", null: false
@@ -270,6 +281,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_08_11_000001) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "accounts", "users"
   add_foreign_key "budgets", "categories"
   add_foreign_key "budgets", "users"
   add_foreign_key "card_schedules", "cards"

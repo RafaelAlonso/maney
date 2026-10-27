@@ -1,0 +1,6 @@
+<%# app/views/shared/_selection_checkbox.html.erb — locals: cents:, label:
+    One row's tick for the `selection-total` controller. Not a form field: it
+    has no name, so it never submits. %>
+<input type="checkbox" aria-label="selecionar <%= label %>" data-cents="<%= cents %>"
+       data-selection-total-target="item" data-action="selection-total#refresh"
+       class="h-4 w-4 shrink-0 accent-accent">

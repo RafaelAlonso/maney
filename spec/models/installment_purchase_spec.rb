@@ -29,19 +29,16 @@ RSpec.describe InstallmentPurchase do
     expect(InstallmentPurchase.new(**sofa_attrs, total_cents: 0)).not_to be_valid
   end
 
-  it "Decision 1: accepts 120 installments (ten years) and refuses 121, without duplicating the minimum message" do
-    at_max = InstallmentPurchase.new(**sofa_attrs, total_cents: 1_200_00, installments_count: 120)
-    expect(at_max).to be_valid
-
-    over_max = InstallmentPurchase.new(**sofa_attrs, total_cents: 1_200_00, installments_count: 121)
-    expect(over_max).not_to be_valid
-    expect(over_max.errors[:installments_count]).to eq([ "deve ter entre 2 e 120 parcelas" ])
+  it "has no upper limit on installments: a real 200x purchase is accepted and generated" do
+    purchase = InstallmentPurchase.create!(**sofa_attrs, total_cents: 2_000_00, installments_count: 200)
+    expect(purchase.expenses.count).to eq(200)
+    expect(purchase.expenses.find_by(installment_number: 200).name).to eq("sofá 200/200")
   end
 
-  it "Decision 1: keeps the minimum of 2 installments using the same message as the upper limit" do
+  it "keeps the minimum of 2 installments" do
     under_min = InstallmentPurchase.new(**sofa_attrs, installments_count: 1)
     expect(under_min).not_to be_valid
-    expect(under_min.errors[:installments_count]).to eq([ "deve ter entre 2 e 120 parcelas" ])
+    expect(under_min.errors[:installments_count]).to eq([ "deve ter no mínimo 2 parcelas" ])
   end
 
   it "refuses the reserved credit-card category (it's a credit purchase)" do

@@ -22,8 +22,8 @@ module Budgeting
     # Installments carry `date: nil` — their month comes from Competence, not
     # from a stored date, so they cannot be range-queried and are filtered in
     # Ruby (as MonthEntries.expenses already does). A date window on the
-    # purchase is no substitute either: installments_count runs to 120, so a
-    # purchase made ten years earlier can still land a parcel inside this year.
+    # purchase is no substitute either: installments_count has no upper limit,
+    # so a purchase made many years earlier can still land a parcel inside this year.
     def undated(scope, year)
       scope.where(date: nil).includes(:installment_purchase).filter_map do |expense|
         month = Competence.month_of(expense)

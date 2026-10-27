@@ -10,9 +10,19 @@ class Setting < ApplicationRecord
   validate :single_row, on: :create
   validate :first_month_not_after_existing_entries
 
+  after_create :create_reserved_accounts
+
   def self.instance = first
 
   private
+
+  # Every person has a Conta principal (which holds saldo inicial) and a
+  # Carteira from the moment their timeline exists — setup, the migration and
+  # every spec that creates a Setting all get them from here.
+  def create_reserved_accounts
+    Account.find_or_create_by!(role: "primary") { |account| account.name = "Conta principal" }
+    Account.find_or_create_by!(role: "wallet") { |account| account.name = "Carteira" }
+  end
 
   def single_row
     errors.add(:base, "já existe uma configuração") if Setting.exists?

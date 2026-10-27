@@ -35,9 +35,12 @@
 
 <%= render "categories/breakdown", chart: @breakdown %>
 
-<ul class="divide-y divide-border rounded border border-border bg-surface">
-  <% @expenses.each do |expense| %>
-    <%= render "expenses/row", expense:, show_delete: false, show_category: false, statements: @statements %>
-  <% end %>
-  <% if @expenses.empty? %><%= render "shared/empty_state", message: "Nenhum gasto nesta categoria no mês." %><% end %>
-</ul>
+<div data-controller="selection-total">
+  <ul class="divide-y divide-border rounded border border-border bg-surface">
+    <% @expenses.each do |expense| %>
+      <%= render "expenses/row", expense:, show_delete: false, show_category: false, statements: @statements %>
+    <% end %>
+    <% if @expenses.empty? %><%= render "shared/empty_state", message: "Nenhum gasto nesta categoria no mês." %><% end %>
+  </ul>
+  <%= render "shared/selection_bar" %>
+</div>

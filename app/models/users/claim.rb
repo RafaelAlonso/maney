@@ -26,7 +26,8 @@ module Users
       "incomes" => { numeric: %w[amount_cents], dates: %w[date] },
       "expenses" => { numeric: %w[amount_cents installment_number], dates: %w[date] },
       "installment_purchases" => { numeric: %w[total_cents installments_count first_installment], dates: %w[date] },
-      "budgets" => { numeric: %w[amount_cents], dates: %w[month] }
+      "budgets" => { numeric: %w[amount_cents], dates: %w[month] },
+      "accounts" => { numeric: [], dates: [] }
     }.freeze
 
     # Derived from FINGERPRINT, not hand-maintained alongside it: two

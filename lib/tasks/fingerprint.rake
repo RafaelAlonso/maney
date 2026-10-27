@@ -40,6 +40,7 @@ namespace :db do
     # `password_digest` it proves the credential survived without writing a
     # password hash into a file that gets diffed and pasted around.
     checksummed = {
+      "accounts" => %w[user_id name role archived_at],
       "cards" => %w[user_id name archived_at],
       "card_schedules" => %w[user_id card_id],
       "categories" => %w[user_id name role],

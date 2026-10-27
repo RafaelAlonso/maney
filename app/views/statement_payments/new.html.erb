@@ -1,0 +1,7 @@
+<%# app/views/statement_payments/new.html.erb %>
+<h1 class="text-lg font-semibold">Pagar fatura</h1>
+<p class="text-sm text-muted mb-4">
+  <%= @card.name %> · <%= statement_due_label(@row.statement) %> · <%= brl(@row.total_cents) %>
+</p>
+<%= render "form", entry: @entry, method: :post,
+      url: card_statement_payments_path(@card, @row.statement, from: params[:from].presence) %>

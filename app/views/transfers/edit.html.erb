@@ -1,0 +1,5 @@
+<%# app/views/transfers/edit.html.erb %>
+<h1 class="text-lg font-semibold mb-4">Editar transferência</h1>
+<%= render "form", transfer: @transfer, url: transfer_path(@transfer) %>
+<%= button_to "excluir", transfer_path(@transfer), method: :delete, class: "mt-4 text-money-expense text-sm",
+      data: { turbo_confirm: "Excluir esta transferência?" } %>

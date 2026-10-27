@@ -18,14 +18,15 @@
   <div>
     <p class="font-medium"><%= expense.name %></p>
     <p class="text-sm text-muted">
-      <%= expense_date_label(expense) %> · <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
+      <%= expense_date_label(expense) %> · <%= brl(expense.amount_cents) %> · <%= payment_method_label(expense.payment_method) %><% if expense.account %> · <%= expense.account.name %><% end %><% if expense.card %> · <%= expense.card.name %><% end %><% if statement %>
       · <%= link_to statement_due_label(statement), card_statement_path(expense.card, statement), class: "text-accent" %><% end %><% if show_category %>
       · <%= expense.category.name %><% end %>
     </p>
   </div>
   </div>
   <div class="flex gap-3 text-sm shrink-0">
-    <%= link_to "editar", edit_expense_path(expense), class: "text-accent" %>
+    <%= link_to "editar", expense.statement_payment? ? edit_statement_payment_path(expense) : edit_expense_path(expense),
+          class: "text-accent" %>
     <% if show_delete %>
 <%# The month travels with the delete so the redirect comes back to the list the
           user was on, not to the current month (see ExpensesController#destroy). %>

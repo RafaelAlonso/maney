@@ -7,7 +7,7 @@ module Budgeting
 
     def expenses(month:, category: nil)
       target = month.beginning_of_month
-      dated = Expense.where(date: target.all_month).includes(:category, :card)
+      dated = Expense.where(date: target.all_month).includes(:category, :card, :account)
       dated = dated.where(category:) if category
       undated = Expense.where(date: nil).includes(:installment_purchase, :category, :card)
       undated = undated.where(category:) if category

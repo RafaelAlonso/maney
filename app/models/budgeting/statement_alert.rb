@@ -21,9 +21,16 @@ module Budgeting
 
     private
 
+    # What is still owed on them: a statement already paid (through pagar)
+    # threatens nothing.
     def next_statements_cents
-      @next_statements_cents ||=
-        StatementSet.due_in(month: @month >> 1).values.flatten.sum(&:amount_cents)
+      @next_statements_cents ||= begin
+        by_due_month = StatementSet.by_due_month
+        payments = StatementPayments.new(by_due_month:)
+        by_due_month.fetch(@month >> 1, {}).sum do |statement, expenses|
+          payments.remaining_cents(statement, expenses.sum(&:amount_cents))
+        end
+      end
     end
 
     def current_balance_cents

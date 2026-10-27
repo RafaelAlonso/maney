@@ -113,7 +113,7 @@ RSpec.describe ApplicationHelper, type: :helper do
   describe "#nav_destinations" do
     it "lists the primary destinations in nav order (Config is pinned separately)" do
       expect(helper.nav_destinations.map { |d| d[:label] }).to eq(
-        %w[Início Gastos Ganhos Cartões Categorias Análise]
+        %w[Início Gastos Ganhos Contas Cartões Categorias Análise]
       )
     end
   end

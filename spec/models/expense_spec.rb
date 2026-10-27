@@ -1,6 +1,9 @@
 require "rails_helper"
 
 RSpec.describe Expense do
+  # Débito and dinheiro need the reserved accounts a Setting creates.
+  before { create_setting! }
+
   let(:card) { create_card }
   let(:mercado) { category("mercado") }
 
@@ -30,7 +33,6 @@ RSpec.describe Expense do
 
   it "a standalone expense requires a date; a date before the first month is blocked" do
     expect(expense(date: nil)).not_to be_valid
-    Setting.create!(first_month: Date.new(2026, 3, 1), initial_balance_cents: 0)
     expect(expense(date: Date.new(2026, 2, 28))).not_to be_valid
     expect(expense(date: Date.new(2026, 3, 1))).to be_valid
   end
@@ -59,5 +61,56 @@ RSpec.describe Expense do
     non_installment = expense(installment_number: 2)
     expect(non_installment).not_to be_valid
     expect(non_installment.errors[:installment_number]).to include("só se aplica a parcelas")
+  end
+
+  describe "account" do
+    it "defaults a débito expense to the primary account and a dinheiro expense to the wallet" do
+      debit = expense(payment_method: "debit").tap(&:save!)
+      cash = expense(payment_method: "cash").tap(&:save!)
+      expect(debit.account).to eq(Account.primary)
+      expect(cash.account).to eq(Account.wallet)
+    end
+
+    it "refuses an account on a crédito expense" do
+      credit = expense(payment_method: "credit", card:, account: Account.primary)
+      expect(credit).not_to be_valid
+      expect(credit.errors[:account]).to include("só se aplica a gastos no débito ou dinheiro")
+    end
+
+    it "refuses the wallet on a débito expense" do
+      debit = expense(payment_method: "debit", account: Account.wallet)
+      expect(debit).not_to be_valid
+      expect(debit.errors[:account]).to include("carteira só para gastos em dinheiro")
+    end
+
+    it "keeps an existing dinheiro expense on the primary account when edited" do
+      cash = expense(payment_method: "cash", account: Account.primary).tap(&:save!)
+      cash.update!(name: "feira")
+      expect(cash.reload.account).to eq(Account.primary)
+    end
+  end
+
+  describe "statement link" do
+    let(:link) { { statement_card: card, statement_closing_on: Date.new(2026, 4, 5) } }
+
+    it "a statement link needs both the card and the closing date" do
+      only_card = expense(category: credit_card_category, statement_card: card)
+      expect(only_card).not_to be_valid
+      expect(only_card.errors[:statement_closing_on]).to be_present
+      only_date = expense(category: credit_card_category, statement_closing_on: Date.new(2026, 4, 5))
+      expect(only_date).not_to be_valid
+      both = expense(category: credit_card_category, **link)
+      expect(both).to be_valid
+      expect(both).to be_statement_payment
+      expect(expense(category: credit_card_category)).not_to be_statement_payment
+    end
+
+    it "only a débito/dinheiro expense in the reserved category can carry a statement link" do
+      expect(expense(payment_method: "cash", category: credit_card_category, **link)).to be_valid
+      expect(expense(category: mercado, **link)).not_to be_valid
+      credit = expense(payment_method: "credit", card:, category: mercado, **link)
+      expect(credit).not_to be_valid
+      expect(credit.errors[:statement_card]).to include("só se aplica a pagamentos de fatura")
+    end
   end
 end

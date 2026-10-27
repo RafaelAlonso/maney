@@ -1,0 +1,51 @@
+<%# app/views/home/_hero_breakdown.html.erb — locals: summary
+    What "saldo atual" is made of: each active account's balance for the month,
+    and the month's card bills (plus any overdue ones) with their status.
+    Starts folded; the "saldo atual" button opens it (disclosure controller). %>
+<% month = summary.month.strftime("%Y-%m") %>
+<div id="hero-breakdown" data-disclosure-target="panel" hidden class="mt-4 space-y-4 text-sm">
+  <div>
+    <p class="text-xs uppercase tracking-wide text-muted mb-1">contas</p>
+    <ul class="divide-y divide-border">
+      <% Account.active.ordered.each do |account| %>
+        <% balance = summary.account_balances.closing_cents(account) %>
+        <li>
+          <%= link_to account_path(account, month:), class: "py-1.5 flex items-center justify-between gap-2" do %>
+            <span><%= account.name %></span>
+            <span class="tabular-nums <%= "text-money-over" if balance.negative? %>"><%= brl(balance) %> ›</span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  </div>
+  <% if summary.bills.any? %>
+    <div>
+      <p class="text-xs uppercase tracking-wide text-muted mb-1">faturas do mês</p>
+      <ul class="divide-y divide-border">
+        <% summary.bills.rows.each do |row| %>
+          <li class="py-1.5 flex items-center justify-between gap-2">
+            <span class="min-w-0">
+              <%= link_to row.statement.card.name, card_statement_path(row.statement.card, row.statement), class: "text-accent" %>
+              <span class="text-muted">· <%= statement_due_label(row.statement) %></span>
+              <% if row.overdue %><span class="text-money-over">· atrasada</span><% end %>
+            </span>
+            <span class="flex items-center gap-2 shrink-0 tabular-nums">
+              <% case row.status %>
+              <% when :paid %>
+                <span class="text-money-positive">paga ✓</span>
+              <% when :partial %>
+                <span class="text-money-near">falta <%= brl(row.remaining_cents) %></span>
+              <% else %>
+                <span><%= brl(row.amount_cents) %></span>
+              <% end %>
+              <% unless row.status.in?(%i[paid untracked]) %>
+                <%= link_to "pagar", new_card_statement_payment_path(row.statement.card, row.statement, from: "home"),
+                      class: "text-accent font-medium" %>
+              <% end %>
+            </span>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+</div>

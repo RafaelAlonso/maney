@@ -1,6 +1,8 @@
 require "rails_helper"
 
 RSpec.describe "Home month view", type: :request do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:march) { Date.new(2026, 3, 1) }
   before { create_setting!(first_month: march); create_reserved_categories! }
 
@@ -392,5 +394,55 @@ RSpec.describe "Home month view", type: :request do
 
       expect(card_row.to_html).not_to include("text-red-700")
     end
+  end
+
+  describe "the hero breakdown under saldo atual" do
+    around { |example| travel_to(Time.zone.local(2026, 3, 20, 10, 0, 0)) { example.run } }
+
+    def breakdown = Nokogiri::HTML(response.body).at("#hero-breakdown")
+
+    it "the hero lists every active account with its balance and links to its page" do
+      Setting.instance.update!(initial_balance_cents: 100_000)
+      itau = Account.create!(name: "Itaú")
+      Transfer.create!(from_account: Account.primary, to_account: itau, amount_cents: 30_000, date: Date.new(2026, 3, 2))
+      Account.create!(name: "Velha", archived_at: Time.current)
+
+      get root_path(month: "2026-03")
+
+      expect(breakdown.text).to include("contas").and include("Conta principal").and include("R$ 700,00")
+      expect(breakdown.text).to include("Itaú").and include("R$ 300,00").and include("Carteira")
+      expect(breakdown.text).not_to include("Velha")
+      expect(breakdown.at("a[href='#{account_path(itau, month: "2026-03")}']")).to be_present
+    end
+
+    it "the hero lists faturas do mês with pagar, falta and paga ✓" do
+      azul = create_card!(name: "Azul")
+      roxo = create_card!(name: "Roxo")
+      verde = create_card!(name: "Verde")
+      [ azul, roxo, verde ].each do |card|
+        Expense.create!(name: "compra", amount_cents: 10_000, date: Date.new(2026, 3, 4), payment_method: "credit",
+                        card:, category: category)
+      end
+      { roxo => 4_000, verde => 10_000 }.each do |card, cents|
+        Expense.create!(name: "fatura", amount_cents: cents, date: Date.new(2026, 3, 10), payment_method: "debit",
+                        category: credit_card_category, statement_card: card, statement_closing_on: Date.new(2026, 3, 5))
+      end
+
+      get root_path(month: "2026-03")
+
+      expect(breakdown.text).to include("faturas do mês").and include("falta R$ 60,00").and include("paga ✓")
+      expect(breakdown.at("a[href='#{new_card_statement_payment_path(azul, "2026-03-05", from: "home")}']")).to be_present
+      expect(breakdown.at("a[href='#{new_card_statement_payment_path(verde, "2026-03-05", from: "home")}']")).to be_nil
+    end
+  end
+
+  it "labels an overdue bill from an earlier month as atrasada on the hero" do
+    azul = create_card!(name: "Azul")
+    Expense.create!(name: "compra", amount_cents: 10_000, date: Date.new(2026, 3, 4), payment_method: "credit",
+                    card: azul, category: category)
+
+    travel_to(Time.zone.local(2026, 4, 20, 10, 0, 0)) { get root_path(month: "2026-04") }
+
+    expect(Nokogiri::HTML(response.body).at("#hero-breakdown").text).to include("atrasada")
   end
 end

@@ -10,7 +10,7 @@ module Users
     # rather than derived from it, because only the order is hand-made — a table
     # added to the schema without being added here fails that assertion.
     DELETION_ORDER = %w[
-      budgets expenses installment_purchases card_schedules incomes accounts settings categories cards
+      budgets expenses installment_purchases card_schedules incomes transfers accounts settings categories cards
     ].freeze
 
     def initialize(user)

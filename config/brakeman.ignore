@@ -22,7 +22,76 @@
         89
       ],
       "note": "False positive: `column` and `table` are only ever iterated out of the frozen Users::Claim::FINGERPRINT constant defined at the top of this file -- no user input can reach them. The value is additionally passed through connection.quote_column_name/quote_table_name before interpolation; Brakeman cannot trace that the sanitized local (not the raw parameter) is what ends up in the SQL string. See app/models/users/claim.rb for the full argument."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "380dc6bf9a0839d8c3fb1e31e2cf56ffe6dcf8bdef681c638cb033ee0a6dc241",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/incomes_controller.rb",
+      "line": 54,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:income).permit(:name, :amount, :date, :account_id)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "IncomesController",
+        "method": "assign_and_save"
+      },
+      "user_input": ":account_id",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "False positive: account_id is never assigned as a column. IncomesController resolves it with Account.find_by(id:), which runs under the OwnedByUser default scope, so another person's id is not found and the income is refused (\"escolha a conta\"); only the found record is assigned. Covered by spec/requests/incomes_spec.rb \"refuses another person's account id\"."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "aecb0d6f31f62291191c14c28f362f158acaeccc48dd46235d235735eb2bfd6b",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/statement_payments_controller.rb",
+      "line": 61,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:statement_payment_entry).permit(:account_id, :amount, :date)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "StatementPaymentsController",
+        "method": "entry_params"
+      },
+      "user_input": ":account_id",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "False positive: account_id is never assigned as a column. StatementPaymentEntry#account resolves it with Account.find_by(id:), which runs under the OwnedByUser default scope, so another person's id is not found and the payment is refused (\"escolha a conta\"); only the found record is assigned. Covered by spec/requests/statement_payments_spec.rb \"refuses another person's account and an unknown statement\"."
+    },
+    {
+      "warning_type": "Mass Assignment",
+      "warning_code": 105,
+      "fingerprint": "f278081a8f0820c7a1e2adb8b0596dd961b87daa7294b6a0037404cb11534ab5",
+      "check_name": "PermitAttributes",
+      "message": "Potentially dangerous key allowed for mass assignment",
+      "file": "app/controllers/expenses_controller.rb",
+      "line": 94,
+      "link": "https://brakemanscanner.org/docs/warning_types/mass_assignment/",
+      "code": "params.require(:expense_entry).permit(:name, :amount, :date, :category_id, :payment_method, :card_id, :account_id, :installment, :installments_count, :first_installment)",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "ExpensesController",
+        "method": "entry_params"
+      },
+      "user_input": ":account_id",
+      "confidence": "High",
+      "cwe_id": [
+        915
+      ],
+      "note": "False positive: account_id is never assigned as a column. ExpenseEntry#bank_account resolves it with Account.banks.find_by(id:), which runs under the OwnedByUser default scope, so another person's id is not found and the form refuses it (\"escolha a conta do débito\"); only the found record is assigned. Covered by spec/requests/expenses_spec.rb \"refuses another person's account id on a debit expense\"."
     }
   ],
-  "brakeman_version": "8.0.5"
+  "brakeman_version": "8.1.0"
 }

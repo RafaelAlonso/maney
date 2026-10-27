@@ -40,6 +40,7 @@ RSpec.describe Users::Claim, :no_current_user do
     Expense.create!(name: "feira", amount_cents: 100_000, date: Date.new(2026, 3, 5),
                     payment_method: "debit", category: mercado)
     Budget.create!(category: mercado, month: march, amount_cents: 400_000)
+    Transfer.create!(from_account: Account.primary, to_account: Account.wallet, amount_cents: 5_000, date: march)
     card = create_card!
     InstallmentPurchase.create!(name: "notebook", total_cents: 200_000, installments_count: 2,
                                 first_installment: 1, date: march, card:, category: mercado)

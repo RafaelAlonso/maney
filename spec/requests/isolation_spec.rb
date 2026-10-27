@@ -152,7 +152,8 @@ RSpec.describe "Isolation between people", type: :request do
   # overwrites `user_id`, or `default_scope` changing shape.
   it "stamps a newly created record with the poster's own id (AC 5)" do
     post expenses_path, params: { expense_entry: { name: "recém-criado", amount: "10,00", date: "2026-03-15",
-                                                    category_id: @mercado.id, payment_method: "debit" } }
+                                                    category_id: @mercado.id, payment_method: "debit",
+                                                    account_id: Account.primary.id } }
 
     # `unscoped`, not the default-scoped finder: a `belongs_to default:` bug
     # that stamps the wrong person would still satisfy a scoped lookup as long

@@ -8,6 +8,14 @@ module SetupHelpers
      Category.find_or_create_by!(role: "credit_card") { |c| c.name = "cartão de crédito" } ]
   end
 
+  # What a Setting creates on its own (Setting#create_reserved_accounts) — for the
+  # engine specs that deliberately build no Setting, so the timeline validation
+  # stays out of the way, but still enter débito/dinheiro or incomes.
+  def create_reserved_accounts!
+    [ Account.find_or_create_by!(role: "primary") { |a| a.name = "Conta principal" },
+     Account.find_or_create_by!(role: "wallet") { |a| a.name = "Carteira" } ]
+  end
+
   # Same card as the reference scenario (ReferenceScenario#create_card), but with
   # the first validity window anchored at the start of the timeline — which is
   # what the cards screen does on registration. Delegates on purpose: two helpers

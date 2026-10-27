@@ -1,0 +1,6 @@
+<%# app/views/statement_payments/edit.html.erb %>
+<h1 class="text-lg font-semibold">Editar pagamento</h1>
+<p class="text-sm text-muted mb-4"><%= @payment.name %></p>
+<%= render "form", entry: @entry, method: :patch, url: statement_payment_path(@payment) %>
+<%= button_to "excluir", statement_payment_path(@payment), method: :delete, class: "mt-4 text-money-expense text-sm",
+      data: { turbo_confirm: "Excluir este pagamento?" } %>

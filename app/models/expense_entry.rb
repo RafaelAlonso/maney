@@ -5,11 +5,13 @@ class ExpenseEntry
   include ActiveModel::Model
 
   attr_accessor :name, :amount, :date, :category_id, :payment_method,
-                :card_id, :installment, :installments_count, :first_installment
+                :card_id, :account_id, :installment, :installments_count, :first_installment
   attr_reader :record
 
   validate :amount_must_parse
   validate :installment_requires_credit
+  validate :debit_requires_bank_account
+  validate :reserved_category_closed, on: :create
 
   def self.from(source)
     case source
@@ -21,7 +23,7 @@ class ExpenseEntry
     else
       new(name: source.name, amount: BrlMoney.format(source.amount_cents), date: source.date,
           category_id: source.category_id, payment_method: source.payment_method,
-          card_id: source.card_id)
+          card_id: source.card_id, account_id: source.account_id)
     end
   end
 
@@ -39,14 +41,18 @@ class ExpenseEntry
     category_id.presence || Category.find_by(role: "others")&.id
   end
 
+  # `:create` closes the reserved category to new débito/dinheiro entries; an
+  # edit keeps today's rules, so a payment entered before "pagar" existed stays
+  # editable.
   def save
-    return false unless valid?
+    return false unless valid?(:create)
     @record = installment? ? build_purchase : Expense.new(expense_attributes)
     persist(@record)
   end
 
   def update(source)
     return false unless valid?
+    @source = source
     @record = source
     case source
     when InstallmentPurchase then update_purchase(source)
@@ -96,7 +102,33 @@ class ExpenseEntry
 
   def expense_attributes
     { name:, amount_cents:, date: date.presence, category:, payment_method:,
-      card_id: payment_method == "credit" ? card_id.presence : nil }
+      card_id: payment_method == "credit" ? card_id.presence : nil, account: }
+  end
+
+  # Crédito never touches an account. Débito goes to the chosen bank account.
+  # New dinheiro always goes to the carteira — but an expense that was already
+  # dinheiro keeps its account on edit, because migrated cash sits in Conta
+  # principal and must never be silently moved.
+  def account
+    case payment_method
+    when "debit" then bank_account
+    when "cash" then @source&.payment_method == "cash" ? @source.account : Account.wallet
+    end
+  end
+
+  # Default scope: another person's id is simply not found.
+  def bank_account = Account.banks.find_by(id: account_id.presence)
+
+  def debit_requires_bank_account
+    return unless payment_method == "debit" && !installment?
+    errors.add(:account_id, "escolha a conta do débito") if bank_account.nil?
+  end
+
+  # Bills are paid through "pagar" on the statement, which links the payment to
+  # it; the old workaround (a débito in the reserved category) is closed.
+  def reserved_category_closed
+    return unless payment_method.in?(%w[debit cash]) && !installment? && category.credit_card?
+    errors.add(:base, "Pagamento de fatura se lança pela fatura do cartão — use o botão pagar.")
   end
 
   def build_purchase

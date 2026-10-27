@@ -8,6 +8,11 @@ class Income < ApplicationRecord
   # technique as `ExpenseEntry#amount` (app/models/expense_entry.rb).
   attr_accessor :amount
 
+  belongs_to :account
+
+  # The model's fallback; the form makes the person choose.
+  before_validation { self.account ||= Account.find_by(role: "primary") }
+
   validates :name, presence: true
   validates :amount_cents, numericality: { only_integer: true, greater_than: 0 }
   validates :date, presence: true

@@ -1,0 +1,42 @@
+<%# app/views/accounts/index.html.erb %>
+<div class="flex items-center justify-between mb-2">
+  <h1 class="text-lg font-semibold">Contas</h1>
+  <%= link_to "nova conta", new_account_path, class: "text-accent text-sm" %>
+</div>
+<%= render "shared/month_nav", path_helper: ->(month:) { accounts_path(month:) } %>
+<ul class="bg-surface border border-border rounded-[var(--radius-card)] divide-y divide-border">
+  <% @accounts.each do |account| %>
+    <% balance = @balances.closing_cents(account) %>
+    <li class="p-3 flex items-center justify-between gap-2 <%= "opacity-60" if account.archived? %>">
+      <div class="min-w-0">
+        <p class="font-medium">
+          <%= link_to account.name, account_path(account, month: month_param), class: "text-accent" %>
+          <% if account.archived? %>
+            <span class="ml-2 align-middle text-xs font-normal bg-border text-muted rounded px-2 py-0.5">arquivada</span>
+          <% end %>
+        </p>
+        <p class="text-sm tabular-nums <%= balance.negative? ? "text-money-over" : "text-muted" %>"><%= brl(balance) %></p>
+      </div>
+      <div class="flex gap-3 text-sm shrink-0">
+        <%= link_to "editar", edit_account_path(account), class: "text-accent" %>
+        <%# Conta principal and Carteira are reserved: renamable only. %>
+        <% unless account.reserved? %>
+          <% if account.archived? %>
+            <%= button_to "reativar", account_archival_path(account), method: :delete, class: "text-accent" %>
+          <% else %>
+            <%= button_to "arquivar", account_archival_path(account), method: :post, class: "text-accent" %>
+          <% end %>
+          <%= button_to "excluir", account_path(account), method: :delete, class: "text-money-expense",
+                data: { turbo_confirm: "Excluir a conta #{account.name}?" } %>
+        <% end %>
+      </div>
+    </li>
+  <% end %>
+  <%# Archived accounts included: their money is still the person's, and this is
+      the same number as "saldo atual". %>
+  <li class="p-3 flex items-center justify-between bg-bg">
+    <span class="font-medium">total</span>
+    <% total = @balances.total_closing_cents %>
+    <span class="tabular-nums <%= "text-money-over" if total.negative? %>"><%= brl(total) %></span>
+  </li>
+</ul>

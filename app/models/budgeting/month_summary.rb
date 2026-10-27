@@ -56,7 +56,13 @@ module Budgeting
     # disposable, for a single month. Nothing here may become process state (see
     # Budgeting::Schedule).
     def statements_due
-      @statements_due ||= StatementsDue.new(month:)
+      @statements_due ||= StatementsDue.new(month:, by_due_month:)
+    end
+
+    # The bill payments read against their statements, from the same derivation
+    # as `statements_due` (Budgeting::CashForecast uses both).
+    def statement_payments
+      @statement_payments ||= StatementPayments.new(by_due_month:)
     end
 
     def statements_due_cents = statements_due.total_cents
@@ -68,6 +74,16 @@ module Budgeting
         Expense.joins(:category)
                .where(categories: { role: "credit_card" }, payment_method: %w[debit cash], date: month.all_month)
                .sum(:amount_cents)
+    end
+
+    # Each account's balance for the month — the "contas" under "saldo atual".
+    def account_balances
+      @account_balances ||= AccountBalances.new(month:)
+    end
+
+    # The month's card bills and any overdue ones — "faturas do mês".
+    def bills
+      @bills ||= MonthBills.new(month:, today: @today, by_due_month:)
     end
 
     def budgeted_cents(category)
@@ -88,6 +104,10 @@ module Budgeting
     end
 
     private
+
+    def by_due_month
+      @by_due_month ||= StatementSet.by_due_month
+    end
 
     def installment_spent_cents(category)
       Expense.where(category:, date: nil).includes(:installment_purchase).sum do |expense|

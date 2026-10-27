@@ -11,6 +11,12 @@ RSpec.describe "Settings", type: :request do
     expect(response.body).not_to include("Renomear")
   end
 
+  it "says saldo inicial is the Conta principal's balance, by its current name" do
+    Account.primary.update!(name: "Nubank")
+    get edit_settings_path
+    expect(response.body).to include("saldo da Nubank no primeiro mês")
+  end
+
   it "updates first month and initial balance (AC 18)" do
     patch settings_path, params: { setting: { first_month: "2026-02", initial_balance: "-250,00", alert_threshold_percent: "80" } }
     expect(Setting.instance.first_month).to eq Date.new(2026, 2, 1)

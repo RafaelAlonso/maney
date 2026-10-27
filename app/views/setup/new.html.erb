@@ -10,6 +10,8 @@
   <div>
     <%= f.label :initial_balance, "Saldo inicial (R$)", class: "field-label" %>
     <%= f.text_field :initial_balance, value: @initial_balance_input, inputmode: "decimal", class: "field-input" %>
+    <%# No accounts exist before the Setting does; this is the name it will get. %>
+    <p class="text-xs text-muted mt-1">saldo da Conta principal no primeiro mês</p>
   </div>
   <%= f.submit "Começar", class: "btn btn-primary" %>
 <% end %>

@@ -16,6 +16,11 @@
           inputmode: "decimal", class: "field-input" %>
   </div>
   <div>
+    <%= f.label :account_id, "Conta", class: "field-label" %>
+    <%= f.select :account_id, account_options_for(income.account_id, scope: Account.all),
+          { selected: income.account_id || Account.last_used_id(Income.all) }, class: "field-input" %>
+  </div>
+  <div>
     <%= f.label :date, "Data", class: "field-label" %>
     <%= f.date_field :date, value: income.date, class: "field-input" %>
   </div>

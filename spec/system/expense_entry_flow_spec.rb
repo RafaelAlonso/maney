@@ -16,6 +16,7 @@ RSpec.describe "Expense entry flow", type: :system do
     fill_in "Nome", with: "padaria"
     fill_in "expense_entry[amount]", with: "50,00"
     choose "débito"
+    select "Conta principal", from: "Conta"
     click_button "Salvar"
     expect(page).to have_content("Gasto lançado")
     expect(page).to have_content("padaria")
@@ -91,6 +92,10 @@ RSpec.describe "Expense entry flow", type: :system do
     fill_in "Nome", with: "compra teste"
     fill_in "expense_entry[amount]", with: "10,00"
     fill_in "Data", with: Date.new(2026, 3, 12)
+    # The account picker is shown by the controller's connect(), so seeing it
+    # proves Stimulus has run — otherwise a late connect() would refresh() over
+    # the values forced below.
+    expect(page).to have_select("Conta")
 
     # Bypass only the client-side `change` handler that a real click would
     # trigger and that would pre-empt this exact combination — see comment
@@ -98,6 +103,9 @@ RSpec.describe "Expense entry flow", type: :system do
     # round trip through the real server and the real re-rendered page.
     page.execute_script(<<~JS)
       document.querySelector('input[name="expense_entry[payment_method]"][value="credit"]').checked = true
+      // The reserved option is disabled on every new expense now, and a disabled
+      // option is never submitted — re-enable it so the POST carries it.
+      document.querySelector('select[name="expense_entry[category_id]"] option[value="#{credit_card_category.id}"]').disabled = false
       document.querySelector('select[name="expense_entry[category_id]"]').value = "#{credit_card_category.id}"
       document.querySelector('select[name="expense_entry[card_id]"]').value = "#{card.id}"
     JS
@@ -133,5 +141,28 @@ RSpec.describe "Expense entry flow", type: :system do
     # exactly what stops a card riding along on a debit expense.
     card_select = find("select[name='expense_entry[card_id]']", visible: :all)
     expect(card_select.value).to be_blank
+  end
+
+  it "shows the account picker only for débito" do
+    create_card!(name: "Azul")
+    visit new_expense_path
+
+    choose "débito"
+    expect(page).to have_select("Conta")
+    choose "crédito"
+    expect(page).to have_select("expense_entry[card_id]")
+    expect(page).to have_no_select("Conta")
+    choose "dinheiro"
+    expect(page).to have_no_select("Conta")
+    expect(page).to have_no_select("expense_entry[card_id]")
+  end
+
+  it "hides the reserved category for every method on a new expense" do
+    visit new_expense_path
+    %w[débito dinheiro].each do |method|
+      choose method
+      option = find("select[name='expense_entry[category_id]'] option", text: "cartão de crédito", visible: :all)
+      expect(option).to be_disabled
+    end
   end
 end

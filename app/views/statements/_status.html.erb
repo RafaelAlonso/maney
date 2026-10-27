@@ -1,0 +1,19 @@
+<%# app/views/statements/_status.html.erb — locals: card:, statement:, amount_cents:, payments:, from: (optional)
+    A statement's payment status and its "pagar" action. Nothing at all for a
+    statement due before tracking started (:untracked); for :unpaid the button
+    is the signal. %>
+<% status = payments.status(statement, amount_cents) %>
+<% unless status == :untracked %>
+  <span class="flex items-center gap-2 text-sm">
+    <% case status %>
+    <% when :paid %>
+      <span class="text-money-positive">paga ✓</span>
+    <% when :partial %>
+      <span class="text-money-near">falta <%= brl(payments.remaining_cents(statement, amount_cents)) %></span>
+    <% end %>
+    <% unless status == :paid %>
+      <%= link_to "pagar", new_card_statement_payment_path(card, statement, from: local_assigns[:from]),
+            class: "text-accent font-medium" %>
+    <% end %>
+  </span>
+<% end %>

@@ -128,4 +128,38 @@ RSpec.describe "Statements", type: :request do
 
     expect(response.body).to match(/class="[^"]*text-money-expense[^"]*"[^>]*>\s*R\$ 200,00/)
   end
+
+  describe "payments" do
+    def pay(cents, closing)
+      Expense.create!(name: "fatura", amount_cents: cents, date: Date.new(2026, 3, 20), payment_method: "debit",
+                      category: credit_card_category, statement_card: card, statement_closing_on: closing)
+    end
+
+    it "shows status and pagar per statement, and nothing for statements due before tracking started" do
+      credit_expense(20_000, Date.new(2026, 3, 4))  # due 12/03
+      credit_expense(5_000, Date.new(2026, 3, 6))   # due 13/04
+      Setting.instance.update!(statements_tracked_from: Date.new(2026, 3, 15))
+
+      get card_statements_path(card)
+
+      expect(response.body).to include(new_card_statement_payment_path(card, "2026-04-05"))
+      expect(response.body).not_to include(new_card_statement_payment_path(card, "2026-03-05"))
+
+      pay(5_000, Date.new(2026, 4, 5))
+      get card_statements_path(card)
+      expect(response.body).to include("paga ✓")
+      expect(response.body).not_to include(new_card_statement_payment_path(card, "2026-04-05"))
+    end
+
+    it "lists the statement's payments on its page" do
+      credit_expense(20_000, Date.new(2026, 3, 4))
+      payment = pay(5_000, Date.new(2026, 3, 5))
+
+      get card_statement_path(card, "2026-03-05")
+
+      expect(response.body).to include("pagamentos").and include("Conta principal").and include("R$ 50,00")
+      expect(response.body).to include(edit_statement_payment_path(payment))
+      expect(response.body).to include("falta R$ 150,00")
+    end
+  end
 end

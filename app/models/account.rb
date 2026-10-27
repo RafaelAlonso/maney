@@ -11,6 +11,11 @@ class Account < ApplicationRecord
 
   ROLES = %w[primary wallet].freeze
 
+  has_many :expenses, dependent: :restrict_with_error
+  has_many :incomes, dependent: :restrict_with_error
+  has_many :transfers_out, class_name: "Transfer", foreign_key: :from_account_id, dependent: :restrict_with_error
+  has_many :transfers_in, class_name: "Transfer", foreign_key: :to_account_id, dependent: :restrict_with_error
+
   # Same uniqueness caveat as Category: the validator queries `unscoped`, so the
   # scope on user_id is what keeps one person's roles from blocking another's.
   validates :name, presence: true
@@ -30,6 +35,13 @@ class Account < ApplicationRecord
 
   def self.primary = find_by!(role: "primary")
   def self.wallet = find_by!(role: "wallet")
+
+  # The account a new entry's picker pre-selects: the one the most recent record
+  # in `scope` used, while it's still active; Conta principal otherwise.
+  def self.last_used_id(scope)
+    scope.where(account_id: active.select(:id)).order(created_at: :desc, id: :desc).pick(:account_id) ||
+      primary.id
+  end
 
   def primary? = role == "primary"
   def wallet? = role == "wallet"

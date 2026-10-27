@@ -1,0 +1,10 @@
+<%# app/views/accounts/_form.html.erb — locals: account:
+    Name only: a balance is never typed in, it is derived. %>
+<%= form_with model: account, class: "space-y-4" do |f| %>
+  <%= render "shared/errors", model: account %>
+  <div>
+    <%= f.label :name, "Nome", class: "field-label" %>
+    <%= f.text_field :name, class: "field-input" %>
+  </div>
+  <%= f.submit "Salvar", class: "btn btn-primary" %>
+<% end %>

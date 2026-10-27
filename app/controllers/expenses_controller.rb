@@ -19,6 +19,9 @@ class ExpensesController < ApplicationController
 
   def edit
     @expense = Expense.find(params[:id])
+    # A bill payment linked to its statement has its own form ("pagar").
+    return redirect_to edit_statement_payment_path(@expense) if @expense.statement_payment?
+
     @entry = ExpenseEntry.from(source_for(@expense))
   end
 
@@ -88,6 +91,6 @@ class ExpensesController < ApplicationController
   def entry_params
     params.require(:expense_entry)
           .permit(:name, :amount, :date, :category_id, :payment_method,
-                  :card_id, :installment, :installments_count, :first_installment)
+                  :card_id, :account_id, :installment, :installments_count, :first_installment)
   end
 end

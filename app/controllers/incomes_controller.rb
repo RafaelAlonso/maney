@@ -2,7 +2,7 @@ class IncomesController < ApplicationController
   before_action :set_income, only: %i[edit update destroy]
 
   def index
-    @incomes = Income.where(date: current_month.all_month).order(:date, :name)
+    @incomes = Income.where(date: current_month.all_month).includes(:account).order(:date, :name)
     @carried_cents = Budgeting::BalanceChain.carried_into(month: current_month)
     @first_month = current_month == Setting.instance.first_month
     @total_cents = @carried_cents + @incomes.sum(:amount_cents)
@@ -51,22 +51,35 @@ class IncomesController < ApplicationController
   # was submitted, whether the parse succeeds or fails, so the form always
   # re-renders with it.
   def assign_and_save(income)
-    permitted = params.require(:income).permit(:name, :amount, :date)
+    permitted = params.require(:income).permit(:name, :amount, :date, :account_id)
     income.name = permitted[:name]
     income.date = permitted[:date]
     income.amount = permitted[:amount]
+    # Default scope: another person's id is simply not found.
+    account = Account.find_by(id: permitted[:account_id].presence)
+    income.account = account
     cents = BrlMoney.parse(permitted[:amount])
-    if cents.nil?
+    income.amount_cents = cents if cents
+    if cents.nil? || account.nil?
       # Run the other validations (name, date) even with the amount not parsing,
       # so a second real error isn't hidden; only the `amount_cents` message
       # (stuck on a column the view doesn't show) is swapped for ours, on the
       # field the form actually displays.
       income.valid?
-      income.errors.delete(:amount_cents)
-      income.errors.add(:amount, "não é um valor válido")
+      if cents.nil?
+        income.errors.delete(:amount_cents)
+        income.errors.add(:amount, "não é um valor válido")
+      else
+        remap_amount_cents_errors(income)
+      end
+      if account.nil?
+        # The model's fallback (Conta principal) must not stand in for a choice
+        # the person didn't make.
+        income.account = nil
+        income.errors.add(:account_id, "escolha a conta")
+      end
       return false
     end
-    income.amount_cents = cents
     return true if income.save
     remap_amount_cents_errors(income)
     false

@@ -23,6 +23,18 @@ RSpec.describe "Expenses", type: :request do
     expect(Expense.find_by(name: "padaria").payment_method).to eq "debit"
   end
 
+  it "refuses another person's account id on a debit expense" do
+    foreign = as(create_user!(email_address: "irma@example.com")) { create_setting!; Account.primary }
+
+    post expenses_path, params: { expense_entry: { name: "padaria", amount: "50,00", date: "2026-03-10",
+                                                   category_id: others.id, payment_method: "debit",
+                                                   account_id: foreign.id } }
+
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("escolha a conta do débito")
+    expect(Expense.find_by(name: "padaria")).to be_nil
+  end
+
   it "refuses a new debit expense in the credit-card category — bills are paid through pagar" do
     post expenses_path, params: { expense_entry: { name: "fatura azul", amount: "800,00", date: "2026-03-12",
                                                    category_id: credit_card_cat.id, payment_method: "debit",
